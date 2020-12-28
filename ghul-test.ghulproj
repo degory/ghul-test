@@ -1,0 +1,49 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net5.0</TargetFramework>
+
+    <Title>ghūl test</Title>
+    <PackageDescription>ghūl compiler snapshot test runner</PackageDescription>
+    <PackageId>ghul.test</PackageId>
+    <Authors>degory</Authors>
+    <Company>ghul.io</Company>
+    <Version>0.0.1-pre2</Version>
+
+    <PackageOutputPath>./nupkg</PackageOutputPath>  
+    <DebugType>None</DebugType>
+    <IsTool>true</IsTool>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>ghul-test</ToolCommandName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ghul.runtime" Version="0.0.6-pre2" />
+  </ItemGroup>
+
+  <Target Name="CreateManifestResourceNames" />
+
+  <Target Name="GhulAssembliesJson" BeforeTargets="CoreCompile" DependsOnTargets="FindReferenceAssembliesForReferences">
+    <PropertyGroup>
+      <Assemblies>{"assemblies": [@(ReferencePathWithRefAssemblies -> '"%(fullpath)"', ',')]}</Assemblies>
+    </PropertyGroup>
+
+    <WriteLinesToFile
+      File=".assemblies.json"
+      Lines="$(Assemblies)"
+      Overwrite="true"
+      Encoding="Utf-8" />
+    <Message Importance="high" Text="updated $(OutputFile) with referenced assemblies" />
+
+  </Target>  
+
+  <Target Name="CoreCompile">
+    <ItemGroup>
+      <GhulSources Include="src/**/*.ghul" />
+    </ItemGroup>
+
+    <Exec Command="ghul --v3 @(GhulSources -> '%(fullpath)', '%20') -o $(IntermediateOutputPath)$(AssemblyName).dll @(ReferencePathWithRefAssemblies -> '--assembly %(fullpath)', '%20')" />
+
+    <Copy SourceFiles="$(ProjectDir)$(IntermediateOutputPath)$(AssemblyName).dll" DestinationFolder="$(ProjectDir)$(IntermediateOutputPath)ref" />
+  </Target>
+</Project>

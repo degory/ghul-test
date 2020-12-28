@@ -1,0 +1,78 @@
+# CI/CD pipeline. 
+
+name: CI/CD
+
+on:
+  pull_request:
+  push:
+    branches:
+      - "main"
+env:
+  CI: true
+
+jobs:
+  version:
+    name: Create a version number
+    runs-on: ubuntu-20.04
+    timeout-minutes: 1
+    outputs:
+      number: ${{ steps.mangle_version_number.outputs.version }}
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Create version number
+      id: create_version_number
+      uses: anothrNick/github-tag-action@1.33.0
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        WITH_V: false
+        DEFAULT_BUMP: patch
+        RELEASE_BRANCHES: main,master
+        PRERELEASE_SUFFIX: pre
+
+    - name: Fail if version number is not valid
+      if: ${{ steps.create_version_number.outputs.new_tag == 'v0.0.0' || steps.create_version_number.outputs.new_tag == '' }}
+      run: exit 1
+
+    - name: Mangle version number
+      id: mangle_version_number
+      run: echo "::set-output name=version::${VERSION/-pre\./-pre}"
+      env:
+        VERSION: ${{ steps.create_version_number.outputs.new_tag }}         
+
+    - name: Echo version number
+      run: echo ${{ steps.mangle_version_number.outputs.version }}
+
+  build:
+    name: Build .NET executable
+    runs-on: ubuntu-latest
+    container: ghul/devcontainer:dotnet
+    timeout-minutes: 10
+    needs: [version]
+
+    steps:
+    - uses: actions/checkout@v2
+                    
+    - name: Pack
+      run: dotnet pack -p:Version=${{ needs.version.outputs.number }}
+
+    - name: Upload .NET package artefact
+      if: ${{ github.event_name != 'push' }}
+      uses: actions/upload-artifact@v2
+      with:
+        name: executable-dotnet
+        path: nupkg
+
+    - name: Publish package to GitHub
+      # if: ${{ github.event_name == 'push' }}
+      run: dotnet nuget push ./nupkg/*.nupkg -k ${GITHUB_TOKEN} -s https://nuget.pkg.github.com/degory/index.json --skip-duplicate --no-symbols true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Publish package to NuGet
+      if: ${{ github.event_name == 'push' }}
+      run: dotnet nuget push ./nupkg/*.nupkg -k ${NUGET_TOKEN} -s https://api.nuget.org/v3/index.json --skip-duplicate --no-symbols true
+      env:
+        NUGET_TOKEN: ${{ secrets.NUGET_TOKEN }}
+

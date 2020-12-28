@@ -1,0 +1,16 @@
+# shell install scripts
+**/*.run
+
+# .NET objects
+obj/
+bin/
+
+**/*.runtimeconfig.json
+**/*.il
+**/*.dll
+**/*.exe
+**/*.exe.mdb
+**/*.vsix
+.assemblies.json
+nupkg/**/*
+output.txt
