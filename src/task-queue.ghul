@@ -7,13 +7,12 @@ namespace Tester is
     use Collections.Iterable;
     use Collections.LIST;
 
+    use Pipes.Pipe;
+
     class TASK_QUEUE is
         _max_tasks: int;
 
         _running_tasks: LIST[Task`1[Result]];
-
-        _running_tasks_as_tasks: Task[] =>
-            new LIST[Task](new Shim.MAPPER[Task`1[Result], Task](_running_tasks, (task: Task`1[Result]) -> Task => task)).to_array();
 
         init(max_tasks: int) is
             _max_tasks = max_tasks;
@@ -51,7 +50,7 @@ namespace Tester is
                 return result;
             fi
 
-            Task.wait_any(_running_tasks_as_tasks);
+            Task.wait_any(Pipe.from(_running_tasks).map((t: Task`1[Result]) -> Task => t).collect_array());
 
             let new_tasks = new LIST[Task`1[Result]]();
 
