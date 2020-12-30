@@ -19,9 +19,7 @@ namespace Tester is
     use System.Diagnostics.Process;
     use System.Diagnostics.ProcessStartInfo;
 
-    use Shim.COUNT;
-    use Shim.JOIN;
-    use Shim.MAPPER;
+    use Pipes;
 
     class RUNNER is
         _collate_environment: MutableMap[string,string] static;
@@ -70,7 +68,7 @@ namespace Tester is
         
         run_test() -> Result is
             try
-                if new COUNT[string](Directory.get_files(_test.path, "disabled*")).result > 0 then
+                if Pipe.from(Directory.get_files(_test.path, "disabled*")).count() > 0 then
                     return new SKIP(_test);
                 fi
 
@@ -87,7 +85,7 @@ namespace Tester is
         si
 
         _run_test() is
-            if new Shim.COUNT[string](_test.source_files).result == 0 then
+            if Pipe.from(_test.source_files).count() == 0 then
                 add_fail("no source files found");
                 return;
             fi
@@ -219,11 +217,10 @@ namespace Tester is
 
             if _test.flags? && _test.flags.length > 0 then
                 arguments.add_range(
-                    new MAPPER[string,string](
-                        _test.flags.split([' ']),
-                        (flag: string) -> string => flag.trim()
-                    )
-                );                
+                    Pipe
+                        .from(_test.flags.split([' ']))
+                        .map((flag: string) -> string => flag.trim())
+                );
             fi
             
             arguments.add_range(_test.source_files);
@@ -398,13 +395,10 @@ namespace Tester is
 
             if arguments? then
                 start_info.arguments =
-                new JOIN[string](
-                    new MAPPER[string,string](
-                        arguments,
-                        (arg: string) -> string => arg.replace("\\", "\\\\").replace("\"", "\"\"")
-                    ),
-                    " "
-                ).result;                
+                    Pipe
+                        .from(arguments)
+                        .map((arg: string) -> string => arg.replace("\\", "\\\\").replace("\"", "\"\""))
+                        .join(" ");
             fi
             
             start_info.working_directory = _test.path;
@@ -416,7 +410,7 @@ namespace Tester is
             let result = Process.start(start_info);
 
             if result == null then
-                throw new Exception("failed to start process: " + path + " " + new JOIN[string](arguments, " "));
+                throw new Exception("failed to start process: " + path + " " + Pipe.from(arguments).join(" "));
             fi
             
             return result;

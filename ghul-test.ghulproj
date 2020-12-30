@@ -10,7 +10,7 @@
     <Company>ghul.io</Company>
     <Version>0.0.1-pre2</Version>
 
-    <PackageOutputPath>./nupkg</PackageOutputPath>  
+    <PackageOutputPath>./nupkg</PackageOutputPath>
     <RepositoryUrl>https://github.com/degory/ghul-test</RepositoryUrl>
     <DebugType>None</DebugType>
     <IsTool>true</IsTool>
@@ -19,6 +19,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="ghul.pipes" Version="*" />
     <PackageReference Include="ghul.runtime" Version="*" />
   </ItemGroup>
 
@@ -29,11 +30,7 @@
       <Assemblies>{"assemblies": [@(ReferencePathWithRefAssemblies -> '"%(fullpath)"', ',')]}</Assemblies>
     </PropertyGroup>
 
-    <WriteLinesToFile
-      File=".assemblies.json"
-      Lines="$(Assemblies)"
-      Overwrite="true"
-      Encoding="Utf-8" />
+    <WriteLinesToFile File=".assemblies.json" Lines="$(Assemblies)" Overwrite="true" Encoding="Utf-8" />
     <Message Importance="high" Text="updated $(OutputFile) with referenced assemblies" />
 
   </Target>  
