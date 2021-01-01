@@ -3,12 +3,21 @@
 name: CI/CD
 
 on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number'
+        required: true
+
   pull_request:
   push:
-    branches:
-      - "main"
+    branches: [master, main]
+
 env:
   CI: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  DOTNET_NOLOGO: 1
 
 jobs:
   version:
@@ -16,7 +25,8 @@ jobs:
     runs-on: ubuntu-20.04
     timeout-minutes: 1
     outputs:
-      number: ${{ steps.mangle_version_number.outputs.version }}
+      tag: ${{ steps.pick_version.outputs.tag }}
+      package: ${{ steps.pick_version.outputs.package }}
 
     steps:
     - uses: actions/checkout@v2
@@ -26,36 +36,70 @@ jobs:
       uses: anothrNick/github-tag-action@1.33.0
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        WITH_V: false
+        WITH_V: true
         DEFAULT_BUMP: patch
         RELEASE_BRANCHES: main,master
-        PRERELEASE_SUFFIX: pre
 
-    - name: Fail if version number is not valid
-      if: ${{ steps.create_version_number.outputs.new_tag == 'v0.0.0' || steps.create_version_number.outputs.new_tag == '' }}
-      run: exit 1
+    - name: Pick version
+      id: pick_version
+      run: |
+        VALID_VERSION_REGEX="^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9]+\.[0-9]+)?$"
 
-    - name: Mangle version number
-      id: mangle_version_number
-      run: echo "::set-output name=version::${VERSION/-pre\./-pre}"
+        if [ ! -z "${MANUAL_VERSION}" ] ; then
+          echo "User supplied version: ${MANUAL_VERSION}"
+
+          VERSION="${MANUAL_VERSION}"
+        elif [ ! -z "${TAG_VERSION}" ] ; then
+          echo "Tag bump generated version: ${TAG_VERSION}"
+
+          VERSION="${TAG_VERSION}"
+        else
+          echo "Neither manual or tag version set"
+          exit 1
+        fi
+
+        if [[ ${VERSION} =~ ${VALID_VERSION_REGEX} ]] && [ "${VERSION}" != "v0.0.0" ] ; then
+          echo "Version number is valid: ${VERSION}"
+          echo "::set-output name=tag::${VERSION}"
+          echo "::set-output name=package::${VERSION:1}"
+        else
+          echo "Version number is not valid ${VERSION}"
+          exit 1
+        fi
+
       env:
-        VERSION: ${{ steps.create_version_number.outputs.new_tag }}         
+        TAG_VERSION: ${{ steps.create_version_number.outputs.new_tag }}
+        MANUAL_VERSION: ${{ github.event.inputs.version }}        
 
-    - name: Echo version number
-      run: echo ${{ steps.mangle_version_number.outputs.version }}
+    - name: Echo version numbers
+      run: |
+        echo "tag version: ${{ steps.pick_version.outputs.tag }}"
+        echo "package version: ${{ steps.pick_version.outputs.package }}"
 
   build:
     name: Build .NET executable
     runs-on: ubuntu-latest
-    container: ghul/devcontainer:dotnet
+
+    container:
+      image: mcr.microsoft.com/dotnet/sdk:5.0
+
     timeout-minutes: 10
     needs: [version]
 
     steps:
     - uses: actions/checkout@v2
-                    
+
+    - name: Add .NET tools to PATH
+      run: echo "${HOME}/.dotnet/tools" >> $GITHUB_PATH
+
+    - name: Add GitHub NuGet package source
+      run: dotnet nuget add source https://nuget.pkg.github.com/degory/index.json -n github -u degory -p ${{ secrets.GH_PACKAGES_RO }} --store-password-in-clear-text
+
+    - name: Install stable compiler
+      run: dotnet tool install --global ghul.compiler
+
     - name: Pack
-      run: dotnet pack -p:Version=${{ needs.version.outputs.number }}
+      run: dotnet pack -p:Version=${{ needs.version.outputs.package }}
 
     - name: Upload .NET package artefact
       if: ${{ github.event_name != 'push' }}
@@ -65,7 +109,6 @@ jobs:
         path: nupkg
 
     - name: Publish package to GitHub
-      # if: ${{ github.event_name == 'push' }}
       run: dotnet nuget push ./nupkg/*.nupkg -k ${GITHUB_TOKEN} -s https://nuget.pkg.github.com/degory/index.json --skip-duplicate --no-symbols true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
