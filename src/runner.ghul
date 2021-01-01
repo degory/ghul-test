@@ -32,14 +32,18 @@ namespace Tester is
 
         _test: TEST;
 
+        _runtime_path: string;
+
         init(
             host_cli: string,
             target_cli: string,
+            runtime_path: string,
             use_installed_compiler: bool,
             test: TEST
         ) is
             _host_cli = host_cli;
             _target_cli = target_cli;
+            _runtime_path = runtime_path;
             _use_installed_compiler = use_installed_compiler;
             _test = test;
 
@@ -122,6 +126,8 @@ namespace Tester is
 
             run_diff_il_out();
 
+            run_ln_runtime();
+
             if !build_succeeded then
                 return;
             fi
@@ -203,13 +209,7 @@ namespace Tester is
         run_compiler() -> bool is
             let arguments = new LIST[string]();
 
-            let ghul_v3_string = System.Environment.get_environment_variable("GHUL_V3"); 
-
-            if ghul_v3_string != null && (ghul_v3_string =~ "1" || ghul_v3_string =~ "true") then
-                arguments.add("--v3");
-            fi
-
-            arguments.add_range(["--library-prefix", get_library_prefix_path()]);
+            arguments.add("--v3");
 
             if _test.flags? && _test.flags.length > 0 then
                 arguments.add_range(
@@ -246,6 +246,21 @@ namespace Tester is
             return File.exists(get_path("binary.exe"));
         si
 
+        run_ln_runtime() -> bool is
+            // let ghul_v3_string = System.Environment.get_environment_variable("GHUL_V3"); 
+
+            // if ghul_v3_string == null || (ghul_v3_string !~ "1" && ghul_v3_string !~ "true") then
+            //     return true;
+            // fi
+
+            return run(
+                "ln",
+                ["-s", _runtime_path, "."],
+                1000,
+                null,
+                null
+            ) != 0;
+        si
 
         run_sed() -> bool =>
             run(
