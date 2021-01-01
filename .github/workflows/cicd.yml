@@ -79,13 +79,25 @@ jobs:
   build:
     name: Build .NET executable
     runs-on: ubuntu-latest
-    container: ghul/devcontainer:dotnet
+
+    container:
+      image: mcr.microsoft.com/dotnet/sdk:5.0
+
     timeout-minutes: 10
     needs: [version]
 
     steps:
     - uses: actions/checkout@v2
-                    
+
+    - name: Add .NET tools to PATH
+      run: echo "${HOME}/.dotnet/tools" >> $GITHUB_PATH
+
+    - name: Add GitHub NuGet package source
+      run: dotnet nuget add source https://nuget.pkg.github.com/degory/index.json -n github -u degory -p ${{ secrets.GH_PACKAGES_RO }} --store-password-in-clear-text
+
+    - name: Install stable compiler
+      run: dotnet tool install --global ghul.compiler
+
     - name: Pack
       run: dotnet pack -p:Version=${{ needs.version.outputs.package }}
 
