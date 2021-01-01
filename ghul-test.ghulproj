@@ -8,7 +8,7 @@
     <PackageId>ghul.test</PackageId>
     <Authors>degory</Authors>
     <Company>ghul.io</Company>
-    <Version>0.0.1-pre2</Version>
+    <Version>0.0.1-alpha.5</Version>
 
     <PackageOutputPath>./nupkg</PackageOutputPath>
     <RepositoryUrl>https://github.com/degory/ghul-test</RepositoryUrl>
