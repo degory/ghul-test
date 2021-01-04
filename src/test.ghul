@@ -28,7 +28,7 @@ namespace Tester is
             self.depth = depth;
             self.flags = flags;
             self.is_build_fail_expected = is_build_fail_expected;
-        si  
+        si
 
         to_string() -> string is
             if result? then
