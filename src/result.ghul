@@ -22,7 +22,7 @@ namespace Tester is
             throw new System.NotImplementedException();            
         si
 
-        is_executed: bool => is_pass || is_fail;
+        is_executed: bool => is_pass \/ is_fail;
 
         head: string is
             throw new System.NotImplementedException();
@@ -38,7 +38,7 @@ namespace Tester is
         format(test_name: string) -> string is
             let result = progress_string + " " + head + ": " + test_name;
 
-            if body? && body !~ "" then
+            if body? /\ body !~ "" then
                 result = result + ": " + body;
             fi
 
