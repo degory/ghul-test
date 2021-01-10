@@ -210,7 +210,7 @@ namespace Tester is
             arguments.add("--v3");
             arguments.add("--test-run");
 
-            if _test.flags? && _test.flags.length > 0 then
+            if _test.flags? /\ _test.flags.length > 0 then
                 arguments.add_range(
                     Pipe
                         .from(_test.flags.split([' ']))

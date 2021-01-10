@@ -10,10 +10,6 @@ namespace Tester is
     use Collections.MutableList;
     use Collections.LIST;
 
-    use Shim.COUNT;
-    use Shim.JOIN;
-    use Shim.MAPPER;
-            
     class TEST_QUEUE is
         _host_cli: string;
         _target_cli: string;
@@ -28,9 +24,9 @@ namespace Tester is
         progress: int;
         count: int => _tests.count;
 
-        executed_count: int => new COUNT[TEST](_tests, (t: TEST) -> bool => t.has_executed).result;
-        pass_count: int => new COUNT[TEST](_tests, (t: TEST) -> bool => t.has_passed).result;
-        fail_count: int => new COUNT[TEST](_tests, (t: TEST) -> bool => t.has_failed).result;
+        executed_count: int => _tests | .filter(t: TEST => t.has_executed).count();
+        pass_count: int => _tests | .filter(t: TEST => t.has_passed).count();
+        fail_count: int => _tests | .filter(t: TEST => t.has_failed).count();
 
         init(host_cli: string, target_cli: string) is
             _host_cli = host_cli;
@@ -129,7 +125,7 @@ namespace Tester is
                 return -1;
             fi
 
-            if Directory.get_files(path, "ghul.exe").count == 1 && Directory.exists(path + "/lib") then
+            if Directory.get_files(path, "ghul.exe").count == 1 /\ Directory.exists(path + "/lib") then
                 return 0;
             fi
 
@@ -139,8 +135,7 @@ namespace Tester is
                 Std.write_line("stupid depth");
             fi
             
-
-            if result == -1 || result > 15 then
+            if result == -1 \/ result > 15 then
                 return -1;
             fi
             
@@ -161,7 +156,7 @@ namespace Tester is
 
                 for entry in entries do
                     // FIXME: appears not to be needed:
-                    if entry =~ "." || entry =~ ".." || entry =~ "template" then
+                    if entry =~ "." \/ entry =~ ".." \/ entry =~ "template" then
                         continue;
                     fi
 
@@ -200,7 +195,7 @@ namespace Tester is
         si
 
         get_source_files(path: string) -> Iterable[string] =>
-            new MAPPER[string,string](Directory.get_files(path, "*.ghul"), (path: string) -> string is
+            Directory.get_files(path, "*.ghul") | .map((path: string) is
                 let last_slash_index = path.last_index_of('/');
 
                 if last_slash_index > 0 then
@@ -209,7 +204,7 @@ namespace Tester is
 
                 return path;                
             si);   
-            
+
         get_runtime_path() -> string is
             let executing_assembly = System.Reflection.Assembly.get_executing_assembly();
 
