@@ -10,7 +10,16 @@ namespace Tester is
     class Result is
         test: TEST;
 
-        progress: int public;
+        _progress: int;
+        progress: int => _progress, = value is
+            if value < 0 then
+                _progress = 0;
+            elif value > 100 then
+                _progress = 100;
+            else
+                _progress = value;
+            fi            
+        si
 
         progress_string: string => progress.to_string().pad_left(2) + "%";
 
@@ -53,7 +62,7 @@ namespace Tester is
         is_fail: bool => false;
         head: string => "   skip";
 
-        init(test: TEST) is super.init(test); si        
+        init(test: TEST) is super.init(test); si
     si
 
     class PASS: Result is
@@ -77,15 +86,7 @@ namespace Tester is
             elif _details.count == 1 then
                 return _details[0].to_string();
             else
-                let buffer = new StringBuilder();
-
-                for details in _details do
-                    buffer
-                        .append("\n")
-                        .append(details);
-                od
-
-                return buffer.to_string();
+                return _details | .to_string("\n");
             fi            
         si
 
@@ -109,7 +110,7 @@ namespace Tester is
                         
         add(details: DETAILS) is
             _details.add(details);
-        si
+        si        
     si
     
     class DETAILS is
