@@ -95,6 +95,9 @@ jobs:
     - name: Install ghūl compiler
       run: dotnet tool install --global ghul.compiler
 
+    - name: Run tests
+      run: dotnet test tests/tests.ghulproj      
+
     - name: Create package
       run: dotnet pack -p:Version=${{ needs.version.outputs.package }}
 

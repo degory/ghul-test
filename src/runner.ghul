@@ -19,8 +19,6 @@ namespace Tester is
     use System.Diagnostics.Process;
     use System.Diagnostics.ProcessStartInfo;
 
-    use Pipes;
-
     class RUNNER is
         _collate_environment: MutableMap[string,string] static;
 
@@ -72,7 +70,7 @@ namespace Tester is
         
         run_test() -> Result is
             try
-                if Pipe.from(Directory.get_files(_test.path, "disabled*")).count() > 0 then
+                if Directory.get_files(_test.path, "disabled*")| .count() > 0 then
                     return new SKIP(_test);
                 fi
 
@@ -89,7 +87,7 @@ namespace Tester is
         si
 
         _run_test() is
-            if Pipe.from(_test.source_files).count() == 0 then
+            if _test.source_files| .count() == 0 then
                 add_fail("no source files found");
                 return;
             fi
@@ -212,9 +210,7 @@ namespace Tester is
 
             if _test.flags? /\ _test.flags.length > 0 then
                 arguments.add_range(
-                    Pipe
-                        .from(_test.flags.split([' ']))
-                        .map((flag: string) -> string => flag.trim())
+                    _test.flags.split([' ']) | .map((flag: string) -> string => flag.trim())
                 );
             fi
             
@@ -374,9 +370,9 @@ namespace Tester is
 
             if arguments? then
                 start_info.arguments =
-                    Pipe
-                        .from(arguments)
-                        .map((arg: string) -> string => arg.replace("\\", "\\\\").replace("\"", "\"\""))
+                    arguments |
+                        .map(arg: string => 
+                            arg.replace("\\", "\\\\").replace("\"", "\"\""))
                         .join(" ");
             fi
             
@@ -389,7 +385,7 @@ namespace Tester is
             let result = Process.start(start_info);
 
             if result == null then
-                throw new Exception("failed to start process: " + path + " " + Pipe.from(arguments).join(" "));
+                throw new Exception("failed to start process: " + path + " " + arguments| .to_string(" "));
             fi
             
             return result;

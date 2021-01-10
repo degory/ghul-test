@@ -7,8 +7,6 @@ namespace Tester is
     use Collections.Iterable;
     use Collections.LIST;
 
-    use Pipes.Pipe;
-
     class TASK_QUEUE is
         _max_tasks: int;
 
@@ -50,7 +48,7 @@ namespace Tester is
                 return result;
             fi
 
-            Task.wait_any(Pipe.from(_running_tasks).map((t: Task`1[Result]) -> Task => t).collect_array());
+            Task.wait_any(_running_tasks| .map((t: Task`1[Result]) -> Task => t).collect_array());
 
             let new_tasks = new LIST[Task`1[Result]]();
 
