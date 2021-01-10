@@ -46,7 +46,7 @@ namespace Tester is
         wait(all: bool) -> Iterable[Result] is
             let result = new LIST[Result]();
 
-            if !all && _running_tasks.count < _max_tasks then
+            if !all /\ _running_tasks.count < _max_tasks then
                 return result;
             fi
 
