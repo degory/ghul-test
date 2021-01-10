@@ -9,9 +9,9 @@ namespace Tester is
 
         is_build_fail_expected: bool;
 
-        has_executed: bool => result? && result.is_executed;
-        has_passed: bool => result? && result.is_pass;
-        has_failed: bool => result? && result.is_fail;
+        has_executed: bool => result? /\ result.is_executed;
+        has_passed: bool => result? /\ result.is_pass;
+        has_failed: bool => result? /\ result.is_fail;
 
         result: Result public;
 
