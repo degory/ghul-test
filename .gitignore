@@ -14,3 +14,5 @@ bin/
 .assemblies.json
 nupkg/**/*
 output.txt
+
+tests/TestResults/

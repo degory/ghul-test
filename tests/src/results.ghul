@@ -1,0 +1,456 @@
+namespace Tests is
+    use Collections;
+
+    use Microsoft.VisualStudio.TestTools.UnitTesting;
+
+    use Main.should;
+    use Main.get_stub_test;
+
+    use Tester;
+
+    class Result_Should is
+        @test()
+
+        _n: object[];
+
+        init() is
+            _n = new LIST[object](0).to_array();    
+        si
+
+        Result__set_progress__given_value_of_minus_50__sets_progress_to_0() is
+            @test()
+
+            let result = new Result(get_stub_test());
+            
+            result.progress = -50;
+
+            should(result.progress).be(0, null, null);
+        si
+        
+        Result__set_progress__given_value_of_minus_1__sets_progress_to_0() is
+            @test()
+
+            let result = new Result(get_stub_test());
+            
+            result.progress = -1;
+
+            should(result.progress).be(0, null, null);
+        si
+
+        Result__set_progress__given_value_of_0__sets_progress_to_0() is
+            @test()
+
+            let result = new Result(get_stub_test());
+            
+            result.progress = 0;
+
+            should(result.progress).be(0, null, null);
+        si
+
+        Result__set_progress__given_value_of_1__sets_progress_to_1() is
+            @test()
+
+            let result = new Result(get_stub_test());
+            
+            result.progress = 1;
+
+            should(result.progress).be(1, null, null);
+        si
+
+        Result__set_progress__given_value_of_33__sets_progress_to_33() is
+            @test()
+
+            let result = new Result(get_stub_test());
+            
+            result.progress = 33;
+
+            should(result.progress).be(33, null, null);
+        si
+
+        Result__set_progress__given_value_of_99__sets_progress_to_99() is
+            @test()
+
+            let result = new Result(get_stub_test());
+            
+            result.progress = 99;
+
+            should(result.progress).be(99, null, null);
+        si
+
+        Result__set_progress__given_value_of_100__sets_progress_to_100() is
+            @test()
+
+            let result = new Result(get_stub_test());
+            
+            result.progress = 100;
+
+            should(result.progress).be(100, null, null);
+        si
+
+        Result__set_progress__given_value_of_101__sets_progress_to_100() is
+            @test()
+
+            let result = new Result(get_stub_test());
+            
+            result.progress = 101;
+
+            should(result.progress).be(100, null, null);
+        si
+
+        Result__set_progress__given_value_of_1000__sets_progress_to_100() is
+            @test()
+
+            let result = new Result(get_stub_test());
+            
+            result.progress = 1000;
+
+            should(result.progress).be(100, null, null);
+        si
+
+        Result__progress_string__given_progress_is_0__returns_space_padded_0_percent() is
+            @test()
+
+            let result = new Result(get_stub_test());
+            
+            result.progress = 0;
+
+            should(result.progress_string).be(" 0%", null, null);
+        si
+        
+        Result__progress_string__given_progress_is_5__returns_space_padded_5_percent() is
+            @test()
+
+            let result = new Result(get_stub_test());
+            
+            result.progress = 5;
+
+            should(result.progress_string).be(" 5%", null, null);
+        si
+
+        Result__progress_string__given_progress_is_12__returns_12_percent() is
+            @test()
+
+            let result = new Result(get_stub_test());
+            
+            result.progress = 12;
+
+            should(result.progress_string).be("12%", null, null);
+        si
+
+        Result__progress_string__given_progress_is_100__returns_100_percent() is
+            @test()
+
+            let result = new Result(get_stub_test());
+            
+            result.progress = 100;
+
+            should(result.progress_string).be("100%", null, null);
+        si
+    si
+    
+    class SKIP_Should is
+        @test()
+
+        init() is si
+
+        SKIP__init__given_a_test__sets_test_property() is
+            @test()
+
+            let test = get_stub_test();
+
+            let skip = new SKIP(test);
+
+            should(skip.test).be(test, null, null);
+        si
+        
+        SKIP__is_fail__is_false() is
+            @test()
+            
+            let skip = new SKIP(get_stub_test());
+
+            should(skip.is_fail).be(false, null, null);
+        si
+
+        SKIP__is_pass__is_false() is
+            @test()
+            
+            let skip = new SKIP(get_stub_test());
+
+            should(skip.is_pass).be(false, null, null);
+        si
+        
+        SKIP__is_executed__is_false() is
+            @test()
+            
+            let skip = new SKIP(get_stub_test());
+
+            should(skip.is_executed).be(false, null, null);
+        si
+        
+        SKIP__head__is_skip() is
+            @test()
+            
+            let skip = new SKIP(get_stub_test());
+
+            should(skip.head).be("   skip", null, null);
+        si
+        
+        SKIP__body__is_null() is
+            @test()
+            
+            let skip = new SKIP(get_stub_test());
+
+            should(skip.body).be(null, null, null);
+        si
+
+        SKIP__format__given_test_name__returns_progress_plus_head_plus_test_name() is
+            @test()
+            
+            let skip = new SKIP(get_stub_test());
+
+            should(skip.format("xx a test name xx")).be(skip.progress_string + " " + skip.head + ": xx a test name xx", null, null);
+        si
+
+        SKIP__to_string__given_test_path__to_string__returns_formatted_path() is
+            @test()
+           
+            let test = get_stub_test();
+
+            test.path = "path/to/test";
+
+            let skip = new SKIP(test);
+
+            should(skip.to_string()).be(skip.format(test.path), null, null);
+        si
+    si
+
+    class PASS_Should is
+        @test()
+
+        init() is si
+
+        PASS__init__given_a_test__sets_test_property() is
+            @test()
+
+            let test = get_stub_test();
+
+            let pass = new PASS(test);
+
+            should(pass.test).be(test, null, null);
+        si
+        
+        PASS__is_fail__is_false() is
+            @test()
+            
+            let pass = new PASS(get_stub_test());
+
+            should(pass.is_fail).be(false, null, null);
+        si
+
+        PASS__is_pass__is_true() is
+            @test()
+            
+            let pass = new PASS(get_stub_test());
+
+            should(pass.is_pass).be(true, null, null);
+        si
+        
+        PASS__is_executed__is_true() is
+            @test()
+            
+            let pass = new PASS(get_stub_test());
+
+            should(pass.is_executed).be(true, null, null);
+        si
+        
+        PASS__head__is_pass() is
+            @test()
+            
+            let pass = new PASS(get_stub_test());
+
+            should(pass.head).be("✅ pass", null, null);
+        si
+        
+        PASS__body__is_null() is
+            @test()
+            
+            let pass = new PASS(get_stub_test());
+
+            should(pass.body).be(null, null, null);
+        si
+
+        PASS__format__given_test_name__returns_progress_plus_head_plus_test_name() is
+            @test()
+            
+            let pass = new PASS(get_stub_test());
+
+            should(pass.format("xx a test name xx")).be(pass.progress_string + " " + pass.head + ": xx a test name xx", null, null);
+        si
+
+        PASS__to_string__given_test_path__returns_formatted_path() is
+            @test()
+           
+            let test = get_stub_test();
+
+            test.path = "path/to/test";
+
+            let pass = new PASS(test);
+
+            should(pass.to_string()).be(pass.format(test.path), null, null);
+        si
+    si    
+
+    class FAILURE_Should is
+        @test()
+
+        init() is si
+
+        FAILURE__init__given_a_test__sets_test_property() is
+            @test()
+
+            let test = get_stub_test();
+
+            let fail = new FAILURE(test);
+
+            should(fail.test).be(test, null, null);
+        si
+        
+        FAILURE__is_pass__is_false() is
+            @test()
+            
+            let fail = new FAILURE(get_stub_test());
+
+            should(fail.is_pass).be(false, null, null);
+        si
+
+        FAILURE__is_fail__is_true() is
+            @test()
+            
+            let fail = new FAILURE(get_stub_test());
+
+            should(fail.is_fail).be(true, null, null);
+        si
+        
+        FAILURE__is_executed__is_true() is
+            @test()
+            
+            let fail = new FAILURE(get_stub_test());
+
+            should(fail.is_executed).be(true, null, null);
+        si
+        
+        FAILURE__head__is_fail() is
+            @test()
+            
+            let fail = new FAILURE(get_stub_test());
+
+            should(fail.head).be("❌ fail", null, null);
+        si
+        
+        FAILURE__body__given_no_details__is_null() is
+            @test()
+            
+            let fail = new FAILURE(get_stub_test());
+
+            should(fail.body).be(null, null, null);
+        si
+
+        FAILURE__body__given_one_detail__is_detail_to_string() is
+            @test()
+            
+            let fail = new FAILURE(get_stub_test());
+            let details = new DETAILS("something went wrong\nsomething bad");
+
+            fail.add(details);
+
+            should(fail.body).be(details.to_string(), null, null);
+        si
+
+        FAILURE__body__given_multiple_details__is_details_joined_with_newlines() is
+            @test()
+            
+            let fail = new FAILURE(get_stub_test());
+            let details = [1, 2, 3] | .map(i: int => new DETAILS("something went wrong " + i));
+
+            for d in details do
+                fail.add(d);                
+            od
+            
+            should(fail.body).be(details | .to_string("\n"), null, null);
+        si
+
+        FAILURE__format__given_test_name__returns_progress_plus_head_plus_test_name() is
+            @test()
+            
+            let fail = new FAILURE(get_stub_test());
+
+            should(fail.format("xx a test name xx")).be(fail.progress_string + " " + fail.head + ": xx a test name xx", null, null);
+        si
+
+        FAILURE__to_string__given_test_path__returns_formatted_path() is
+            @test()
+           
+            let test = get_stub_test();
+
+            test.path = "path/to/test";
+
+            let fail = new FAILURE(test);
+
+            should(fail.to_string()).be(fail.format(test.path), null, null);
+        si
+    si
+    
+    class DETAILS_Should is
+        @test()
+
+        init() is si
+        
+        DETAILS__init__given_a_message__sets_message_property() is
+            @test()
+
+            let details = new DETAILS("this is a message");
+
+            should(details.message).be("this is a message", null, null);
+        si
+
+        DETAILS__init__given_a_message__given_message__sets_details_property_to_null() is
+            @test()
+
+            let details = new DETAILS("this is a message");
+
+            should(details.details).be(null, null, null);
+        si
+
+        DETAILS__init__given_details__sets_details_property() is
+            @test()
+
+            let details = new DETAILS("this is a message", "and this is additional detail");
+
+            should(details.details).be("and this is additional detail", null, null);
+        si
+
+        DETAILS__to_string__given_a_message_but_no_details__returns_message() is
+            @test()
+
+            let details = new DETAILS("this is a message");
+
+            should(details.to_string()).be("this is a message", null, null);
+        si
+        
+        DETAILS__to_string__given_message_and_single_line_details__returns_message_plus_details_on_same_line() is
+            @test()
+
+            let details = new DETAILS("this is a message", "and this is additional detail");
+
+            should(details.to_string()).be("this is a message: and this is additional detail", null, null);
+        si
+        
+        DETAILS__to_string__given_message_and_single_line_details__returns_message_on_first_line_and_indented_details_on_subsequent_lines() is
+            @test()
+
+            let details = new DETAILS("this is a message", "and this\nis multi-line\nadditional detail");
+
+            should(details.to_string()).be("this is a message:\n    and this\n    is multi-line\n    additional detail", null, null);
+        si
+    si
+si
