@@ -210,7 +210,7 @@ namespace Tester is
 
             if _test.flags? /\ _test.flags.length > 0 then
                 arguments.add_range(
-                    _test.flags.split([' ']) | .map((flag: string) -> string => flag.trim())
+                    _test.flags.split([' ']) | .map((flag) -> string => flag.trim())
                 );
             fi
             
@@ -371,9 +371,9 @@ namespace Tester is
             if arguments? then
                 start_info.arguments =
                     arguments |
-                        .map(arg: string => 
+                        .map(arg => 
                             arg.replace("\\", "\\\\").replace("\"", "\"\""))
-                        .join(" ");
+                        .to_string(" ");
             fi
             
             start_info.working_directory = _test.path;
@@ -392,12 +392,12 @@ namespace Tester is
         si
 
         wait(process: Process, timeout: int, out_file_name: string, err_file_name: string) -> int is
-            if out_file_name then
+            if out_file_name? then
                 let stdout = process.standard_output.read_to_end();
                 write_all_text(out_file_name, stdout);
             fi
             
-            if err_file_name then
+            if err_file_name? then
                 let stderr = process.standard_error.read_to_end();
                 write_all_text(err_file_name, stderr);
             fi

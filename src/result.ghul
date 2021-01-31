@@ -11,7 +11,7 @@ namespace Tester is
         test: TEST;
 
         _progress: int;
-        progress: int => _progress, = value is
+        progress: int public => _progress, = value is
             if value < 0 then
                 _progress = 0;
             elif value > 100 then
