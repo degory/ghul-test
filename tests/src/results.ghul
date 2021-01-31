@@ -370,7 +370,7 @@ namespace Tests is
             @test()
             
             let fail = new FAILURE(get_stub_test());
-            let details = [1, 2, 3] | .map(i: int => new DETAILS("something went wrong " + i));
+            let details = [1, 2, 3] | .map(i => new DETAILS("something went wrong " + i));
 
             for d in details do
                 fail.add(d);                

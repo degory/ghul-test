@@ -14,8 +14,6 @@ namespace Tester is
 
     class Main is
         entry(arguments: string[]) -> int static is
-            @IL.entrypoint()
-
             Std.output_encoding = new UTF8Encoding();
 
             let host = get_cli_environment_variable("HOST");
