@@ -48,7 +48,7 @@ namespace Tester is
                 return result;
             fi
 
-            Task.wait_any(_running_tasks| .map((t: Task`1[Result]) -> Task => t).collect_array());
+            Task.wait_any(_running_tasks| .map(t -> Task => t).collect_array());
 
             let new_tasks = new LIST[Task`1[Result]]();
 

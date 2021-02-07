@@ -24,9 +24,9 @@ namespace Tester is
         progress: int;
         count: int => _tests.count;
 
-        executed_count: int => _tests | .filter(t: TEST => t.has_executed).count();
-        pass_count: int => _tests | .filter(t: TEST => t.has_passed).count();
-        fail_count: int => _tests | .filter(t: TEST => t.has_failed).count();
+        executed_count: int => _tests | .filter(t => t.has_executed).count();
+        pass_count: int => _tests | .filter(t => t.has_passed).count();
+        fail_count: int => _tests | .filter(t => t.has_failed).count();
 
         init(host_cli: string, target_cli: string) is
             _host_cli = host_cli;
@@ -195,14 +195,14 @@ namespace Tester is
         si
 
         get_source_files(path: string) -> Iterable[string] =>
-            Directory.get_files(path, "*.ghul") | .map((path: string) is
+            Directory.get_files(path, "*.ghul") | .map(path: string is
                 let last_slash_index = path.last_index_of('/');
 
                 if last_slash_index > 0 then
                     return path.substring(last_slash_index + 1);
                 fi
 
-                return path;                
+                return path;
             si);   
 
         get_runtime_path() -> string is
