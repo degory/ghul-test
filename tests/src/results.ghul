@@ -3,9 +3,6 @@ namespace Tests is
 
     use Microsoft.VisualStudio.TestTools.UnitTesting;
 
-    use Main.should;
-    use Main.get_stub_test;
-
     use Tester;
 
     class Result_Should is
