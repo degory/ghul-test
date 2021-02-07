@@ -7,24 +7,20 @@ namespace Tests is
     
     use Tester;
 
-    class Main is
-        entry() static is
-            @IL.entrypoint()
-            
-            return;
-        si
-
-        get_stub_test() -> TEST static => new TEST("path", new LIST[string](), 1, "", false); 
-
-        // ghūl doesn't have extension methods, so wrap these for easier consumption:
-        should[T](iterable: Collections.Iterable[T]) -> GenericCollectionAssertions`1[T] static => new GenericCollectionAssertions`1[T](iterable);
-
-        should(s: string) -> StringAssertions static => new StringAssertions(s);
-
-        should(o: object) -> ObjectAssertions static => new ObjectAssertions(o);
-
-        // should(i: int) -> FluentAssertions.Numeric.NumericAssertions`1[int] static => new FluentAssertions.Numeric.NumericAssertions`1[int](cast object(i));
-
-        should(b: bool) -> BooleanAssertions static => new BooleanAssertions(new System.Nullable`1[bool](b));        
+    entry() is
+        return;
     si
+
+    get_stub_test() -> TEST => new TEST("path", new LIST[string](), 1, "", false); 
+
+    // ghūl doesn't have extension methods, so wrap these for easier consumption:
+    should[T](iterable: Collections.Iterable[T]) -> GenericCollectionAssertions`1[T] => new GenericCollectionAssertions`1[T](iterable);
+
+    should(s: string) -> StringAssertions => new StringAssertions(s);
+
+    should(o: object) -> ObjectAssertions => new ObjectAssertions(o);
+
+    // should(i: int) -> FluentAssertions.Numeric.NumericAssertions`1[int] => new FluentAssertions.Numeric.NumericAssertions`1[int](cast object(i));
+
+    should(b: bool) -> BooleanAssertions => new BooleanAssertions(new System.Nullable`1[bool](b));        
 si
