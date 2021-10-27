@@ -81,7 +81,7 @@ jobs:
     runs-on: ubuntu-latest
 
     container:
-      image: mcr.microsoft.com/dotnet/sdk:5.0
+      image: mcr.microsoft.com/dotnet/sdk:6.0
 
     timeout-minutes: 10
     needs: [version]
@@ -93,7 +93,7 @@ jobs:
       run: echo "${HOME}/.dotnet/tools" >> $GITHUB_PATH
 
     - name: Install ghūl compiler
-      run: dotnet tool install --global ghul.compiler
+      run: dotnet tool install --global ghul.compiler --version 0.2.135-alpha.1
 
     - name: Run tests
       run: dotnet test tests/tests.ghulproj      
