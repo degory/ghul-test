@@ -11,6 +11,7 @@ bin/
 **/*.exe
 **/*.exe.mdb
 **/*.vsix
+**/.build.rsp
 .assemblies.json
 nupkg/**/*
 output.txt
