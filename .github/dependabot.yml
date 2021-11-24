@@ -1,11 +1,6 @@
 version: 2
-updates: 
-  — package-ecosystem: “nuget”
-  directory: “/” 
-  schedule:
-    interval: “daily"
-
-  — package-ecosystem: “nuget”
-  directory: “/tests”
-  schedule: 
-    interval: “daily"
+updates:
+  - package-ecosystem: "nuget"
+    directory: ".dependabot/" #ghul-test.ghulproj
+    schedule:
+      interval: "daily"
