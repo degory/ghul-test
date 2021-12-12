@@ -1,6 +1,6 @@
 # CI/CD pipeline. 
 
-name: CI/CD
+name: CICD
 
 on:
   workflow_dispatch:
@@ -92,11 +92,8 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Add .NET tools to PATH
-      run: echo "${HOME}/.dotnet/tools" >> $GITHUB_PATH
-
-    - name: Install ghūl compiler
-      run: dotnet tool install --global ghul.compiler --version 0.2.135-alpha.1
+    - name: Restore local .NET tools
+      run: dotnet tool restore
 
     - name: Run tests
       run: dotnet test tests/tests.ghulproj      
@@ -123,3 +120,43 @@ jobs:
       env:
         NUGET_TOKEN: ${{ secrets.NUGET_TOKEN }}
 
+  create_release:
+    needs: [version, build]
+    name: Create release
+    runs-on: ubuntu-20.04
+
+    timeout-minutes: 5
+    if: ${{ github.event_name == 'push' }}
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Download package
+      uses: actions/download-artifact@v2
+      with:
+        name: package
+        path: nupkg
+
+    - name: Create changelog
+      run: git log -1 --format="%s%n%n%b%n%n" >changelog.txt
+
+    - name: Create a Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ needs.version.outputs.tag }}
+        release_name: ${{ needs.version.outputs.tag }}
+        body_path: changelog.txt
+        draft: false
+
+    - name: Upload package asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./nupkg/ghul.test.${{ needs.version.outputs.package }}.nupkg
+        asset_name: ghul.test.${{ needs.version.outputs.package }}.nupkg
+        asset_content_type: application/octet-stream
