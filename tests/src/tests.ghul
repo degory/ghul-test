@@ -11,7 +11,7 @@ namespace Tests is
         return;
     si
 
-    get_stub_test() -> TEST => new TEST("path", new LIST[string](), 1, "", false); 
+    get_stub_test() -> TEST => new TEST("path", new LIST[string](), "", false); 
 
     // ghūl doesn't have extension methods, so wrap these for easier consumption:
     should[T](iterable: Collections.Iterable[T]) -> GenericCollectionAssertions`1[T] => new GenericCollectionAssertions`1[T](iterable);

@@ -4,7 +4,6 @@ namespace Tester is
     class TEST is
         path: string;
         source_files: Iterable[string];
-        depth: int;
         flags: string;
 
         is_build_fail_expected: bool;
@@ -18,14 +17,12 @@ namespace Tester is
         init(
             path: string, 
             source_files: Iterable[string],
-            depth: int,
             flags: string,
             is_build_fail_expected: bool
         )
         is
             self.path = path;
             self.source_files = source_files;
-            self.depth = depth;
             self.flags = flags;
             self.is_build_fail_expected = is_build_fail_expected;
         si

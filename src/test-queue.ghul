@@ -96,59 +96,8 @@ namespace Tester is
         si
 
         try_queue_tests(path: string) is
-            let depth = find_depth(path);
-
-            if depth == -1 then
-                Std.write_line("testing installed compiler and library for tests in " + path);
-
-                _use_installed_compiler = true;
-                depth = 0;
-            else
-                Std.write_line("testing compiler and library in " + 
-                    Path.get_full_path(
-                        path + "/" +
-                            new System.Text.StringBuilder()
-                                .insert(0, "../", depth)
-                                .append("ghul.exe")  
-                                .to_string()
-                        ) + " for tests in " + path
-                );
-
-                _use_installed_compiler = false;
-            fi
-            
-            try_queue_tests(path, depth);
-        si
-
-        find_depth(path: string) -> int is
-            if Path.get_full_path(path + "/..") =~ Path.get_full_path(path) then
-                return -1;
-            fi
-
-            if Directory.get_files(path, "ghul.exe").count == 1 /\ Directory.exists(path + "/lib") then
-                return 0;
-            fi
-
-            let result = find_depth(path + "/..");
-           
-            if result > 15 then
-                Std.write_line("stupid depth");
-            fi
-            
-            if result == -1 \/ result > 15 then
-                return -1;
-            fi
-            
-            return result + 1;
-        si
-
-        try_queue_tests(path: string, depth: int) is
-            if depth > 30 then
-                throw new Exception("oops: path: " + path + " depth: " + depth);
-            fi            
-
             try                
-                try_queue_test(path, depth);
+                try_queue_test(path);
 
                 let entries = new LIST[string](Directory.get_directories(path));
                 
@@ -160,7 +109,7 @@ namespace Tester is
                         continue;
                     fi
 
-                    try_queue_tests(entry, depth + 1);
+                    try_queue_tests(entry);
                 od
             catch ex: Exception
                 Std.write_line("probably not a directory: " + path);
@@ -168,7 +117,7 @@ namespace Tester is
             yrt            
         si
 
-        try_queue_test(path: string, depth: int) is
+        try_queue_test(path: string) is
             let flags_path = path + "/ghulflags";
 
             if !File.exists(flags_path) then
@@ -183,7 +132,6 @@ namespace Tester is
                 new TEST(
                     path,
                     source_files,
-                    depth,
                     flags,
                     is_build_failure_Expected
                 )
