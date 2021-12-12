@@ -205,6 +205,7 @@ namespace Tester is
         run_compiler() -> bool is
             let arguments = new LIST[string]();
 
+            arguments.add("ghul-compiler");
             arguments.add("--v3");
             arguments.add("--test-run");
 
@@ -219,7 +220,7 @@ namespace Tester is
             arguments.add_range(["-o", "binary.exe"]);                
             
             let result = run(
-                get_compiler_binary_path(),
+                "dotnet",
                 arguments,
                 5000,
                 null,
@@ -449,30 +450,6 @@ namespace Tester is
             fi
         si
         
-        get_compiler_binary_path() -> string is
-            if _use_installed_compiler then
-                return "ghul-compiler";
-            fi
-            
-            return
-                new StringBuilder()
-                    .insert(0, "../", _test.depth)
-                    .append("ghul.exe")  
-                    .to_string();
-        si
-
-        get_library_prefix_path() -> string is
-            if _use_installed_compiler then
-                return "/usr/lib/ghul";
-            fi
-
-            return 
-                new StringBuilder()
-                    .insert(0, "../", _test.depth)
-                    .append("lib")
-                    .to_string();
-        si
-
         get_path(file_name: string) -> string =>
             _test.path + "/" + file_name;
 
