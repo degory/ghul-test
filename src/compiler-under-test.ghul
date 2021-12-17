@@ -1,0 +1,136 @@
+namespace Tester is
+    use System.Exception;
+    use IO.File;
+    use IO.Path;
+    use IO.Directory;
+    use IO.DirectoryInfo;
+
+    use Collections.Iterable;
+    use Collections.LIST;
+
+    class COMPILER_UNDER_TEST is
+        _is_ci: bool;
+        _publish: string;
+        _executable: string;
+        _runtime_path: string;
+        _arguments: Iterable[string];
+
+        init(is_ci: bool) is
+            _is_ci = is_ci;
+
+            if _is_ci then
+                IO.Std.error.write_line("CI is set: expect compiler to be installed as a local tool");
+
+                _executable = "dotnet";
+                _runtime_path = get_ghul_test_runtime_path();
+                _arguments = ["ghul-compiler", "--v3", "--test-run"];
+            else
+                IO.Std.error.write_line("CI is not set: expect compiler to be published in ./publish");
+
+                _publish = find_publish_directory();
+
+                _executable = find_published_compiler();
+                _runtime_path = get_published_compiler_path("ghul-runtime.dll");
+                _arguments = ["--v3", "--test-run"];
+            fi
+
+            IO.Std.error.write_line("compiler: " + [_executable] | .cat(_arguments) );
+            IO.Std.error.write_line("runtime: " + _runtime_path);
+        si
+        
+        run_compiler(runner: RUNNER, test: TEST) -> bool is
+            let arguments = new LIST[string]();
+
+            arguments.add_range(_arguments);
+
+            if test.flags? /\ test.flags.length > 0 then
+                arguments.add_range(
+                    test.flags.split([' ']) | .map((flag) -> string => flag.trim())
+                );
+            fi
+            
+            arguments.add_range(test.source_files);
+
+            arguments.add_range(["-o", "binary.exe"]);                
+            
+            let result = runner.run(
+                _executable,
+                arguments,
+                5000,
+                null,
+                "compiler.out"
+            );
+
+            if !File.exists(runner.get_path("compiler.out")) then
+                throw new Exception("compiler output file not found");
+            fi
+
+            if result != 0 then
+                return false;
+            fi
+
+            if !runner.read_all_text("compiler.out").contains("*** succeeded ***") then
+                throw new Exception("compiler success exit status but success message not found in output");
+            fi
+
+            return File.exists(runner.get_path("binary.exe"));
+        si
+
+        run_ln_runtime(runner: RUNNER) -> bool is
+            return runner.run(
+                "ln",
+                ["-s", _runtime_path, "."],
+                1000,
+                null,
+                null
+            ) != 0;
+        si
+
+        find_publish_directory() -> string =>
+            find_publish_directory(new DirectoryInfo(Directory.get_current_directory()));
+
+        find_publish_directory(from: DirectoryInfo) -> string is
+            if !from? then
+                throw new Exception("could not find a publish directory");
+            fi
+            
+            let publish = from.get_directories("publish") | .first();
+
+            if publish.has_value then
+                return publish.value.full_name;
+            fi
+
+            return find_publish_directory(from.parent);
+        si
+
+        find_published_compiler() -> string is
+            let result = get_published_compiler_path("ghul");
+
+            if File.exists(result) then
+                return result;
+            fi
+
+            result = get_published_compiler_path("ghul.exe");
+
+            if File.exists(result) then
+                return result;
+            fi
+
+            throw new Exception("Could not find published compiler: " 
+                + get_published_compiler_path("[ghul|ghul.exe]"));
+        si
+        
+        get_published_compiler_path(file_name: string) -> string =>
+            Path.join(_publish, file_name);
+
+        get_ghul_test_runtime_path() -> string is
+            let executing_assembly = System.Reflection.Assembly.get_executing_assembly();
+
+            let assembly_path = Path.get_full_path(executing_assembly.location);
+
+            let result = Path.get_directory_name(assembly_path);
+
+            return Path.join(result, "ghul-runtime.dll");
+        si                
+    si
+si
