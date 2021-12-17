@@ -26,23 +26,19 @@ namespace Tester is
         _target_cli: string;
 
         _failure: FAILURE;
-        _use_installed_compiler: bool;
+        _compiler_under_test: COMPILER_UNDER_TEST;
 
         _test: TEST;
-
-        _runtime_path: string;
 
         init(
             host_cli: string,
             target_cli: string,
-            runtime_path: string,
-            use_installed_compiler: bool,
+            compiler_under_test: COMPILER_UNDER_TEST,
             test: TEST
         ) is
             _host_cli = host_cli;
             _target_cli = target_cli;
-            _runtime_path = runtime_path;
-            _use_installed_compiler = use_installed_compiler;
+            _compiler_under_test = compiler_under_test;
             _test = test;
 
             if !_collate_environment? then
@@ -92,7 +88,7 @@ namespace Tester is
                 return;
             fi
 
-            let build_succeeded = run_compiler();
+            let build_succeeded = _compiler_under_test.run_compiler(self, _test);
 
             if build_succeeded then
                 if _test.is_build_fail_expected then
@@ -126,7 +122,7 @@ namespace Tester is
                 return;
             fi
 
-            run_ln_runtime();
+            _compiler_under_test.run_ln_runtime(self);
 
             if !run_binary() then
                 return;
@@ -202,56 +198,6 @@ namespace Tester is
             fi            
         si
        
-        run_compiler() -> bool is
-            let arguments = new LIST[string]();
-
-            arguments.add("ghul-compiler");
-            arguments.add("--v3");
-            arguments.add("--test-run");
-
-            if _test.flags? /\ _test.flags.length > 0 then
-                arguments.add_range(
-                    _test.flags.split([' ']) | .map((flag) -> string => flag.trim())
-                );
-            fi
-            
-            arguments.add_range(_test.source_files);
-
-            arguments.add_range(["-o", "binary.exe"]);                
-            
-            let result = run(
-                "dotnet",
-                arguments,
-                5000,
-                null,
-                "compiler.out"
-            );
-
-            if !File.exists(get_path("compiler.out")) then
-                throw new Exception("compiler output file not found");
-            fi
-
-            if result != 0 then
-                return false;
-            fi
-
-            if !read_all_text("compiler.out").contains("*** succeeded ***") then
-                throw new Exception("compiler success exit status but success message not found in output");
-            fi
-
-            return File.exists(get_path("binary.exe"));
-        si
-
-        run_ln_runtime() -> bool is
-            return run(
-                "ln",
-                ["-s", _runtime_path, "."],
-                1000,
-                null,
-                null
-            ) != 0;
-        si
-
         run_grep(pattern: string, in_file: string, out_file: string) -> bool is
             return
                 run(
@@ -341,7 +287,7 @@ namespace Tester is
             environment: Iterable[Pair[string,string]]
         ) -> int
         is
-            let process = start(path, arguments);
+            let process = start(path, arguments, environment);
             
             return wait(process, timeout, out_file, err_file);
         si

@@ -13,13 +13,12 @@ namespace Tester is
     class TEST_QUEUE is
         _host_cli: string;
         _target_cli: string;
-        _use_installed_compiler: bool;
+        _is_ci: bool;
+        _compiler_under_test: COMPILER_UNDER_TEST;
 
         _task_queue: TASK_QUEUE;
 
         _tests: MutableList[TEST];
-
-        _runtime_path: string;
 
         progress: int;
         count: int => _tests.count;
@@ -28,15 +27,22 @@ namespace Tester is
         pass_count: int => _tests | .filter(t => t.has_passed).count();
         fail_count: int => _tests | .filter(t => t.has_failed).count();
 
-        init(host_cli: string, target_cli: string) is
+        init(
+            host_cli: string, 
+            target_cli: string,
+            is_ci: bool,
+            compiler_under_test: COMPILER_UNDER_TEST)
+        is
             _host_cli = host_cli;
             _target_cli = target_cli;
+            _is_ci = is_ci;
+            _compiler_under_test = compiler_under_test;
 
             let requested_test_processes = System.Environment.get_environment_variable("TEST_PROCESSES");
 
             let actual_test_processes: int;
 
-            _runtime_path = get_runtime_path();
+            // _runtime_path = get_runtime_path();
 
             if requested_test_processes? then
                 actual_test_processes = System.Convert.to_int32(requested_test_processes);                
@@ -65,8 +71,7 @@ namespace Tester is
                     new RUNNER(
                         _host_cli,
                         _target_cli,
-                        _runtime_path,
-                        _use_installed_compiler, 
+                        _compiler_under_test,
                         test
                     );
 
@@ -152,19 +157,5 @@ namespace Tester is
 
                 return path;
             si);   
-
-        get_runtime_path() -> string is
-            let executing_assembly = System.Reflection.Assembly.get_executing_assembly();
-
-            let assembly_path = IO.Path.get_full_path(executing_assembly.location);
-
-            let result = IO.Path.get_directory_name(assembly_path);
-
-            if !result.ends_with('/') then
-                result = result + '/';
-            fi
-
-            return result + "ghul-runtime.dll";
-        si        
     si
 si
