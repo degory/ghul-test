@@ -19,9 +19,18 @@ namespace Tester is
             let host = get_cli_environment_variable("HOST");
             let target = get_cli_environment_variable("TARGET");
 
-            report_host_and_target(host, target);
+            // report_host_and_target(host, target);
 
-            let queue = new TEST_QUEUE(host, target);
+            let ci_string = 
+                System.Environment.get_environment_variable("CI");
+
+            let is_ci =
+                !string.is_null_or_white_space(ci_string) /\
+                (ci_string =~ "1" \/ ci_string.to_lower() =~ "true");
+
+            let compiler_under_test = new COMPILER_UNDER_TEST(is_ci);
+
+            let queue = new TEST_QUEUE(host, target, is_ci, compiler_under_test);
 
             if arguments.count == 0 then
                 Std.write_line("usage: ghul-test <test-folder>...");
