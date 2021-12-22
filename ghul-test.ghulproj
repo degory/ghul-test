@@ -34,6 +34,6 @@
     <GhulSources Include="src/**/*.ghul" />
     <PackageReference Include="ghul.targets" Version="0.0.9" />
     <PackageReference Include="ghul.pipes" Version="0.0.17" />
-    <PackageReference Include="ghul.runtime" Version="0.0.16" />
+    <PackageReference Include="ghul.runtime" Version="1.0.0" />
   </ItemGroup>
 </Project>
