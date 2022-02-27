@@ -1,0 +1,31 @@
+namespace Tester is
+    use IO.File;
+    use IO.Path;
+    use IO.Directory;
+
+    class RUNNER_FACTORY is
+        _host_cli: string;
+        _target_cli: string;
+        _compiler_under_test: COMPILER_UNDER_TEST;
+
+        init(
+            host_cli: string,
+            target_cli: string,
+            compiler_under_test: COMPILER_UNDER_TEST
+        ) is
+            _host_cli = host_cli;
+            _target_cli = target_cli;
+            _compiler_under_test = compiler_under_test;            
+        si
+        
+        get_runner_for(test: TEST) -> Runner is
+            let path = test.path;
+
+            if File.exists(Path.join(path, "ghulflags")) then
+                return new COMPILE_RUNNER(_host_cli, _target_cli, _compiler_under_test, test);
+            elif File.exists(Path.join(path, "request.txt")) then
+                return new ANALYSER_RUNNER(_host_cli, _target_cli, _compiler_under_test, test);
+            fi
+        si        
+    si    
+si

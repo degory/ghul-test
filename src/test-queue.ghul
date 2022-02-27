@@ -28,14 +28,12 @@ namespace Tester is
         fail_count: int => _tests | .filter(t => t.has_failed).count();
 
         init(
-            host_cli: string, 
-            target_cli: string,
-            is_ci: bool,
+            environment: HOST_ENVIRONMENT,
             compiler_under_test: COMPILER_UNDER_TEST)
         is
-            _host_cli = host_cli;
-            _target_cli = target_cli;
-            _is_ci = is_ci;
+            _host_cli = environment.host;
+            _target_cli = environment.target;
+            _is_ci = environment.is_ci;
             _compiler_under_test = compiler_under_test;
 
             let requested_test_processes = System.Environment.get_environment_variable("TEST_PROCESSES");
@@ -68,7 +66,7 @@ namespace Tester is
 
             for test in _tests do
                 let runner = 
-                    new RUNNER(
+                    new COMPILE_RUNNER(
                         _host_cli,
                         _target_cli,
                         _compiler_under_test,

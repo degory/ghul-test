@@ -38,7 +38,7 @@ namespace Tester is
             IO.Std.error.write_line("runtime: " + _runtime_path);
         si
         
-        run_compiler(runner: RUNNER, test: TEST) -> bool is
+        run_compiler(runner: Runner, test: TEST) -> bool is
             let arguments = new LIST[string]();
 
             arguments.add_range(_arguments);
@@ -76,7 +76,43 @@ namespace Tester is
             return File.exists(runner.get_path("binary.exe"));
         si
 
-        run_ln_runtime(runner: RUNNER) -> bool is
+        run_analysis(runner: Runner, test: TEST) -> bool is
+            let arguments = new LIST[string]();
+
+            arguments.add_range(_arguments);
+
+            if test.flags? /\ test.flags.length > 0 then
+                arguments.add_range(
+                    test.flags.split([' ']) | .map((flag) -> string => flag.trim())
+                );
+            fi
+            
+            arguments.add("-A");
+            
+            let result = runner.run(
+                _executable,
+                arguments,
+                5000,
+                "request.txt",
+                "compiler.out"
+            );
+
+            if !File.exists(runner.get_path("compiler.out")) then
+                throw new Exception("compiler output file not found");
+            fi
+
+            if result != 0 then
+                return false;
+            fi
+
+            if !runner.read_all_text("compiler.out").contains("*** succeeded ***") then
+                throw new Exception("compiler success exit status but success message not found in output");
+            fi
+
+            return File.exists(runner.get_path("binary.exe"));
+        si
+
+        run_ln_runtime(runner: COMPILE_RUNNER) -> bool is
             return runner.run(
                 "ln",
                 ["-s", _runtime_path, "."],

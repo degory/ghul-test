@@ -1,0 +1,24 @@
+namespace Tester.IoC is
+    use Autofac;
+
+    use BX = Autofac.RegistrationExtensions;
+    use RX = Autofac.ResolutionExtensions;
+
+    container: IContainer;
+    scope: ILifetimeScope;
+
+    get[T]() -> T is
+        RX.resolve`[T](scope);
+    si
+    
+    initialize() is
+        let builder = new ContainerBuilder();
+
+        // RegistrationExtensions.register_type`[HELLO_WORLD](builder).as`[HelloWorld]();
+        // BX.register_type`[GREETER](builder).as`[Greeter]();
+
+        container = builder.build(Autofac.Builder.ContainerBuildOptions.NONE);
+
+        scope = container.begin_lifetime_scope();
+    si
+si

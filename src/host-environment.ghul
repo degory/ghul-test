@@ -1,0 +1,46 @@
+namespace Tester is
+    class HOST_ENVIRONMENT is
+        host: string;
+        target: string;
+        
+        is_ci: bool;
+
+        init() is
+            host = get_cli_environment_variable("HOST");
+            target = get_cli_environment_variable("TARGET");
+        
+            let ci_string = 
+                System.Environment.get_environment_variable("CI");
+    
+            is_ci =
+                !string.is_null_or_white_space(ci_string) /\
+                (ci_string =~ "1" \/ ci_string.to_lower() =~ "true");
+    
+        si
+
+        report_host_and_target() is
+            IO.Std.write_line("compiler hosted on: " + get_cli_description(host));
+            IO.Std.write_line("built tests executed on: " + get_cli_description(target));
+        si
+
+        get_cli_description(name: string) -> string static is
+            if name =~ "mono" then
+                return "Mono";
+            elif name =~ "dotnet" then
+                return ".NET";
+            fi
+
+            throw new System.Exception("unknown CLI environment: " + name);
+        si
+                
+        get_cli_environment_variable(name: string) -> string static is
+            let result = System.Environment.get_environment_variable(name);
+
+            if !result? then
+                result = "dotnet";
+            fi
+
+            return result;
+        si
+    si
+si

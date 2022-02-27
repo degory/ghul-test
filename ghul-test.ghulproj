@@ -27,10 +27,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="README.md" Pack="true" PackagePath="\"/>  
+    <None Include="README.md" Pack="true" PackagePath="\" />  
     <None Include="LICENSE*" Pack="true" PackagePath="\" />
 
     <GhulSources Include="src/**/*.ghul" />
+
+    <PackageReference Include="Autofac" Version="6.3.0" />
 
     <PackageReference Include="ghul.targets" />
     <PackageReference Include="ghul.pipes" />

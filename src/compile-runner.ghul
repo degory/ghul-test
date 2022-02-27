@@ -19,7 +19,7 @@ namespace Tester is
     use System.Diagnostics.Process;
     use System.Diagnostics.ProcessStartInfo;
 
-    class Runner is
+    class COMPILE_RUNNER: Runner is
         _collate_environment: MutableMap[string,string] static;
 
         _host_cli: string;
@@ -416,4 +416,8 @@ namespace Tester is
             return File.read_all_text(get_path(file_name));
         si
     si
+
+    class COMPILE_RUNNER: Runner is
+        
+    si    
 si
