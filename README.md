@@ -1,6 +1,6 @@
 # ghūl compiler integration test runner
 
-[![CI/CD](https://img.shields.io/github/workflow/status/degory/ghul-test/CICD)](https://github.com/degory/ghul-test/actions?query=workflow%3ACICD)
+[![CI/CD](https://img.shields.io/github/actions/workflow/status/degory/ghul-test/cicd.yml?branch=main)](https://github.com/degory/ghul-test/actions?query=workflow%3ACICD+branch%3Amain)
 [![NuGet version (ghul.test)](https://img.shields.io/nuget/v/ghul.test.svg)](https://www.nuget.org/packages/ghul.test/)
 [![Release](https://img.shields.io/github/v/release/degory/ghul-test?label=release)](https://github.com/degory/ghul-test/releases)
 [![Release Date](https://img.shields.io/github/release-date/degory/ghul-test)](https://github.com/degory/ghul-test/releases)
