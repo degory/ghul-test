@@ -33,9 +33,12 @@ jobs:
 
     - name: Create version
       id: create_version
-      uses: degory/create-version@v0.0.1
+      uses: degory/create-version@v0.0.2
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
+      env:
+        PRERELEASE: ${{ github.event_name == 'pull_request' }}
+
 
   build:
     name: Build and publish NuGet package
@@ -67,13 +70,13 @@ jobs:
 
     - name: Publish package to GitHub
       if: ${{ github.actor != 'dependabot[bot]' }}
-      run: dotnet nuget push ./nupkg/*.nupkg -k ${GITHUB_TOKEN} -s https://nuget.pkg.github.com/degory/index.json --skip-duplicate --no-symbols true
+      run: dotnet nuget push ./nupkg/*.nupkg -k ${GITHUB_TOKEN} -s https://nuget.pkg.github.com/degory/index.json --skip-duplicate --no-symbols
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Publish package to NuGet
       if: ${{ github.event_name == 'push' }}
-      run: dotnet nuget push ./nupkg/*.nupkg -k ${NUGET_TOKEN} -s https://api.nuget.org/v3/index.json --skip-duplicate --no-symbols true
+      run: dotnet nuget push ./nupkg/*.nupkg -k ${NUGET_TOKEN} -s https://api.nuget.org/v3/index.json --skip-duplicate --no-symbols
       env:
         NUGET_TOKEN: ${{ secrets.NUGET_TOKEN }}
 
