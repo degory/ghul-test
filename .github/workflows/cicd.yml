@@ -33,9 +33,12 @@ jobs:
 
     - name: Create version
       id: create_version
-      uses: degory/create-version@v0.0.1
+      uses: degory/create-version@v0.0.2
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
+      env:
+        PRERELEASE: ${{ github.event_name == 'pull_request' }}
+
 
   build:
     name: Build and publish NuGet package
