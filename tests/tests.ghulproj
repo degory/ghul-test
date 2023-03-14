@@ -13,10 +13,6 @@
     <PackageReference Include="MSTest.TestFramework" Version="2.2.8" />
     <PackageReference Include="FluentAssertions" Version="5.10.3" />
 
-    <PackageReference Include="ghul.targets" />
-    <PackageReference Include="ghul.pipes" />
-    <PackageReference Include="ghul.runtime" />
-
     <ProjectReference Include="../ghul-test.ghulproj" />
 
     <GhulSources Include="src/**/*.ghul" />
