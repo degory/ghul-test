@@ -31,9 +31,5 @@
     <None Include="LICENSE*" Pack="true" PackagePath="\" />
 
     <GhulSources Include="src/**/*.ghul" />
-
-    <PackageReference Include="ghul.targets" />
-    <PackageReference Include="ghul.pipes" />
-    <PackageReference Include="ghul.runtime" />
   </ItemGroup>
 </Project>
