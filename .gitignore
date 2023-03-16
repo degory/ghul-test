@@ -17,3 +17,11 @@ nupkg/**/*
 output.txt
 
 tests/TestResults/
+
+actual-output
+integration-tests/**/failed
+integration-tests/**/*.out
+integration-tests/**/*.grep
+integration-tests/**/*.diff
+integration-tests/**/*.sort
+integration-tests/**/*.err
