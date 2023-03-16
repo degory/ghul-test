@@ -1,0 +1,11 @@
+using 1 processes to run tests
+ 0% ❌ fail: integration-tests/execution-fail/hello-world: test output:
+    1c1
+    < something else
+    ---
+    > hello, world
+    
+1 tests discovered
+1 tests enabled
+0/1 tests passed
+❌ 1 tests failed ❌
