@@ -10,7 +10,13 @@ if [ "${PIPESTATUS[0]}" != "1" ]; then
     exit 1
 fi
 
-if diff actual-output integration-tests/execution-fail ; then
+if [ ! -f actual-output ] ; then
+    echo integration-tests/execution-fail produced no output
+
+    exit 1
+fi
+
+if ! diff integration-tests/execution-fail/expected-output actual-output ; then
     echo integration-tests/execution-fail output did not match expected output
 
     exit 1
@@ -27,7 +33,13 @@ if [ "${PIPESTATUS[0]}" != "0" ]; then
     exit 1
 fi
 
-if diff actual-output integration-tests/execution-pass ; then
+if [ ! -f actual-output ] ; then
+    echo integration-tests/execution-pass produced no output
+
+    exit 1
+fi
+
+if ! diff integration-tests/execution-pass/expected-output actual-output ; then
     echo integration-tests/execution-pass output did not match expected output
 
     exit 1

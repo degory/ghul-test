@@ -1,3 +1,4 @@
+using 1 processes to run tests
  0% ❌ fail: integration-tests/execution-fail/hello-world: test output:
     1c1
     < something else
