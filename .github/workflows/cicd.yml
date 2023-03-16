@@ -28,8 +28,11 @@ jobs:
       tag: ${{ steps.create_version.outputs.tag }}
       package: ${{ steps.create_version.outputs.package }}
 
+    permissions:
+      contents: 'write'      
+
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Create version
       id: create_version
@@ -51,13 +54,16 @@ jobs:
     needs: [version]
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Restore local .NET tools
       run: dotnet tool restore
 
-    - name: Run tests
-      run: dotnet test tests/tests.ghulproj      
+    - name: Run unit tests
+      run: dotnet test tests/tests.ghulproj
+
+    - name: Run integration tests
+      run: integration-tests/run-integration-tests.sh
 
     - name: Create package
       run: dotnet pack -p:Version=${{ needs.version.outputs.package }}
@@ -89,7 +95,7 @@ jobs:
     if: ${{ github.event_name == 'push' }}
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Download package
       uses: actions/download-artifact@v2
