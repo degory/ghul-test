@@ -16,11 +16,9 @@ namespace Tests is
     // ghūl doesn't have extension methods, so wrap these for easier consumption:
     should[T](iterable: Collections.Iterable[T]) -> GenericCollectionAssertions`1[T] => new GenericCollectionAssertions`1[T](iterable);
 
-    should(s: string) -> StringAssertions => new StringAssertions(s);
+    should(s: string) -> StringAssertions`1[StringAssertions] => new StringAssertions(s);
 
-    should(o: object) -> ObjectAssertions => new ObjectAssertions(o);
+    should(o: object) -> ObjectAssertions`2[object,ObjectAssertions] => new ObjectAssertions(o);
 
-    // should(i: int) -> FluentAssertions.Numeric.NumericAssertions`1[int] => new FluentAssertions.Numeric.NumericAssertions`1[int](cast object(i));
-
-    should(b: bool) -> BooleanAssertions => new BooleanAssertions(new System.Nullable`1[bool](b));        
+    should(b: bool) -> BooleanAssertions`1[BooleanAssertions] => new BooleanAssertions(new System.Nullable`1[bool](b));        
 si
