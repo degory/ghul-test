@@ -22,14 +22,14 @@ env:
 jobs:
   version:
     name: Create a version number
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     timeout-minutes: 1
     outputs:
       tag: ${{ steps.create_version.outputs.tag }}
       package: ${{ steps.create_version.outputs.package }}
-
+      
     permissions:
-      contents: 'write'      
+      contents: 'write'
 
     steps:
     - uses: actions/checkout@v3
@@ -43,7 +43,6 @@ jobs:
         token: ${{ secrets.GITHUB_TOKEN }}
       env:
         PRERELEASE: ${{ github.event_name == 'pull_request' }}
-
 
   build:
     name: Build and publish NuGet package
@@ -74,7 +73,7 @@ jobs:
       run: dotnet pack -p:Version=${{ needs.version.outputs.package }}
 
     - name: Upload .NET package artefact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: package
         path: nupkg
@@ -103,7 +102,7 @@ jobs:
     - uses: actions/checkout@v3
 
     - name: Download package
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v4
       with:
         name: package
         path: nupkg
