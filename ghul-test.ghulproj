@@ -12,7 +12,10 @@
     <RepositoryUrl>https://github.com/degory/ghul-test.git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <RepositoryBranch>main</RepositoryBranch>
-    <PublishRepositoryUrl>true</PublishRepositoryUrl>    
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+
+    <PackageIcon>ghul-logo-icon.png</PackageIcon>
+    <PackageIconUrl>ghul-logo-icon.png</PackageIconUrl>
 
     <PackageId>ghul.test</PackageId>
     <Authors>degory</Authors>
@@ -29,6 +32,8 @@
   <ItemGroup>
     <None Include="README.md" Pack="true" PackagePath="\"/>  
     <None Include="LICENSE*" Pack="true" PackagePath="\" />
+
+    <None Include="./images/ghul-logo-icon.png" Pack="true" PackagePath=""/>
 
     <GhulSources Include="src/**/*.ghul" />
   </ItemGroup>
