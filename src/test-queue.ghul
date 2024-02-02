@@ -148,14 +148,7 @@ namespace Tester is
         si
 
         get_source_files(path: string) -> Iterable[string] =>
-            Directory.get_files(path, "*.ghul") | .map(path: string is
-                let last_slash_index = path.last_index_of('/');
-
-                if last_slash_index > 0 then
-                    return path.substring(last_slash_index + 1);
-                fi
-
-                return path;
-            si);   
+            Directory.get_files(path, "*.ghul") | 
+                .map(path: string => Path.get_file_name(path));
     si
 si
