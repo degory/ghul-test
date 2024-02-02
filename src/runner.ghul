@@ -201,8 +201,8 @@ namespace Tester is
         run_grep(pattern: string, in_file: string, out_file: string) -> bool is
             return
                 run(
-                    "fgrep",
-                    [pattern, in_file],
+                    "grep",
+                    ["-F", pattern, in_file],
                     5000,
                     out_file,
                     null,
@@ -322,7 +322,7 @@ namespace Tester is
                             arg.replace("\\", "\\\\").replace("\"", "\"\""))
                         .to_string(" ");
             fi
-            
+
             start_info.working_directory = _test.path;
 
             start_info.redirect_standard_output = true;
