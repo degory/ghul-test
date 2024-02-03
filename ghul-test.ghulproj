@@ -6,10 +6,10 @@
     <Title>ghūl test</Title>
     <PackageDescription>ghūl compiler snapshot test runner</PackageDescription>
     <PackageTags>ghul;ghūl;compiler;test;test-automation</PackageTags>
-    <PackageProjectUrl>https://github.com/degory/ghul-test</PackageProjectUrl>
+    <PackageProjectUrl>https://ghul.dev</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <RepositoryUrl>https://github.com/degory/ghul-test.git</RepositoryUrl>
+    <RepositoryUrl>https://github.com/degory/ghul-test</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <RepositoryBranch>main</RepositoryBranch>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
