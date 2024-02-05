@@ -55,8 +55,8 @@ namespace Tests is
             return field.get_value(null);
         si
 
-        get_mock_COMPILER_UNDER_TEST() -> COMPILER_UNDER_TEST is
-            return NSubstitute.Substitute.`for`[COMPILER_UNDER_TEST]([false]:object);
+        get_mock_COMPILER_UNDER_TEST(run_mode: COMPILER_RUN_MODE) -> COMPILER_UNDER_TEST is
+            return NSubstitute.Substitute.`for`[COMPILER_UNDER_TEST]([run_mode]:object);
         si
 
         get_mock_TEST() -> TEST is
@@ -89,7 +89,7 @@ namespace Tests is
 
             let arguments = System.Array.empty`[object]();
 
-            let compiler_under_test = get_mock_COMPILER_UNDER_TEST();
+            let compiler_under_test = get_mock_COMPILER_UNDER_TEST(COMPILER_RUN_MODE.CI);
             let test = get_mock_TEST();
 
             let runner = new RUNNER("dotnet", "dotnet", compiler_under_test, test);
@@ -115,7 +115,7 @@ namespace Tests is
 
             let arguments = System.Array.empty`[object]();
 
-            let compiler_under_test = get_mock_COMPILER_UNDER_TEST();
+            let compiler_under_test = get_mock_COMPILER_UNDER_TEST(COMPILER_RUN_MODE.DOTNET);
             let test = get_mock_TEST();
 
             let runner = new RUNNER("dotnet", "dotnet", compiler_under_test, test);
@@ -138,7 +138,7 @@ namespace Tests is
 
             let arguments = System.Array.empty`[object]();
 
-            let compiler_under_test = get_mock_COMPILER_UNDER_TEST();
+            let compiler_under_test = get_mock_COMPILER_UNDER_TEST(COMPILER_RUN_MODE.LOCAL);
             let test = get_mock_TEST();
             let runner = new RUNNER("dotnet", "dotnet", compiler_under_test, test);
 
@@ -156,7 +156,7 @@ namespace Tests is
 
             let arguments = System.Array.empty`[object]();
 
-            let compiler_under_test = get_mock_COMPILER_UNDER_TEST();
+            let compiler_under_test = get_mock_COMPILER_UNDER_TEST(COMPILER_RUN_MODE.CI);
             let test = get_mock_TEST();
             let runner = new RUNNER("dotnet", "dotnet", compiler_under_test, test);
 
