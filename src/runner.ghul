@@ -90,27 +90,29 @@ namespace Tester is
 
             let build_succeeded = _compiler_under_test.run_compiler(self, _test);
 
+            let exit_after_grep_and_sort = false;
+
             if build_succeeded then
                 if _test.is_build_fail_expected then
                     add_fail("unexpected build success: " + _test.path);
-
-                    return;
+                    exit_after_grep_and_sort = true;
                 fi
             else
                 if !_test.is_build_fail_expected then
                     add_fail("unexpected build failure", "compiler.out");
-
-                    return;
+                    exit_after_grep_and_sort = true;
                 fi
             fi
 
             run_grep("error:", "compiler.out", "err.grep");
-                 
             run_grep("warn:", "compiler.out", "warn.grep");
 
             run_sort("err.grep", "err.sort");
-
             run_sort("warn.grep", "warn.sort");
+
+            if exit_after_grep_and_sort then
+                return;
+            fi
 
             run_diff("errors", "err.expected", "err.sort", "err.diff", true);
 
@@ -157,7 +159,9 @@ namespace Tester is
         si
         
         run_binary() -> bool is
-            let binary_path = get_path("binary.exe");
+            // this needs to be a path relative to the directory
+            // that ghul-test was run from
+            let binary_path = _compiler_under_test.get_binary_path(self);
 
             if !File.exists(binary_path) then
                 add_fail("no binary found: " + binary_path);
@@ -167,7 +171,9 @@ namespace Tester is
             let exit_status =
                 run(
                     _target_cli,
-                    ["binary.exe"],
+                    // but this needs to be a path relative to the directory
+                    // that the test is in
+                    [_compiler_under_test.get_binary_path_relative_to_test_folder(self)],
                     5000,
                     "run.out",
                     "run.err"
@@ -214,12 +220,12 @@ namespace Tester is
             return
                 run(
                     "sort",
-                    [in_file, "--output=" + out_file],
+                    [in_file],
                     5000,
-                    null,
+                    out_file,
                     null,
                     _collate_environment
-                ) != 0;            
+                ) != 0;
         si
         
         run_diff(
@@ -251,7 +257,7 @@ namespace Tester is
             if ignore_space_changes then
                 args = ["-b", "--strip-trailing-cr", expected_file_name, actual_file_name];
             else
-                args = [expected_file_name, actual_file_name];
+                args = ["--strip-trailing-cr", expected_file_name, actual_file_name];
             fi
 
             let result = run(
@@ -308,18 +314,17 @@ namespace Tester is
                 od                        
             fi
 
-            // FIXME: StartInfo.arguments_list is broken:
-            // for arg in arguments do
-            //     start_info.argument_list.add(arg);                
-            // od
-
             let arguments_string = new StringBuilder();
 
-            if arguments? then
+            if arguments? then                
                 start_info.arguments =
                     arguments |
+                        .filter(a => a?)
                         .map(arg => 
-                            arg.replace("\\", "\\\\").replace("\"", "\"\""))
+                            arg
+                                // FIXME: not convinced either of these are necessary
+                                .replace("\\", "\\\\")
+                                .replace("\"", "\"\""))
                         .to_string(" ");
             fi
 
@@ -332,7 +337,7 @@ namespace Tester is
             let result = Process.start(start_info);
 
             if result == null then
-                throw new Exception("failed to start process: " + path + " " + arguments| .to_string(" "));
+                throw new Exception("failed to start process: " + path + " " + start_info.arguments);
             fi
             
             return result;
@@ -397,7 +402,10 @@ namespace Tester is
         si
         
         get_path(file_name: string) -> string =>
-            _test.path + "/" + file_name;
+            IO.Path.join(_test.path, file_name);
+
+        get_path() -> string =>
+            _test.path;
 
         write_all_text(file_name: string, text: string) is
             File.write_all_text(get_path(file_name), text);

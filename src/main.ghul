@@ -29,15 +29,27 @@ namespace Tester is
             let ci_string = 
                 System.Environment.get_environment_variable("CI");
 
-            let is_ci =
+            let run_mode = COMPILER_RUN_MODE.LOCAL;
+
+            if 
                 !string.is_null_or_white_space(ci_string) /\
-                (ci_string =~ "1" \/ ci_string.to_lower() =~ "true");
+                (ci_string =~ "1" \/ ci_string.to_lower() =~ "true")
+            then
+                run_mode = COMPILER_RUN_MODE.CI;
+            fi
 
-            let compiler_under_test = new COMPILER_UNDER_TEST(is_ci);
+            let arguments_to_skip = 0;
 
-            let queue = new TEST_QUEUE(host, target, is_ci, compiler_under_test);
+            if arguments.count > 1 /\ arguments[0] =~ "--use-dotnet-build" then
+                run_mode = COMPILER_RUN_MODE.DOTNET;
+                arguments_to_skip = 1;
+            fi
+            
+            let compiler_under_test = new COMPILER_UNDER_TEST(run_mode);
 
-            for path in arguments do
+            let queue = new TEST_QUEUE(host, target, compiler_under_test);
+
+            for path in arguments | .skip(arguments_to_skip) do
                 if !Directory.exists(path) then
                     Std.write_line("not a directory: " + path);
                     return 1;
