@@ -27,14 +27,11 @@ namespace Tester is
             self.is_build_fail_expected = is_build_fail_expected;
         si
 
-        to_string() -> string is
+        to_string() -> string =>
             if result? then
-                return result.format(path);  
+                result.format(path);  
             else
-                return "no result: " + path;
-            fi
-            
-            return path;
-        si  
+                "no result: {path}";
+            fi;
     si
 si

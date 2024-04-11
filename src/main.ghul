@@ -14,7 +14,7 @@ namespace Tester is
 
     class Main is
         entry(arguments: string[]) -> int static is
-            Std.output_encoding = new UTF8Encoding();
+            Std.output_encoding = UTF8Encoding();
 
             if arguments.count == 0 then
                 Std.write_line("usage: ghul-test <test-folder>...");
@@ -45,9 +45,9 @@ namespace Tester is
                 arguments_to_skip = 1;
             fi
             
-            let compiler_under_test = new COMPILER_UNDER_TEST(run_mode);
+            let compiler_under_test = COMPILER_UNDER_TEST(run_mode);
 
-            let queue = new TEST_QUEUE(host, target, compiler_under_test);
+            let queue = TEST_QUEUE(host, target, compiler_under_test);
 
             for path in arguments | .skip(arguments_to_skip) do
                 if !Directory.exists(path) then
@@ -79,24 +79,22 @@ namespace Tester is
             Std.write_line("built tests executed on: " + get_cli_description(target));
         si
 
-        get_cli_description(name: string) -> string static is
+        get_cli_description(name: string) -> string static =>
             if name =~ "mono" then
-                return "Mono";
+                "Mono";
             elif name =~ "dotnet" then
-                return ".NET";
-            fi
-
-            throw new Exception("unknown CLI environment: " + name);
-        si
+                ".NET";
+            else
+                throw Exception("unknown CLI environment: " + name);
+            fi;
                 
-        get_cli_environment_variable(name: string) -> string static is
-            let result = System.Environment.get_environment_variable(name);
-
-            if !result? then
-                result = "dotnet";
-            fi
-
-            return result;
-        si
+        get_cli_environment_variable(name: string) -> string static =>
+            let result = System.Environment.get_environment_variable(name) in
+            
+            if result? then
+                result
+            else
+                "dotnet";
+            fi;
     si
 si

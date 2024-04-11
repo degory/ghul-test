@@ -51,11 +51,11 @@ namespace Tester is
                 fi
             fi
             
-            _task_queue = new TASK_QUEUE(actual_test_processes);
+            _task_queue = TASK_QUEUE(actual_test_processes);
 
             Std.write_line("using " + actual_test_processes + " processes to run tests");
 
-            _tests = new LIST[TEST]();
+            _tests = LIST[TEST]();
         si
 
         run_queued_tests() -> Iterable[Result] is
@@ -63,7 +63,7 @@ namespace Tester is
 
             for test in _tests do
                 let runner = 
-                    new RUNNER(
+                    RUNNER(
                         _host_cli,
                         _target_cli,
                         _compiler_under_test,
@@ -99,7 +99,7 @@ namespace Tester is
             try                
                 try_queue_test(path);
 
-                let entries = new LIST[string](Directory.get_directories(path));
+                let entries = LIST[string](Directory.get_directories(path));
                 
                 entries.sort();
 
@@ -129,7 +129,7 @@ namespace Tester is
             let is_build_failure_Expected = File.exists(path + "/fail.expected");
 
             queue_test(
-                new TEST(
+                TEST(
                     path,
                     source_files,
                     flags,
@@ -138,9 +138,8 @@ namespace Tester is
             );
         si
 
-        queue_test(test: TEST) is
+        queue_test(test: TEST) =>
             _tests.add(test);
-        si
 
         get_source_files(path: string) -> Iterable[string] =>
             Directory.get_files(path, "*.ghul") | 

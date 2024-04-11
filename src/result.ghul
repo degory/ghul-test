@@ -24,17 +24,17 @@ namespace Tester is
         progress_string: string => progress.to_string().pad_left(2) + "%";
 
         is_pass: bool is
-            throw new System.NotImplementedException();            
+            throw System.NotImplementedException();            
         si
 
         is_fail: bool is
-            throw new System.NotImplementedException();            
+            throw System.NotImplementedException();            
         si
 
         is_executed: bool => is_pass \/ is_fail;
 
         head: string is
-            throw new System.NotImplementedException();
+            throw System.NotImplementedException();
         si
         
         body: string => null;
@@ -44,15 +44,14 @@ namespace Tester is
             test.result = self;
         si
         
-        format(test_name: string) -> string is
-            let result = progress_string + " " + head + ": " + test_name;
+        format(test_name: string) -> string =>
+            let result = "{progress_string} {head}: {test_name}" in
 
             if body? /\ body !~ "" then
-                result = result + ": " + body;
-            fi
-
-            return result;
-        si
+                "{result}: {body}";
+            else
+                result
+            fi;
 
         to_string() -> string => format(test.path);            
     si
@@ -80,19 +79,18 @@ namespace Tester is
         is_fail: bool => true;
         head: string => "❌ fail";
 
-        body: string is
+        body: string =>
             if _details.count == 0 then
-                return null;
+                null;
             elif _details.count == 1 then
-                return _details[0].to_string();
+                _details[0].to_string();
             else
-                return _details | .to_string("\n");
-            fi            
-        si
+                _details | .to_string("\n");
+            fi;
 
         init(test: TEST) is
             super.init(test);
-            _details = new LIST[DETAILS]();
+            _details = LIST[DETAILS]();
         si
 
         init(test: TEST, details: DETAILS) is
@@ -101,11 +99,11 @@ namespace Tester is
         si
 
         init(test: TEST, message: string) is
-            init(test, new DETAILS(message));
+            init(test, DETAILS(message));
         si
 
         init(test: TEST, message: string, details: string) is
-            init(test, new DETAILS(message, details));
+            init(test, DETAILS(message, details));
         si
                         
         add(details: DETAILS) is
@@ -127,7 +125,7 @@ namespace Tester is
         si
         
         to_string() -> string is
-            let result = new StringBuilder();
+            let result = StringBuilder();
 
             result.append(message);
             
