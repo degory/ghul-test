@@ -1,10 +1,14 @@
 #!/bin/bash
 
-CASE=`basename $1`
+CASE=$1
 
+if [ ! -d $CASE ] ; then
+    echo "not run from a test case project"
+    exit 1
+fi
 
-if [[ ! "$CASE" =~ "^tests/cases/.*" ]] ; then
-    echo "usage: ./scripts/capture.sh test-case-name"
+if [ ! -f $CASE/ghulflags ] ; then
+    echo "not run from a test case project"
     exit 1
 fi
 
@@ -38,4 +42,3 @@ else
     echo "doesn't seem to be a test case: $CASE"
     exit 1
 fi
-
