@@ -10,3 +10,7 @@
 
 This is a very simple snapshot based test runner which is used by the [ghūl programming language](https://ghul.dev) [compiler](https://github.com/degory/ghul) [integration tests](https://github.com/degory/ghul/tree/master/integration-tests). It compares test expectations, in the form of snapshot text files, against the actual outputs of the compiler and test executables and flags any differences.
 
+## Analysis mode tests
+
+Tests under a directory named `analysis` (e.g. `integration-tests/analysis/`) are run as **analysis tests**: the runner spawns the compiler in the same “under test” mode as compile tests (`--v3 --test-run`) with `-A`, sends protocol commands (EDIT, then optional COMPILE) on stdin, and diffs the compiler’s stdout to `analysis.expected`. The compiler uses its default reference assemblies (no response file needed). See [docs/ANALYSIS-TESTS-PLAN.md](docs/ANALYSIS-TESTS-PLAN.md) and [integration-tests/analysis/README.md](integration-tests/analysis/README.md).
+

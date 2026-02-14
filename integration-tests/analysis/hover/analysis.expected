@@ -1,0 +1,15 @@
+PARTIAL DONE
+
+---
+HOVER
+class IO.Std
+---
+HOVER
+message: Ghul.string // local variable
+---
+DIAGNOSTICS STORE
+<lib>/ghul.ghul:
+  (none)
+test.ghul:
+  (none)
+---

@@ -1,0 +1,10 @@
+namespace Test is
+    use Std = IO.Std;
+
+    class Main is
+        entry() static is
+            let _thing = "fixed";
+            Std.write_line(_thing);
+        si
+    si
+si

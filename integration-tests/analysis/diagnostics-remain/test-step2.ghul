@@ -1,0 +1,10 @@
+namespace Test is
+    use Std = IO.Std;
+
+    class Main is
+        entry() static is
+            Std.write_line(_thing);
+        si
+        // edit after last error - diagnostics should remain
+    si
+si

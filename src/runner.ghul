@@ -88,6 +88,11 @@ namespace Tester is
                 return;
             fi
 
+            if _test.is_analysis_test then
+                _run_analysis_test();
+                return;
+            fi
+
             let build_succeeded = _compiler_under_test.run_compiler(self, _test);
 
             let exit_after_grep_and_sort = false;
@@ -133,6 +138,59 @@ namespace Tester is
             run_diff("test output", "run.expected", "run.out", "run.diff", true);
         si
 
+        _run_analysis_test() is
+            let process = start_analysis_process();
+
+            if !process? then
+                return;
+            fi
+
+            try
+                let client = new ANALYSIS_PROTOCOL_CLIENT();
+                let output = client.run(process, self, _test);
+
+                write_all_text("analysis.out", output);
+
+                let err = process.standard_error.read_to_end();
+                if err? then
+                    write_all_text("analysis.stderr", err);
+                fi
+
+                process.wait_for_exit(15000);
+
+                run_diff("analysis output", "analysis.expected", "analysis.out", "analysis.diff", true);
+            catch ex: Exception
+                add_fail("analysis test failed: " + ex.message, "analysis.out");
+            yrt
+        si
+
+        start_analysis_process() -> Process is
+            let executable = _compiler_under_test.get_analysis_executable();
+            let arguments = _compiler_under_test.get_analysis_arguments(self, _test);
+
+            let start_info = new System.Diagnostics.ProcessStartInfo();
+            start_info.file_name = executable;
+            start_info.use_shell_execute = false;
+            start_info.arguments =
+                arguments |
+                    .filter(a => a?)
+                    .map(arg => arg.replace("\\", "\\\\").replace("\"", "\"\""))
+                    .to_string(" ");
+            start_info.working_directory = _compiler_under_test.get_analysis_working_directory(self);
+            start_info.redirect_standard_output = true;
+            start_info.redirect_standard_error = true;
+            start_info.redirect_standard_input = true;
+
+            let result = Process.start(start_info);
+
+            if result == null then
+                add_fail("failed to start analysis compiler: " + executable + " " + start_info.arguments);
+                return null;
+            fi
+
+            return result;
+        si
+
         clean_up() is
             if !_failure? then
                 delete_files([
@@ -153,7 +211,10 @@ namespace Tester is
                     "run.out",
                     "run.err",
                     "run.diff",
-                    "ghul-runtime.dll"
+                    "ghul-runtime.dll",
+                    "analysis.out",
+                    "analysis.stderr",
+                    "analysis.diff"
                 ]);
             fi            
         si

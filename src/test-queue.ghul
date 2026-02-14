@@ -104,12 +104,22 @@ namespace Tester is
                 entries.sort();
 
                 for entry in entries do
-                    // FIXME: appears not to be needed:
                     if entry =~ "." \/ entry =~ ".." \/ entry =~ "template" then
                         continue;
                     fi
 
-                    try_queue_tests(entry);
+                    let parent_dir = Path.get_directory_name(entry);
+                    let parent_name = Path.get_file_name(parent_dir);
+
+                    if parent_name =~ "analysis" then
+                        try_queue_analysis_test(entry);
+                    elif Path.get_file_name(entry) =~ "analysis" then
+                        for sub in Directory.get_directories(entry) do
+                            try_queue_analysis_test(sub);
+                        od
+                    else
+                        try_queue_tests(entry);
+                    fi
                 od
             catch ex: Exception
                 Std.write_line("probably not a directory: " + path);
@@ -134,6 +144,36 @@ namespace Tester is
                     source_files,
                     flags,
                     is_build_failure_Expected
+                )
+            );
+        si
+
+        try_queue_analysis_test(path: string) is
+            let flags_path = path + "/analysis.ghulflags";
+
+            if !File.exists(flags_path) then
+                flags_path = path + "/ghulflags";
+            fi
+
+            if !File.exists(flags_path) then
+                return;
+            fi
+
+            let source_files = get_source_files(path);
+
+            if source_files | .count() == 0 then
+                return;
+            fi
+
+            let flags = File.read_all_text(flags_path);
+
+            queue_test(
+                new TEST(
+                    path,
+                    source_files,
+                    flags,
+                    false,
+                    true
                 )
             );
         si

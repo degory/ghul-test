@@ -1,0 +1,9 @@
+PARTIAL DONE
+
+---
+DIAGNOSTICS STORE
+<lib>/ghul.ghul:
+  (none)
+test.ghul:
+  9,24..9,37 1 symbol not found: _runtime_path
+---

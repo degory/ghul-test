@@ -1,0 +1,9 @@
+namespace Test is
+    class Main is
+        entry() static is
+            let x: int;
+
+            if
+        si
+    si
+si

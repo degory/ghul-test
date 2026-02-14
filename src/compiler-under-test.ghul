@@ -168,6 +168,32 @@ namespace Tester is
             let result = Path.get_directory_name(assembly_path);
 
             return Path.join(result, "ghul-runtime.dll");
-        si                
+        si
+
+        // Same "under test" mode as compile tests: --v3 --test-run and -A.
+        // The compiler uses its default ref set (sdk refs + install_folder/ghul-runtime.dll)
+        // when no -a is supplied; no response file needed.
+        get_analysis_arguments(runner: RUNNER, test: TEST) -> Iterable[string] is
+            let args = new LIST[string]();
+
+            args.add_range(_arguments);
+            args.add("-A");
+
+            if test.flags? /\ test.flags.length > 0 then
+                for part in test.flags.split([' ']) | .map((flag) -> string => flag.trim()) do
+                    if part.length > 0 then
+                        args.add(part);
+                    fi
+                od
+            fi
+
+            return args;
+        si
+
+        get_analysis_executable() -> string =>
+            _executable;
+
+        get_analysis_working_directory(runner: RUNNER) -> string =>
+            runner.get_path();
     si
 si

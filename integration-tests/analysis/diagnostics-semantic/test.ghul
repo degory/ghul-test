@@ -1,0 +1,24 @@
+namespace Test is
+    use Std = IO.Std;
+    use Collections;
+
+    class Main is
+        run_thing() -> bool is
+            return run(
+                "ln",
+                ["-s", _runtime_path, "."],
+                1000,
+                null,
+                null
+            ) != 0;
+        si
+
+        run(
+            path: string,
+            arguments: Collections.Iterable[string],
+            timeout: int,
+            out_file: string,
+            err_file: string
+        ) -> int => 0;
+    si
+si

@@ -7,6 +7,7 @@ namespace Tester is
         flags: string;
 
         is_build_fail_expected: bool;
+        is_analysis_test: bool;
 
         has_executed: bool => result? /\ result.is_executed;
         has_passed: bool => result? /\ result.is_pass;
@@ -25,6 +26,22 @@ namespace Tester is
             self.source_files = source_files;
             self.flags = flags;
             self.is_build_fail_expected = is_build_fail_expected;
+            self.is_analysis_test = false;
+        si
+
+        init(
+            path: string, 
+            source_files: Iterable[string],
+            flags: string,
+            is_build_fail_expected: bool,
+            is_analysis_test: bool
+        )
+        is
+            self.path = path;
+            self.source_files = source_files;
+            self.flags = flags;
+            self.is_build_fail_expected = is_build_fail_expected;
+            self.is_analysis_test = is_analysis_test;
         si
 
         to_string() -> string is

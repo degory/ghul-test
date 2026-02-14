@@ -1,0 +1,6 @@
+helper(x: int) -> int => x + 1;
+
+entry() is
+    let n = helper(42);
+    IO.Std.write_line("" + n);
+si

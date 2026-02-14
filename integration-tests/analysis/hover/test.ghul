@@ -1,0 +1,4 @@
+entry() is
+    let message = "hover me";
+    IO.Std.write_line(message);
+si

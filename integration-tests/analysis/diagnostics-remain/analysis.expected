@@ -1,0 +1,9 @@
+PARTIAL DONE
+
+---
+DIAGNOSTICS STORE
+<lib>/ghul.ghul:
+  (none)
+test.ghul:
+  6,28..6,34 1 symbol not found: _thing
+---

@@ -1,0 +1,9 @@
+PARTIAL DONE
+
+---
+DIAGNOSTICS STORE
+<lib>/ghul.ghul:
+  (none)
+test.ghul:
+  7,9..7,11 1 in primary expression: expected (, [, cast, char literal, false, float literal, identifier, if, int literal, isa, let, new, null, rec, self, string literal, super, true, typeof or { but found si
+---

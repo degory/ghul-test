@@ -1,0 +1,400 @@
+namespace Tester is
+    use System.Exception;
+    use System.Text.StringBuilder;
+
+    use Collections.Iterable;
+    use Collections.LIST;
+    use Collections.MutableList;
+    use Collections.MutableMap;
+    use Collections.MAP;
+
+    use IO.File;
+    use IO.Path;
+
+    // Client-side diagnostics store: per-path set of diagnostic entries.
+    // Each DIAGNOSTICS section replaces the store for every path that appears in it:
+    // a path-only line clears that path; tab-delimited lines define the full set for that path.
+    // So a second DIAGNOSTICS section for the same URI replaces the first (no accumulation).
+    class DIAGNOSTICS_STORE is
+        _per_path: MutableMap[string, MutableList[string]];
+
+        init() is
+            _per_path = new MAP[string, MutableList[string]]();
+        si
+
+        apply_section(section: string, normalize_path: (string) -> string) is
+            let lines = section.split(['\n']) | .collect_array();
+
+            if lines.count < 2 then
+                return;
+            fi
+
+            let section_entries: MutableMap[string, MutableList[string]] = new MAP[string, MutableList[string]]();
+            let paths_cleared: MutableList[string] = new LIST[string]();
+
+            for i in 1..(lines.count - 1) do
+                let line = lines[i];
+
+                if !line.contains('\t') then
+                    let path = normalize_path(line.trim());
+
+                    if path.length > 0 then
+                        paths_cleared.add(path);
+                    fi
+                else
+                    let parts = line.split(['\t']) | .collect_array();
+
+                    if parts.count >= 7 then
+                        let path = normalize_path(parts[0].trim());
+                        let start_line = parts[1].trim();
+                        let start_col = parts[2].trim();
+                        let end_line = parts[3].trim();
+                        let end_col = parts[4].trim();
+                        let severity = parts[5].trim();
+                        let message = parts[6].trim();
+
+                        let entry = start_line + "," + start_col + ".." + end_line + "," + end_col + " " + severity + " " + message;
+
+                        if !section_entries.contains_key(path) then
+                            section_entries[path] = new LIST[string]();
+                        fi
+
+                        section_entries[path].add(entry);
+                    fi
+                fi
+            od
+
+            for path in section_entries.keys do
+                _per_path[path] = section_entries[path];
+            od
+
+            for path in paths_cleared do
+                _per_path[path] = new LIST[string]();
+            od
+        si
+
+        format_snapshot() -> string is
+            let path_list = new LIST[string](_per_path.keys);
+            path_list.sort();
+
+            let out = new StringBuilder();
+            out.append("DIAGNOSTICS STORE\n");
+
+            for path in path_list do
+                let entries = _per_path[path];
+
+                out.append(path + ":\n");
+
+                if entries.count == 0 then
+                    out.append("  (none)\n");
+                else
+                    let sorted_list = new LIST[string](entries);
+                    sorted_list.sort();
+
+                    for entry in sorted_list do
+                        out.append("  " + entry + "\n");
+                    od
+                fi
+            od
+
+            return out.to_string() + "---\n";
+        si
+    si
+
+    // Analysis mode protocol client: send EDIT, optionally run scenario commands,
+    // maintain diagnostics store from DIAGNOSTICS sections, assert store state in snapshot.
+    class ANALYSIS_PROTOCOL_CLIENT is
+        init() is si
+
+        run(process: System.Diagnostics.Process, runner: RUNNER, test: TEST) -> string is
+            let stdout_reader = process.standard_output;
+            let stdin_writer = process.standard_input;
+            let store = new DIAGNOSTICS_STORE();
+
+            read_and_expect_listen(stdout_reader);
+
+            let edit_again_paths = get_edit_again_paths(runner);
+            let source_list = test.source_files | .collect_array();
+            let initial_paths = if edit_again_paths.count > 0 then
+                source_list | .filter((s: string) => edit_again_paths.contains(s)).collect_array()
+            else
+                source_list
+            fi;
+            send_edit(stdin_writer, runner, initial_paths);
+
+            let output = read_sections_until_partial_done(stdout_reader, store);
+
+            let scenario_output = run_scenarios_if_present(stdin_writer, stdout_reader, runner, store);
+
+            if scenario_output? /\ scenario_output.length > 0 then
+                output = output + scenario_output;
+            fi
+
+            output = output + store.format_snapshot();
+
+            stdin_writer.close();
+
+            return output;
+        si
+
+        run_scenarios_if_present(writer: IO.TextWriter, reader: IO.TextReader, runner: RUNNER, store: DIAGNOSTICS_STORE) -> string is
+            let path = Path.join(runner.get_path(), "analysis.scenarios");
+
+            if !File.exists(path) then
+                return null;
+            fi
+
+            let text = File.read_all_text(path).trim();
+            let blocks = split_blocks(text);
+
+            let result = new StringBuilder();
+
+            for block in blocks do
+                let lines = block.split(['\n']) | .map((s: string) => s.trim()) | .filter((s: string) => s.length > 0).collect_array();
+
+                if lines.count < 1 then
+                    continue;
+                fi
+
+                let command = lines[0];
+
+                if command =~ "EDIT_AGAIN" /\ lines.count >= 3 then
+                    send_edit_single_file(writer, runner, lines[1], lines[2]);
+                    read_sections_until_partial_done(reader, store);
+                elif command =~ "HOVER" /\ lines.count >= 4 then
+                    send_hover(writer, lines[1], lines[2], lines[3]);
+                    let section = read_sections_until(reader, "HOVER", store);
+                    if section? then result.append(section); fi
+                elif command =~ "DEFINITION" /\ lines.count >= 4 then
+                    send_definition(writer, lines[1], lines[2], lines[3]);
+                    let section = read_sections_until(reader, "DEFINITION", store);
+                    if section? then result.append(section); fi
+                fi
+            od
+
+            return result.to_string();
+        si
+
+        get_edit_again_paths(runner: RUNNER) -> Collections.MutableList[string] is
+            let path = Path.join(runner.get_path(), "analysis.scenarios");
+            if !File.exists(path) then
+                return new LIST[string]();
+            fi
+            let text = File.read_all_text(path).trim();
+            let blocks = split_blocks(text);
+            let out = new LIST[string]();
+            for block in blocks do
+                let lines = block.split(['\n']) | .map((s: string) => s.trim()) | .filter((s: string) => s.length > 0).collect_array();
+                if lines.count >= 3 /\ lines[0] =~ "EDIT_AGAIN" then
+                    out.add(lines[1]);
+                fi
+            od
+            return out;
+        si
+
+        split_blocks(text: string) -> Iterable[string] is
+            let normalized = text.replace("\r\n", "\n");
+            let line_list = normalized.split(['\n']) | .collect_array();
+            let blocks = new LIST[string]();
+            let current = new StringBuilder();
+
+            for line in line_list do
+                if line.trim().length == 0 then
+                    if current.length > 0 then
+                        blocks.add(current.to_string().trim());
+                        current = new StringBuilder();
+                    fi
+                else
+                    if current.length > 0 then
+                        current.append("\n");
+                    fi
+                    current.append(line);
+                fi
+            od
+
+            if current.length > 0 then
+                blocks.add(current.to_string().trim());
+            fi
+
+            return blocks;
+        si
+
+        send_hover(writer: IO.TextWriter, path: string, line: string, column: string) is
+            writer.write("#HOVER#\n");
+            writer.write(path + "\n");
+            writer.write(line + "\n");
+            writer.write(column + "\n");
+            writer.flush();
+        si
+
+        send_definition(writer: IO.TextWriter, path: string, line: string, column: string) is
+            writer.write("#DEFINITION#\n");
+            writer.write(path + "\n");
+            writer.write(line + "\n");
+            writer.write(column + "\n");
+            writer.flush();
+        si
+
+        send_edit_single_file(writer: IO.TextWriter, runner: RUNNER, path_to_send: string, content_file_name: string) is
+            let full_path = Path.join(runner.get_path(), content_file_name);
+            let content = File.read_all_text(full_path);
+            let form_feed = cast char(12);
+
+            writer.write("#EDIT#\n");
+            writer.write(path_to_send + "\n");
+            writer.write("\n");
+            writer.write(content);
+            writer.write(form_feed);
+            writer.flush();
+        si
+
+        read_sections_until(reader: IO.TextReader, expected_type: string, store: DIAGNOSTICS_STORE) -> string is
+            let result = new StringBuilder();
+
+            while true do
+                let section = read_section(reader);
+
+                if section == null \/ section.length == 0 then
+                    break;
+                fi
+
+                if section.starts_with("DIAGNOSTICS") then
+                    store.apply_section(section, s => normalize_path_line(s));
+                else
+                    let normalized = normalize_section(section);
+
+                    if normalized? then
+                        result.append(normalized);
+
+                        if normalized.starts_with(expected_type) then
+                            break;
+                        fi
+                    fi
+                fi
+            od
+
+            return result.to_string();
+        si
+
+        read_and_expect_listen(reader: IO.TextReader) is
+            let section = read_section(reader);
+
+            if section == null \/ !section.starts_with("LISTEN") then
+                let msg = if section? then section else "null (compiler may have exited before sending LISTEN)" fi;
+                throw new Exception("analysis protocol: expected LISTEN, got: " + msg);
+            fi
+        si
+
+        read_section(reader: IO.TextReader) -> string is
+            let buffer = new StringBuilder();
+
+            do
+                let c = reader.read();
+
+                if c == -1 then
+                    if buffer.length == 0 then
+                        return null;
+                    fi
+
+                    return buffer.to_string();
+                fi
+
+                if c == 12 then
+                    return buffer.to_string();
+                fi
+
+                buffer.append(cast char(c));
+            od
+        si
+
+        send_edit(writer: IO.TextWriter, runner: RUNNER, file_names: string[]) is
+            writer.write("#EDIT#\n");
+
+            for file_name in file_names do
+                writer.write(file_name + "\n");
+            od
+
+            writer.write("\n");
+
+            let form_feed = cast char(12);
+
+            for file_name in file_names do
+                let path = Path.join(runner.get_path(), file_name);
+                let content = File.read_all_text(path);
+                writer.write(content);
+                writer.write(form_feed);
+            od
+
+            writer.flush();
+        si
+
+        read_sections_until_partial_done(reader: IO.TextReader, store: DIAGNOSTICS_STORE) -> string is
+            let result = new StringBuilder();
+            let seen_partial_done = false;
+
+            while !seen_partial_done do
+                let section = read_section(reader);
+
+                if section == null \/ section.length == 0 then
+                    break;
+                fi
+
+                if section.starts_with("DIAGNOSTICS") then
+                    store.apply_section(section, s => normalize_path_line(s));
+                else
+                    let normalized = normalize_section(section);
+
+                    if normalized? then
+                        result.append(normalized);
+
+                        if normalized.starts_with("PARTIAL DONE") then
+                            seen_partial_done = true;
+                        fi
+                    fi
+                fi
+            od
+
+            return result.to_string();
+        si
+
+        normalize_section(section: string) -> string is
+            let line_list = section.split(['\n']) | .collect_array();
+
+            if line_list.count == 0 then
+                return null;
+            fi
+
+            let first = line_list[0].trim();
+            let strip_timing = first =~ "PARTIAL DONE" \/ first =~ "FULL DONE";
+
+            let out = new StringBuilder();
+            let n = line_list.count;
+
+            for i in 0..(n - 1) do
+                let line = if strip_timing /\ i == 1 then "" else line_list[i] fi;
+
+                line = normalize_path_line(line);
+
+                out.append(line);
+
+                if i < n - 1 then
+                    out.append("\n");
+                fi
+            od
+
+            return out.to_string() + "---\n";
+        si
+
+        normalize_path_line(line: string) -> string is
+            if !line? \/ line.length == 0 then
+                return line;
+            fi
+
+            if line.contains("dotnet/ghul") \/ line.contains("dotnet\\\\ghul") then
+                return "<lib>/ghul.ghul";
+            fi
+
+            return line;
+        si
+    si
+si
