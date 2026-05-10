@@ -1,0 +1,78 @@
+namespace Tests is
+    use System.Exception;
+    use System.Reflection.Assembly;
+
+    use IO.Path;
+
+    use Tester;
+
+    class COMPILER_UNDER_TEST_Should is
+        @test()
+
+        init() is si
+
+        get_existing_file_path() -> string is
+            // The current test assembly is guaranteed to exist on disk.
+            return Path.get_full_path(Assembly.get_executing_assembly().location);
+        si
+
+        COMPILER_UNDER_TEST__set_runtime_path__given_null__leaves_runtime_path_unchanged() is
+            @test()
+
+            let cut = new COMPILER_UNDER_TEST(COMPILER_RUN_MODE.CI);
+            let original = cut.runtime_path;
+
+            cut.set_runtime_path(null);
+
+            should(cut.runtime_path).be(original, null, null);
+        si
+
+        COMPILER_UNDER_TEST__set_runtime_path__given_empty_string__leaves_runtime_path_unchanged() is
+            @test()
+
+            let cut = new COMPILER_UNDER_TEST(COMPILER_RUN_MODE.CI);
+            let original = cut.runtime_path;
+
+            cut.set_runtime_path("");
+
+            should(cut.runtime_path).be(original, null, null);
+        si
+
+        COMPILER_UNDER_TEST__set_runtime_path__given_whitespace_only__leaves_runtime_path_unchanged() is
+            @test()
+
+            let cut = new COMPILER_UNDER_TEST(COMPILER_RUN_MODE.CI);
+            let original = cut.runtime_path;
+
+            cut.set_runtime_path("   ");
+
+            should(cut.runtime_path).be(original, null, null);
+        si
+
+        COMPILER_UNDER_TEST__set_runtime_path__given_existing_path__overrides_runtime_path() is
+            @test()
+
+            let cut = new COMPILER_UNDER_TEST(COMPILER_RUN_MODE.CI);
+            let new_path = get_existing_file_path();
+
+            cut.set_runtime_path(new_path);
+
+            should(cut.runtime_path).be(new_path, null, null);
+        si
+
+        COMPILER_UNDER_TEST__set_runtime_path__given_nonexistent_path__throws() is
+            @test()
+
+            let cut = new COMPILER_UNDER_TEST(COMPILER_RUN_MODE.CI);
+            let threw = false;
+
+            try
+                cut.set_runtime_path("/tmp/ghul-test-this-path-must-not-exist.dll");
+            catch ex: Exception
+                threw = true;
+            yrt
+
+            should(threw).be(true, null, null);
+        si
+    si
+si

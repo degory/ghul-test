@@ -38,23 +38,50 @@ namespace Tester is
                 run_mode = COMPILER_RUN_MODE.CI;
             fi
 
-            let arguments_to_skip = 0;
+            let runtime_dll_override =
+                System.Environment.get_environment_variable("GHUL_RUNTIME_DLL");
 
-            if arguments.count > 1 /\ arguments[0] =~ "--use-dotnet-build" then
-                run_mode = COMPILER_RUN_MODE.DOTNET;
-                arguments_to_skip = 1;
-            fi
-            
+            let test_paths = new LIST[string]();
+
+            let i = 0;
+            while i < arguments.count do
+                let arg = arguments[i];
+
+                if arg =~ "--use-dotnet-build" then
+                    run_mode = COMPILER_RUN_MODE.DOTNET;
+                elif arg =~ "--runtime-dll" then
+                    i = i + 1;
+
+                    if i >= arguments.count then
+                        Std.write_line("--runtime-dll requires a path argument");
+                        return 1;
+                    fi
+
+                    runtime_dll_override = arguments[i];
+                else
+                    test_paths.add(arg);
+                fi
+
+                i = i + 1;
+            od
+
             let compiler_under_test = new COMPILER_UNDER_TEST(run_mode);
+
+            try
+                compiler_under_test.set_runtime_path(runtime_dll_override);
+            catch ex: Exception
+                Std.write_line(ex.message);
+                return 1;
+            yrt
 
             let queue = new TEST_QUEUE(host, target, compiler_under_test);
 
-            for path in arguments | .skip(arguments_to_skip) do
+            for path in test_paths do
                 if !Directory.exists(path) then
                     Std.write_line("not a directory: " + path);
                     return 1;
                 fi
-                
+
                 queue.try_queue_tests(path);
             od
 

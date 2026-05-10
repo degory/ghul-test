@@ -42,6 +42,20 @@ namespace Tester is
                 throw new Exception("unknown run mode: " + _run_mode);
             fi
         si
+
+        runtime_path: string => _runtime_path;
+
+        set_runtime_path(path: string) is
+            if string.is_null_or_white_space(path) then
+                return;
+            fi
+
+            if !File.exists(path) then
+                throw new Exception("runtime DLL not found: " + path);
+            fi
+
+            _runtime_path = Path.get_full_path(path);
+        si
         
         run_compiler(runner: RUNNER, test: TEST) -> bool is
             let arguments = new LIST[string]();
