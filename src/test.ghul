@@ -31,7 +31,7 @@ namespace Tester is
             if result? then
                 return result.format(path);  
             else
-                return "no result: " + path;
+                return "no result: {path}";
             fi
             
             return path;

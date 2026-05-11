@@ -94,7 +94,7 @@ namespace Tester is
 
             if build_succeeded then
                 if _test.is_build_fail_expected then
-                    add_fail("unexpected build success: " + _test.path);
+                    add_fail("unexpected build success: {_test.path}");
                     exit_after_grep_and_sort = true;
                 fi
             else
@@ -164,7 +164,7 @@ namespace Tester is
             let binary_path = _compiler_under_test.get_binary_path(self);
 
             if !File.exists(binary_path) then
-                add_fail("no binary found: " + binary_path);
+                add_fail("no binary found: {binary_path}");
                 return false;
             fi
 
@@ -182,7 +182,7 @@ namespace Tester is
             if 
                 exit_status != 0
             then
-                add_fail("binary exited with non-zero status (" + exit_status + ")", "run.err");
+                add_fail("binary exited with non-zero status ({exit_status})", "run.err");
                 return false;
             fi
 
@@ -337,7 +337,7 @@ namespace Tester is
             let result = Process.start(start_info);
 
             if result == null then
-                throw new Exception("failed to start process: " + path + " " + start_info.arguments);
+                throw new Exception("failed to start process: {path} {start_info.arguments}");
             fi
             
             return result;
@@ -418,7 +418,7 @@ namespace Tester is
             let file_path = get_path(file_name);
 
             if !File.exists(file_path) then
-                return "(could not read file: " + file_path + ")";
+                return "(could not read file: {file_path})";
             fi
             
             return File.read_all_text(get_path(file_name));
