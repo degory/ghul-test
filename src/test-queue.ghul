@@ -53,7 +53,7 @@ namespace Tester is
             
             _task_queue = new TASK_QUEUE(actual_test_processes);
 
-            Std.write_line("using " + actual_test_processes + " processes to run tests");
+            Std.write_line("using {actual_test_processes} processes to run tests");
 
             _tests = new LIST[TEST]();
         si
@@ -112,13 +112,13 @@ namespace Tester is
                     try_queue_tests(entry);
                 od
             catch ex: Exception
-                Std.write_line("probably not a directory: " + path);
-                Std.write_line("caught: " + ex);
+                Std.write_line("probably not a directory: {path}");
+                Std.write_line("caught: {ex}");
             yrt            
         si
 
         try_queue_test(path: string) is
-            let flags_path = path + "/ghulflags";
+            let flags_path = "{path}/ghulflags";
 
             if !File.exists(flags_path) then
                 return;
@@ -126,7 +126,7 @@ namespace Tester is
 
             let flags = File.read_all_text(flags_path);
             let source_files = get_source_files(path);
-            let is_build_failure_Expected = File.exists(path + "/fail.expected");
+            let is_build_failure_Expected = File.exists("{path}/fail.expected");
 
             queue_test(
                 new TEST(
