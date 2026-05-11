@@ -78,7 +78,7 @@ namespace Tester is
 
             for path in test_paths do
                 if !Directory.exists(path) then
-                    Std.write_line("not a directory: " + path);
+                    Std.write_line("not a directory: {path}");
                     return 1;
                 fi
 
@@ -87,23 +87,23 @@ namespace Tester is
 
             queue.run_queued_tests();
 
-            Std.write_line("" + queue.count + " tests discovered");
-            Std.write_line("" + queue.executed_count + " tests enabled");
-            Std.write_line("" + queue.pass_count + "/" + queue.executed_count + " tests passed");
+            Std.write_line("{queue.count} tests discovered");
+            Std.write_line("{queue.executed_count} tests enabled");
+            Std.write_line("{queue.pass_count}/{queue.executed_count} tests passed");
 
             if queue.fail_count == 0 then
-                Std.write_line("" + cast char(9989) + " all tests passed " + cast char(9989));
+                Std.write_line("{cast char(9989)} all tests passed {cast char(9989)}");
                 return 0;
             fi
-            
-            Std.write_line("" + cast char(10060) + " " + queue.fail_count + " tests failed " + cast char(10060));
+
+            Std.write_line("{cast char(10060)} {queue.fail_count} tests failed {cast char(10060)}");
 
             return 1;
         si
 
         report_host_and_target(host: string, target: string) static is
-            Std.write_line("compiler hosted on: " + get_cli_description(host));
-            Std.write_line("built tests executed on: " + get_cli_description(target));
+            Std.write_line("compiler hosted on: {get_cli_description(host)}");
+            Std.write_line("built tests executed on: {get_cli_description(target)}");
         si
 
         get_cli_description(name: string) -> string static is
@@ -113,7 +113,7 @@ namespace Tester is
                 return ".NET";
             fi
 
-            throw new Exception("unknown CLI environment: " + name);
+            throw new Exception("unknown CLI environment: {name}");
         si
                 
         get_cli_environment_variable(name: string) -> string static is

@@ -39,7 +39,7 @@ namespace Tester is
                 _runtime_path = get_published_compiler_path("ghul-runtime.dll");
                 _arguments = ["--v3", "--test-run"];
             else
-                throw new Exception("unknown run mode: " + _run_mode);
+                throw new Exception("unknown run mode: {_run_mode}");
             fi
         si
 
@@ -51,7 +51,7 @@ namespace Tester is
             fi
 
             if !File.exists(path) then
-                throw new Exception("runtime DLL not found: " + path);
+                throw new Exception("runtime DLL not found: {path}");
             fi
 
             _runtime_path = Path.get_full_path(path);
@@ -167,8 +167,7 @@ namespace Tester is
                 return result;
             fi
 
-            throw new Exception("Could not find published compiler: " 
-                + get_published_compiler_path("[ghul|ghul.exe]"));
+            throw new Exception("Could not find published compiler: {get_published_compiler_path("[ghul|ghul.exe]")}");
         si
         
         get_published_compiler_path(file_name: string) -> string =>

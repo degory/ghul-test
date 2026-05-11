@@ -21,7 +21,7 @@ namespace Tester is
             fi            
         si
 
-        progress_string: string => progress.to_string().pad_left(2) + "%";
+        progress_string: string => "{progress.to_string().pad_left(2)}%";
 
         is_pass: bool is
             throw new System.NotImplementedException();            
@@ -45,10 +45,10 @@ namespace Tester is
         si
         
         format(test_name: string) -> string is
-            let result = progress_string + " " + head + ": " + test_name;
+            let result = "{progress_string} {head}: {test_name}";
 
             if body? /\ body !~ "" then
-                result = result + ": " + body;
+                result = "{result}: {body}";
             fi
 
             return result;
