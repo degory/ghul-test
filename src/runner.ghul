@@ -91,6 +91,7 @@ namespace Tester is
             let build_succeeded = _compiler_under_test.run_compiler(self, _test);
 
             let exit_after_grep_and_sort mut = false;
+
             if build_succeeded then
                 if _test.is_build_fail_expected then
                     add_fail("unexpected build success: {_test.path}");
@@ -252,6 +253,7 @@ namespace Tester is
             fi
 
             let args: string[] mut;
+
             if ignore_space_changes then
                 args = ["-b", "--strip-trailing-cr", expected_file_name, actual_file_name];
             else
@@ -363,6 +365,7 @@ namespace Tester is
         
         add_fail(message: string, file_name: string) is
             let details: DETAILS mut;
+
             if file_name? then
                 details = new DETAILS(message, read_all_text_quiet(file_name));
             else
