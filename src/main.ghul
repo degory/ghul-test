@@ -29,22 +29,19 @@ namespace Tester is
             let ci_string = 
                 System.Environment.get_environment_variable("CI");
 
-            let run_mode = COMPILER_RUN_MODE.LOCAL;
-
-            if 
+            let run_mode mut = COMPILER_RUN_MODE.LOCAL;
+            if
                 !string.is_null_or_white_space(ci_string) /\
                 (ci_string =~ "1" \/ ci_string.to_lower() =~ "true")
             then
                 run_mode = COMPILER_RUN_MODE.CI;
             fi
 
-            let runtime_dll_override =
-                System.Environment.get_environment_variable("GHUL_RUNTIME_DLL");
+            let runtime_dll_override mut =                System.Environment.get_environment_variable("GHUL_RUNTIME_DLL");
 
             let test_paths = new LIST[string]();
 
-            let i = 0;
-            while i < arguments.count do
+            let i mut = 0;            while i < arguments.count do
                 let arg = arguments[i];
 
                 if arg =~ "--use-dotnet-build" then
@@ -117,8 +114,7 @@ namespace Tester is
         si
                 
         get_cli_environment_variable(name: string) -> string static is
-            let result = System.Environment.get_environment_variable(name);
-
+            let result mut = System.Environment.get_environment_variable(name);
             if !result? then
                 result = "dotnet";
             fi
