@@ -38,6 +38,7 @@ namespace Tester is
             let requested_test_processes = System.Environment.get_environment_variable("TEST_PROCESSES");
 
             let actual_test_processes: int mut;
+
             if requested_test_processes? then
                 actual_test_processes = System.Convert.to_int32(requested_test_processes);                
             else
@@ -75,6 +76,7 @@ namespace Tester is
             od
 
             let results mut = _task_queue.drain();
+
             while results? do
                 report_progress(results);
                 results = _task_queue.drain();

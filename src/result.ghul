@@ -46,6 +46,7 @@ namespace Tester is
         
         format(test_name: string) -> string is
             let result mut = "{progress_string} {head}: {test_name}";
+
             if body? /\ body !~ "" then
                 result = "{result}: {body}";
             fi

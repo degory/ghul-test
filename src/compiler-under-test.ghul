@@ -69,6 +69,7 @@ namespace Tester is
             fi
 
             let result mut = -1;
+
             if _run_mode == COMPILER_RUN_MODE.DOTNET then
                 result = runner.run(
                     _executable,
@@ -155,6 +156,7 @@ namespace Tester is
 
         find_published_compiler() -> string is
             let result mut = get_published_compiler_path("ghul");
+
             if File.exists(result) then
                 return result;
             fi
