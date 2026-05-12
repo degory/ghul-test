@@ -101,10 +101,10 @@ namespace Tests is
                     "_collate_environment"
                 );
 
-            Std.error.write_line("field_value: " + field_value);
+            Std.error.write_line("field_value: {field_value}");
 
             if field_value? then
-                Std.error.write_line("field_value type: " + field_value.get_type().to_string());
+                Std.error.write_line("field_value type: {field_value.get_type().to_string()}");
             fi
 
             should(isa Map[string,string](field_value)).be_true(null, null);
