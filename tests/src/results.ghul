@@ -205,7 +205,7 @@ namespace Tests is
             
             let skip = new SKIP(get_stub_test());
 
-            should(skip.format("xx a test name xx")).be(skip.progress_string + " " + skip.head + ": xx a test name xx", null, null);
+            should(skip.format("xx a test name xx")).be("{skip.progress_string} {skip.head}: xx a test name xx", null, null);
         si
 
         SKIP__to_string__given_test_path__to_string__returns_formatted_path() is
@@ -281,7 +281,7 @@ namespace Tests is
             
             let pass = new PASS(get_stub_test());
 
-            should(pass.format("xx a test name xx")).be(pass.progress_string + " " + pass.head + ": xx a test name xx", null, null);
+            should(pass.format("xx a test name xx")).be("{pass.progress_string} {pass.head}: xx a test name xx", null, null);
         si
 
         PASS__to_string__given_test_path__returns_formatted_path() is
@@ -367,7 +367,7 @@ namespace Tests is
             @test()
             
             let fail = new FAILURE(get_stub_test());
-            let details = [1, 2, 3] | .map(i => new DETAILS("something went wrong " + i));
+            let details = [1, 2, 3] | .map(i => new DETAILS("something went wrong {i}"));
 
             for d in details do
                 fail.add(d);                
@@ -381,7 +381,7 @@ namespace Tests is
             
             let fail = new FAILURE(get_stub_test());
 
-            should(fail.format("xx a test name xx")).be(fail.progress_string + " " + fail.head + ": xx a test name xx", null, null);
+            should(fail.format("xx a test name xx")).be("{fail.progress_string} {fail.head}: xx a test name xx", null, null);
         si
 
         FAILURE__to_string__given_test_path__returns_formatted_path() is
