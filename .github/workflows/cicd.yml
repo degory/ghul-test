@@ -21,28 +21,53 @@ env:
 
 jobs:
   version:
-    name: Create a version number
-    runs-on: ubuntu-22.04
+    name: Determine the version number
+    runs-on: ubuntu-latest
     timeout-minutes: 1
     outputs:
-      tag: ${{ steps.create_version.outputs.tag }}
-      package: ${{ steps.create_version.outputs.package }}
-      
+      tag: ${{ steps.package_version.outputs.tag }}
+      package: ${{ steps.package_version.outputs.package }}
+
     permissions:
-      contents: 'write'
+      contents: read
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
-        fetch-depth: '0'    
+        fetch-depth: '0'
 
-    - name: Create version
-      id: create_version
-      uses: degory/create-version@v0.0.2
+    # Calculates the next version from the git history. This action only
+    # reads the repository - it never creates tags or releases. The next
+    # version is a major/minor/patch bump of the most recent vX.Y.Z tag;
+    # a #major or #minor marker in a commit subject picks the bump level,
+    # otherwise each commit bumps the patch number.
+    - name: Calculate the semantic version
+      id: semver
+      uses: paulhatch/semantic-version@v6.0.2
       with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-      env:
-        PRERELEASE: ${{ github.event_name == 'pull_request' }}
+        tag_prefix: 'v'
+        major_pattern: '#major'
+        minor_pattern: '#minor'
+        version_format: '${major}.${minor}.${patch}'
+
+    - name: Determine the package version
+      id: package_version
+      run: |
+        manual="${{ github.event.inputs.version }}"
+        if [ -n "$manual" ]; then
+          # version supplied via the workflow_dispatch input
+          package="${manual#v}"
+        else
+          package="${{ steps.semver.outputs.version }}"
+          # pull request builds get a prerelease version so they can
+          # never collide with a real release
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            package="${package}-beta.${{ github.run_number }}"
+          fi
+        fi
+        echo "tag=v${package}" >> "$GITHUB_OUTPUT"
+        echo "package=${package}" >> "$GITHUB_OUTPUT"
+        echo "Version: v${package}"
 
   build:
     name: Build and publish NuGet package
@@ -55,7 +80,7 @@ jobs:
     needs: [version]
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Add GHCR package source
       run: dotnet nuget add source --username USERNAME --password ${{ secrets.GITHUB_TOKEN }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/degory/index.json"    
@@ -98,8 +123,13 @@ jobs:
     timeout-minutes: 5
     if: ${{ github.event_name == 'push' }}
 
+    permissions:
+      contents: write
+
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: '0'
 
     - name: Download package
       uses: actions/download-artifact@v4
@@ -110,23 +140,11 @@ jobs:
     - name: Create changelog
       run: git log -1 --format="%s%n%n%b%n%n" >changelog.txt
 
-    - name: Create a Release
-      id: create_release
-      uses: actions/create-release@v1
+    - name: Create a release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ needs.version.outputs.tag }}
-        release_name: ${{ needs.version.outputs.tag }}
-        body_path: changelog.txt
-        draft: false
-
-    - name: Upload package asset
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./nupkg/ghul.test.${{ needs.version.outputs.package }}.nupkg
-        asset_name: ghul.test.${{ needs.version.outputs.package }}.nupkg
-        asset_content_type: application/octet-stream
+      run: |
+        gh release create "${{ needs.version.outputs.tag }}" \
+          ./nupkg/ghul.test.${{ needs.version.outputs.package }}.nupkg \
+          --title "${{ needs.version.outputs.tag }}" \
+          --notes-file changelog.txt
