@@ -3,10 +3,11 @@
   "isRoot": true,
   "tools": {
     "ghul.compiler": {
-      "version": "0.9.5",
+      "version": "1.0.17",
       "commands": [
         "ghul-compiler"
-      ]
+      ],
+      "rollForward": false
     }
   }
 }

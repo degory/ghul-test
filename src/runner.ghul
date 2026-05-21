@@ -10,7 +10,7 @@ namespace Tester is
     use Collections.LIST;
     use Collections.MAP;
 
-    use Pair = Collections.KeyValuePair`2;
+    use Pair = Collections.KeyValuePair;
 
     use IO.Std;
     use IO.File;
