@@ -2,7 +2,6 @@ namespace Tester is
     use IO.Std;
 
     use System.Threading.Tasks.Task;
-    use System.Threading.Tasks.Task`1;
 
     use Collections.Iterable;
     use Collections.LIST;
@@ -10,18 +9,18 @@ namespace Tester is
     class TASK_QUEUE is
         _max_tasks: int;
 
-        _running_tasks: LIST[Task`1[Result]];
+        _running_tasks: LIST[Task[Result]];
 
         init(max_tasks: int) is
             _max_tasks = max_tasks;
 
-            _running_tasks = new LIST[Task`1[Result]](max_tasks);
+            _running_tasks = new LIST[Task[Result]](max_tasks);
         si
 
         queue(task: () -> Result) -> Iterable[Result] is
             let result = wait_any();
 
-            let new_task = new Task`1[Result](task);
+            let new_task = new Task[Result](task);
 
             new_task.start();
 
@@ -50,7 +49,7 @@ namespace Tester is
 
             Task.wait_any(_running_tasks| .map(t -> Task => t).collect_array());
 
-            let new_tasks = new LIST[Task`1[Result]]();
+            let new_tasks = new LIST[Task[Result]]();
 
             for task in _running_tasks do
                 if task.is_completed then
