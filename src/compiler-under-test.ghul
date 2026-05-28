@@ -19,6 +19,7 @@ namespace Tester is
         _publish: string;
         _executable: string;
         _runtime_path: string;
+        _sdk_reference_path: string;
         _arguments: Iterable[string];
         _use_dotnet: bool;
 
@@ -31,12 +32,14 @@ namespace Tester is
             elif _run_mode == COMPILER_RUN_MODE.CI then
                 _executable = "dotnet";
                 _runtime_path = get_ghul_test_runtime_path();
+                _sdk_reference_path = discover_sdk_reference_path();
                 _arguments = ["ghul-compiler", "--v3", "--test-run"];
             elif _run_mode == COMPILER_RUN_MODE.LOCAL then
                 _publish = find_publish_directory();
 
                 _executable = find_published_compiler();
                 _runtime_path = get_published_compiler_path("ghul-runtime.dll");
+                _sdk_reference_path = discover_sdk_reference_path();
                 _arguments = ["--v3", "--test-run"];
             else
                 throw new Exception("unknown run mode: {_run_mode}");
@@ -79,6 +82,7 @@ namespace Tester is
                     null
                 );
             else
+                arguments.add_range(["--sdk-ref-path", _sdk_reference_path]);
                 arguments.add_range(test.source_files);
                 arguments.add_range(["-o", "binary.exe"]);
 
@@ -181,6 +185,152 @@ namespace Tester is
             let result = Path.get_directory_name(assembly_path);
 
             return Path.join(result, "ghul-runtime.dll");
-        si                
+        si
+
+        // Locate the .NET reference-assembly directory to hand the compiler.
+        // The target framework follows what this harness was *built* for, not
+        // the runtime it rolls forward onto — the compiler and the test outputs
+        // target that framework, so an ecosystem-wide bump needs no change here.
+        // The install root comes from `dotnet --list-sdks`, and we take the
+        // highest ref pack matching the target framework's version.
+        discover_sdk_reference_path() -> string is
+            let target_framework = get_target_framework();
+            // "net8.0" -> "8.0", to match ref-pack directory names like "8.0.27".
+            let framework_version = target_framework.substring(3, target_framework.length - 3);
+
+            let dotnet_root = find_dotnet_root();
+            let packs_root = Path.join([dotnet_root, "packs", "Microsoft.NETCore.App.Ref"]);
+
+            if !Directory.exists(packs_root) then
+                throw new Exception("no .NET reference assembly packs found at {packs_root}");
+            fi
+
+            let pack = find_latest_ref_pack(packs_root, framework_version);
+
+            if !pack? then
+                throw new Exception("no Microsoft.NETCore.App.Ref pack matching {framework_version}.* under {packs_root}");
+            fi
+
+            let reference_path = Path.join([pack, "ref", target_framework]);
+
+            if !Directory.exists(reference_path) then
+                throw new Exception("reference assemblies not found at {reference_path}");
+            fi
+
+            return reference_path;
+        si
+
+        // The target framework this harness was built for (e.g. "net8.0"),
+        // read from the `tfm` field of its runtimeconfig.json. This is the
+        // framework the compiler and test outputs target, independent of the
+        // runtime we roll forward onto, so an ecosystem-wide bump needs no
+        // change here.
+        get_target_framework() -> string is
+            let assembly = System.Reflection.Assembly.get_executing_assembly();
+            let assembly_path = Path.get_full_path(assembly.location);
+            let directory = Path.get_directory_name(assembly_path);
+            let name = Path.get_file_name_without_extension(assembly_path);
+            let config_path = Path.join(directory, "{name}.runtimeconfig.json");
+
+            if !File.exists(config_path) then
+                throw new Exception("runtime config not found at {config_path}");
+            fi
+
+            let target_framework = extract_json_string(File.read_all_text(config_path), "tfm");
+
+            if !target_framework? then
+                throw new Exception("no \"tfm\" entry found in {config_path}");
+            fi
+
+            return target_framework;
+        si
+
+        // Minimal extractor for a string-valued key in flat JSON; enough for
+        // the fixed shape of runtimeconfig.json (no nested escaping in `tfm`).
+        extract_json_string(content: string, key: string) -> string? is
+            let key_index = content.index_of("\"{key}\"");
+
+            if key_index < 0 then
+                return null;
+            fi
+
+            let colon = content.index_of(':', key_index);
+            let open = if colon >= 0 then content.index_of('"', colon) else -1 fi;
+            let close = if open >= 0 then content.index_of('"', open + 1) else -1 fi;
+
+            if close < 0 then
+                return null;
+            fi
+
+            return content.substring(open + 1, close - open - 1);
+        si
+
+        find_dotnet_root() -> string is
+            let output = run_and_capture("dotnet", ["--list-sdks"]);
+
+            for line in output.split(['\n']) do
+                let trimmed = line.trim();
+                let open = trimmed.index_of('[');
+                let close = trimmed.last_index_of(']');
+
+                if open >= 0 /\ close > open then
+                    // `dotnet --list-sdks` prints `<version> [<root>/sdk]`.
+                    let sdk_directory = trimmed.substring(open + 1, close - open - 1).trim();
+                    let root = Path.get_directory_name(sdk_directory);
+
+                    if root? /\ Directory.exists(root) then
+                        return root;
+                    fi
+                fi
+            od
+
+            throw new Exception("could not determine the .NET install root from `dotnet --list-sdks`");
+        si
+
+        find_latest_ref_pack(packs_root: string, framework_version: string) -> string? is
+            let best: string? mut = null;
+            let best_version: System.Version? mut = null;
+
+            for directory in Directory.get_directories(packs_root, "{framework_version}.*") do
+                let version = try_parse_version(Path.get_file_name(directory));
+
+                if version? /\ (!best_version? \/ version.compare_to(best_version) > 0) then
+                    best_version = version;
+                    best = directory;
+                fi
+            od
+
+            return best;
+        si
+
+        try_parse_version(text: string) -> System.Version? is
+            try
+                return System.Version.parse(text);
+            catch ex: Exception
+                return null;
+            yrt
+        si
+
+        run_and_capture(path: string, arguments: Iterable[string]) -> string is
+            let start_info = new System.Diagnostics.ProcessStartInfo();
+
+            start_info.file_name = path;
+            start_info.arguments = arguments | .to_string(" ");
+            start_info.use_shell_execute = false;
+            start_info.redirect_standard_output = true;
+            start_info.redirect_standard_error = true;
+
+            let process = System.Diagnostics.Process.start(start_info);
+
+            if !process? then
+                throw new Exception("failed to start `{path}`");
+            fi
+
+            let output = process.standard_output.read_to_end();
+
+            process.wait_for_exit(5000);
+
+            return output;
+        si
     si
 si
