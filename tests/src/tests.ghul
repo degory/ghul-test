@@ -20,5 +20,9 @@ namespace Tests is
 
     should(o: object) -> ObjectAssertions[object,ObjectAssertions] => new ObjectAssertions(o);
 
-    should(b: bool) -> BooleanAssertions[BooleanAssertions] => new BooleanAssertions(new OPTION[bool](b));
+    should(b: bool) -> BooleanAssertions[BooleanAssertions] is
+        let value: bool? = b;
+
+        return new BooleanAssertions(value);
+    si
 si
