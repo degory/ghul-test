@@ -75,7 +75,7 @@ This runner does **not** execute arbitrary MSBuild projects. It either drives th
 
 ## Dependencies
 
-The runner relies on several standard Unix utilities being available in the environment: `grep`, `sort`, `diff` and `ln`. A .NET 8 SDK installation is required; mono is not supported.
+The runner relies on several standard Unix utilities being available in the environment: `grep`, `sort`, `diff` and `ln`. A .NET 10 SDK installation is required; mono is not supported.
 
 ## Writing New Tests
 
