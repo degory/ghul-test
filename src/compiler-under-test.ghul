@@ -113,7 +113,7 @@ namespace Tester is
 
         get_binary_path_relative_to_test_folder(runner: RUNNER) -> string is
             if _run_mode == COMPILER_RUN_MODE.DOTNET then
-                return Path.join(["bin", "Debug", "net8.0", "binary.dll"]);
+                return Path.join(["bin", "Debug", get_target_framework(), "binary.dll"]);
             fi
 
             return "binary.exe";
@@ -121,7 +121,7 @@ namespace Tester is
 
         get_binary_path(runner: RUNNER) -> string is
             if _run_mode == COMPILER_RUN_MODE.DOTNET then
-                return Path.join([runner.get_path(), "bin", "Debug", "net8.0", "binary.dll"]);
+                return Path.join([runner.get_path(), "bin", "Debug", get_target_framework(), "binary.dll"]);
             fi
 
             return runner.get_path("binary.exe");
@@ -195,7 +195,7 @@ namespace Tester is
         // highest ref pack matching the target framework's version.
         discover_sdk_reference_path() -> string is
             let target_framework = get_target_framework();
-            // "net8.0" -> "8.0", to match ref-pack directory names like "8.0.27".
+            // "net10.0" -> "10.0", to match ref-pack directory names like "10.0.8".
             let framework_version = target_framework.substring(3, target_framework.length - 3);
 
             let dotnet_root = find_dotnet_root();
@@ -220,7 +220,7 @@ namespace Tester is
             return reference_path;
         si
 
-        // The target framework this harness was built for (e.g. "net8.0"),
+        // The target framework this harness was built for (e.g. "net10.0"),
         // read from the `tfm` field of its runtimeconfig.json. This is the
         // framework the compiler and test outputs target, independent of the
         // runtime we roll forward onto, so an ecosystem-wide bump needs no
