@@ -52,7 +52,7 @@ echo integration-tests/runtime-dll-override-valid...
 
 # The --runtime-dll override should be transparent when pointed at the same
 # runtime that CI mode would have discovered itself: hello-world still passes.
-RUNTIME_DLL="$(pwd)/bin/Debug/net8.0/ghul-runtime.dll"
+RUNTIME_DLL="$(pwd)/bin/Debug/net10.0/ghul-runtime.dll"
 
 if [ ! -f "$RUNTIME_DLL" ]; then
     echo "expected runtime DLL not found at $RUNTIME_DLL"

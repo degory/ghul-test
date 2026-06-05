@@ -64,7 +64,7 @@ namespace Tests is
             @test()
 
             let cut = new COMPILER_UNDER_TEST(COMPILER_RUN_MODE.CI);
-            let threw = false;
+            let threw mut = false;
 
             try
                 cut.set_runtime_path("/tmp/ghul-test-this-path-must-not-exist.dll");

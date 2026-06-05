@@ -1,5 +1,5 @@
 {
-    "compiler": "../../../bin/Release/net8.0/ghul",
+    "compiler": "../../../bin/Release/net10.0/ghul",
     "source": [
         "."
     ]
