@@ -18,10 +18,6 @@ env:
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
   DOTNET_CLI_TELEMETRY_OPTOUT: 1
   DOTNET_NOLOGO: 1
-  # Lets the still-net8.0 published `ghul.compiler` bootstrap tool start
-  # on the .NET 10 runtime present in the `sdk:10.0` container. Drop this
-  # once the next published compiler is itself net10.0-hosted.
-  DOTNET_ROLL_FORWARD: LatestMajor
 
 jobs:
   version:
