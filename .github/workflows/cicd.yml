@@ -37,11 +37,10 @@ jobs:
         fetch-depth: '0'
 
     # Compute the next version: the patch bump of the latest vX.Y.Z tag, unless
-    # the checked-in VERSION file declares a higher minor/major floor. VERSION
-    # is code-owned, so raising it for a non-patch release requires the code
-    # owner's review (a #major/#minor marker can no longer trigger a bump). A
-    # workflow_dispatch `version` input overrides outright; pull request builds
-    # get a -beta.<run> prerelease so they never collide with a real release.
+    # the checked-in VERSION file declares a higher minor/major floor (a
+    # #major/#minor marker can no longer trigger a bump). A workflow_dispatch
+    # `version` input overrides outright; pull request builds get a -beta.<run>
+    # prerelease so they never collide with a real release.
     - name: Determine the version
       id: version
       uses: degory/create-version@v1.0.0
