@@ -19,6 +19,9 @@ namespace Tester is
     use System.Diagnostics.Process;
     use System.Diagnostics.ProcessStartInfo;
 
+    use System.Text.RegularExpressions.Regex;
+    use System.Text.RegularExpressions.RegexOptions;
+
     class RUNNER is
         _collate_environment: MutableMap[string,string] static;
 
@@ -110,6 +113,9 @@ namespace Tester is
             run_sort("err.grep", "err.sort");
             run_sort("warn.grep", "warn.sort");
 
+            normalize_paths("err.sort");
+            normalize_paths("warn.sort");
+
             if exit_after_grep_and_sort then
                 return;
             fi
@@ -129,6 +135,9 @@ namespace Tester is
             if !run_binary() then
                 return;
             fi
+
+            normalize_paths("run.out");
+            strip_stack_trace_locations("run.out");
 
             run_diff("test output", "run.expected", "run.out", "run.diff", true);
         si
@@ -226,6 +235,49 @@ namespace Tester is
                     null,
                     _collate_environment
                 ) != 0;
+        si
+
+        normalize_paths(file_name: string) is
+            let path = get_path(file_name);
+
+            if !File.exists(path) then
+                return;
+            fi
+
+            let test_directory = IO.Path.get_full_path(_test.path);
+
+            if string.is_null_or_empty(test_directory) then
+                return;
+            fi
+
+            let prefix =
+                if test_directory.ends_with('/') \/ test_directory.ends_with('\\') then
+                    test_directory;
+                else
+                    "{test_directory}/";
+                fi;
+
+            let content = File.read_all_text(path);
+
+            File.write_all_text(path, content.replace(prefix, ""));
+        si
+
+        strip_stack_trace_locations(file_name: string) is
+            let path = get_path(file_name);
+
+            if !File.exists(path) then
+                return;
+            fi
+
+            let content = File.read_all_text(path);
+
+            // Strip the ` in <path>:line <N>` suffix from each `   at …`
+            // frame so snapshots don't pin absolute paths or line numbers.
+            // Frames without an `in …` suffix (typically ones without debug
+            // info) are left intact.
+            let pattern = Regex("^( {3}at .+) in [^:]*:line [0-9]+\\s*$", RegexOptions.MULTILINE);
+
+            File.write_all_text(path, pattern.replace(content, "$1"));
         si
         
         run_diff(
