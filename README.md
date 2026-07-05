@@ -26,6 +26,7 @@ Optional expectation and configuration files may also be present:
 | `fail.expected` | If present, the build is expected to fail. Its mere presence enables this behaviour; the file contents are ignored. |
 | `err.expected` | Expected compiler error output. Actual errors are extracted from `compiler.out`, sorted, and diffed against this file. |
 | `warn.expected` | Expected compiler warning output. Warnings undergo the same grep and sort process as errors. |
+| `hint.expected` | Expected compiler hint output. Hints are editor-only unless the compiler is run with `--show-hints`; they undergo the same grep and sort process as errors. Omit the file when no hints are expected. |
 | `run.expected` | Expected stdout from running the compiled binary. |
 | `il.expected` | Expected IL disassembly output (from the `il.out` file). |
 | `ghulflags` | Mandatory file containing additional command line flags for the compiler. |
@@ -36,9 +37,9 @@ A basic “hello world” example can be found in the `integration-tests` folder
 ## Expectation Comparison Workflow
 
 1. The runner invokes the compiler using the arguments from `ghulflags` and the test’s `.ghul` sources. Compiler stdout/stderr is written to `compiler.out`.
-2. `grep` extracts error and warning lines from `compiler.out` into `err.grep` and `warn.grep` respectively.
-3. These files are sorted with `sort` (with `LC_COLLATE` set to `C` for stable output) into `err.sort` and `warn.sort`.
-4. `diff` compares `err.sort` to `err.expected` and `warn.sort` to `warn.expected`. Whitespace differences are ignored and carriage returns are stripped.
+2. `grep` extracts error, warning and hint lines from `compiler.out` into `err.grep`, `warn.grep` and `hint.grep` respectively.
+3. These files are sorted with `sort` (with `LC_COLLATE` set to `C` for stable output) into `err.sort`, `warn.sort` and `hint.sort`.
+4. `diff` compares `err.sort` to `err.expected`, `warn.sort` to `warn.expected` and `hint.sort` to `hint.expected`. Whitespace differences are ignored and carriage returns are stripped.
 5. If compilation succeeded, `ghul-runtime.dll` is symlinked into the test directory and the binary is executed via `dotnet`. Output is captured in `run.out` and compared to `run.expected`.
 6. If an `il.expected` file exists, `diff` is run against the generated `il.out` file as well.
 

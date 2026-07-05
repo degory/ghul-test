@@ -109,12 +109,15 @@ namespace Tester is
 
             run_grep("error:", "compiler.out", "err.grep");
             run_grep("warn:", "compiler.out", "warn.grep");
+            run_grep("hint:", "compiler.out", "hint.grep");
 
             run_sort("err.grep", "err.sort");
             run_sort("warn.grep", "warn.sort");
+            run_sort("hint.grep", "hint.sort");
 
             normalize_paths("err.sort");
             normalize_paths("warn.sort");
+            normalize_paths("hint.sort");
 
             if exit_after_grep_and_sort then
                 return;
@@ -123,6 +126,8 @@ namespace Tester is
             run_diff("errors", "err.expected", "err.sort", "err.diff", true);
 
             run_diff("warnings", "warn.expected", "warn.sort", "warn.diff", true);
+
+            run_diff("hints", "hint.expected", "hint.sort", "hint.diff", true);
 
             run_diff_il_out();
 
@@ -151,8 +156,11 @@ namespace Tester is
                     "compiler.out",
                     "sed.out",
                     "warn.grep",
+                    "warn.sort",
                     "warn.diff",
-                    "warn.diff",
+                    "hint.grep",
+                    "hint.sort",
+                    "hint.diff",
                     "err.grep",
                     "err.sort",
                     "err.diff",
