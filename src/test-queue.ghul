@@ -19,6 +19,8 @@ namespace Tester is
 
         _tests: MutableList[TEST];
 
+        _progress_reporter: PROGRESS_REPORTER;
+
         progress: int;
         count: int => _tests.count;
 
@@ -27,13 +29,15 @@ namespace Tester is
         fail_count: int => _tests | .filter(t => t.has_failed).count();
 
         init(
-            host_cli: string, 
+            host_cli: string,
             target_cli: string,
-            compiler_under_test: COMPILER_UNDER_TEST)
+            compiler_under_test: COMPILER_UNDER_TEST,
+            progress_reporter: PROGRESS_REPORTER)
         is
             _host_cli = host_cli;
             _target_cli = target_cli;
             _compiler_under_test = compiler_under_test;
+            _progress_reporter = progress_reporter;
 
             let requested_test_processes = System.Environment.get_environment_variable("TEST_PROCESSES");
 
@@ -61,8 +65,10 @@ namespace Tester is
         run_queued_tests() -> Iterable[Result] is
             let i = 0;
 
+            _progress_reporter.on_discovered(count);
+
             for test in _tests do
-                let runner = 
+                let runner =
                     new RUNNER(
                         _host_cli,
                         _target_cli,
@@ -73,6 +79,10 @@ namespace Tester is
                 let results = _task_queue.queue(runner.get_run());
 
                 report_progress(results);
+
+                // `queue` returns once the task is running, so this reports a
+                // test that has actually started, not one waiting for a slot.
+                _progress_reporter.on_start(test.path);
             od
 
             let results mut = _task_queue.drain();
@@ -81,6 +91,8 @@ namespace Tester is
                 report_progress(results);
                 results = _task_queue.drain();
             od
+
+            _progress_reporter.close();
         si
 
         report_progress(results: Iterable[Result]) is
@@ -91,7 +103,9 @@ namespace Tester is
 
                 Std.write_line(result);
 
-                progress = progress + 1;            
+                progress = progress + 1;
+
+                _progress_reporter.on_finish(result);
             od
         si
 

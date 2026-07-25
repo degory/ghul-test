@@ -75,7 +75,7 @@ namespace Tester is
                 return 1;
             yrt
 
-            let queue = new TEST_QUEUE(host, target, compiler_under_test);
+            let queue = TEST_QUEUE(host, target, compiler_under_test, PROGRESS_REPORTER(test_paths));
 
             for path in test_paths do
                 if !Directory.exists(path) then

@@ -1,0 +1,238 @@
+namespace Tester is
+    use System.Exception;
+
+    use Collections.Iterable;
+    use Collections.MutableList;
+    use Collections.LIST;
+
+    use IO.File;
+    use IO.Directory;
+    use IO.Path;
+
+    use System.Text.Json.JsonSerializer;
+    use System.Text.Json.JsonSerializerOptions;
+
+    // Snapshot of one test run, serialized to the run's status file. Field
+    // names are the wire format: consumers deserialize this shape, so
+    // `version` gates any incompatible change to it.
+    class RUN_PROGRESS is
+        version: int public;
+
+        pid: int public;
+        cwd: string public;
+        suites: string[] public;
+
+        // "running" until the run finishes, then "done".
+        state: string public;
+
+        started_at: long public;
+        updated_at: long public;
+
+        total: int public;
+        completed: int public;
+        passed: int public;
+        failed: int public;
+        skipped: int public;
+        percent: int public;
+
+        // Tests started but not yet finished, and the most recent finisher.
+        running: string[] public;
+        last: string public;
+
+        init() is si
+    si
+
+    // Publishes run progress to a per-process pair of files under
+    // $XDG_RUNTIME_DIR/ghul-test/: `<pid>.json` holds the current snapshot,
+    // `<pid>.events` is an append-only log a watcher can tail. Both are
+    // best-effort — every operation is guarded, so a missing or unwritable
+    // state directory silently disables reporting rather than failing a run.
+    //
+    // All calls come from the main thread (tests are started and reaped
+    // there), so no synchronization is needed.
+    class PROGRESS_REPORTER is
+        _enabled: bool;
+
+        _snapshot_path: string;
+        _snapshot_temp_path: string;
+        _events_path: string;
+
+        _record: RUN_PROGRESS;
+        _running: MutableList[string];
+
+        _options: JsonSerializerOptions;
+
+        // Reporting is best-effort and silent, which makes a broken reporter
+        // indistinguishable from a disabled one. Set GHUL_TEST_PROGRESS_DEBUG
+        // to have the suppressed failure printed instead.
+        _debug: bool;
+
+        report_suppressed(context: string, ex: Exception) is
+            if _debug then
+                IO.Std.write_line("progress reporter disabled at {context}: {ex}");
+            fi
+        si
+
+        init(suites: Iterable[string]) is
+            _debug = System.Environment.get_environment_variable("GHUL_TEST_PROGRESS_DEBUG")?;
+
+            _running = LIST[string]();
+
+            // Fields are deliberately excluded: the record's members are
+            // properties, and including fields would emit each property's
+            // backing field alongside it.
+            _options = JsonSerializerOptions();
+
+            _record = RUN_PROGRESS();
+
+            _record.version = 1;
+            _record.state = "running";
+            _record.suites = suites | .collect_array();
+            _record.running = [];
+            _record.last = "";
+
+            try
+                _record.pid = System.Environment.process_id;
+                _record.cwd = System.Environment.current_directory;
+                _record.started_at = now();
+                _record.updated_at = _record.started_at;
+
+                let directory = get_state_directory();
+
+                if !directory? then
+                    return;
+                fi
+
+                Directory.create_directory(directory);
+
+                _snapshot_path = Path.join(directory, "{_record.pid}.json");
+                _snapshot_temp_path = "{_snapshot_path}.tmp";
+                _events_path = Path.join(directory, "{_record.pid}.events");
+
+                _enabled = true;
+            catch ex: Exception
+                _enabled = false;
+                report_suppressed("init", ex);
+            yrt
+
+            write_event("run", "");
+        si
+
+        // $XDG_RUNTIME_DIR is a tmpfs the session owns, cleared on logout, so
+        // status files never need collecting. Null disables reporting: the
+        // fallbacks (/tmp, the home directory) would leave litter behind.
+        get_state_directory() -> string? static is
+            if System.Environment.get_environment_variable("GHUL_TEST_NO_PROGRESS")? then
+                return null;
+            fi
+
+            let runtime_directory = System.Environment.get_environment_variable("XDG_RUNTIME_DIR");
+
+            if string.is_null_or_white_space(runtime_directory) then
+                return null;
+            fi
+
+            return Path.join(runtime_directory, "ghul-test");
+        si
+
+        now() -> long static =>
+            System.DateTimeOffset.utc_now.to_unix_time_milliseconds();
+
+        on_discovered(total: int) is
+            _record.total = total;
+            flush();
+        si
+
+        on_start(path: string) is
+            _running.add(path);
+            write_event("start", path);
+            flush();
+        si
+
+        on_finish(result: Result) is
+            let path = result.test.path;
+
+            _running.remove(path);
+
+            _record.completed = _record.completed + 1;
+
+            if result.is_pass then
+                _record.passed = _record.passed + 1;
+            elif result.is_fail then
+                _record.failed = _record.failed + 1;
+            else
+                _record.skipped = _record.skipped + 1;
+            fi
+
+            _record.last = path;
+
+            write_event(get_event_kind(result), path);
+            flush();
+        si
+
+        get_event_kind(result: Result) -> string static is
+            if result.is_pass then
+                return "pass";
+            elif result.is_fail then
+                return "fail";
+            fi
+
+            return "skip";
+        si
+
+        // Final snapshot, left in place so a consumer sampling after the run
+        // can still show the outcome. The state directory's own lifetime
+        // bounds how long it lingers.
+        close() is
+            _record.state = "done";
+            write_event("done", "");
+            flush();
+        si
+
+        flush() is
+            if !_enabled then
+                return;
+            fi
+
+            _record.updated_at = now();
+            _record.running = _running | .collect_array();
+
+            if _record.total > 0 then
+                _record.percent = 100 * _record.completed / _record.total;
+            fi
+
+            try
+                // Written aside and moved so a sampling consumer never reads a
+                // partial object.
+                File.write_all_text(_snapshot_temp_path, JsonSerializer.serialize[RUN_PROGRESS](_record, _options));
+                File.move(_snapshot_temp_path, _snapshot_path, true);
+            catch ex: Exception
+                _enabled = false;
+                report_suppressed("flush", ex);
+            yrt
+        si
+
+        write_event(kind: string, path: string) is
+            if !_enabled then
+                return;
+            fi
+
+            let suffix =
+                if string.is_null_or_empty(path) then
+                    "";
+                else
+                    " {path}";
+                fi;
+
+            try
+                File.append_all_text(
+                    _events_path,
+                    "{now()} {kind} {_record.completed}/{_record.total}{suffix}\n"
+                );
+            catch ex: Exception
+                _enabled = false;
+                report_suppressed("write_event", ex);
+            yrt
+        si
+    si
+si
