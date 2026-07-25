@@ -89,7 +89,6 @@ jobs:
         path: nupkg
 
     - name: Publish package to GitHub
-      if: ${{ github.actor != 'dependabot[bot]' }}
       run: dotnet nuget push ./nupkg/*.nupkg -k ${GITHUB_TOKEN} -s https://nuget.pkg.github.com/degory/index.json --skip-duplicate --no-symbols
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
