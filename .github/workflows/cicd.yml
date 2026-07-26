@@ -155,7 +155,7 @@ jobs:
         You run in parallel with CI. Whether the diff builds and passes tests is gated by CI before merge — that's not your job. Trust the diff as written.
 
         Read these files first, in order:
-        1. .github/claude-review.md — how to operate, severity bar, what to flag
+        1. .github/claude-review.md — what this repo is, and what to watch for in it
         2. GHUL.md — ghūl language reference (consult as needed while reading the diff)
 
         Post findings only to GitHub per the brief. Do not put review text in chat messages.
