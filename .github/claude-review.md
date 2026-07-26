@@ -66,8 +66,8 @@ Don't raise: style preferences the codebase doesn't share, speculative refactors
 ## ghūl idioms to know
 
 - `let x = e` defines an immutable local variable; `let x mut = e` makes it reassignable. There is no interior immutability — `let xs = LIST[int]()` still permits `xs.add(9)`. Never call these "bindings"; say "local variable".
-- Construct by calling the type: `Box(42)`, `LIST[int]()`. `new` is deprecated and its path has bugs.
-- `UPPER_CASE` for classes that are ever constructed, `PascalCase` only for pure-abstract bases, `snake_case` for members. .NET names arrive snake_cased.
+- Construct by calling the type: `BOX(42)`, `LIST[int]()`. `new` is deprecated and its path has bugs.
+- `UPPER_SNAKE_CASE` for concrete classes, structs, variants and enum members; `PascalCase` for namespaces, traits, abstract classes, unions and enums; `snake_case` for variables, functions, methods and properties. A class with only static members takes either. A leading underscore marks a member or type non-public. .NET names arrive snake_cased.
 - A bare or `public` member is an auto-property; `x: T field` is a real field. Struct property reads return copies, so mutating through one is silently lost.
 - String interpolation: `{` switches to expression context, where string literals nest normally — `"{g("hello")}"` is correct. Braces escape as `{{` / `}}`.
 
