@@ -47,10 +47,11 @@ Any mismatches cause a failure report containing a unified diff of the actual ve
 ## Command Line Usage
 
 ```text
-ghul-test [--use-dotnet-build] [--runtime-dll <path>] <test-folder> [...]
+ghul-test [--use-dotnet-build] [--compiler <command>] [--runtime-dll <path>] <test-folder> [...]
 ```
 
 - `--use-dotnet-build` – expects each test folder to be an MSBuild project. For ghūl projects the file should end with `.ghulproj`. The runner builds the project with `dotnet build` instead of invoking the compiler directly.
+- `--compiler <command>` – the command each test project is built with, supplied to MSBuild as the `GhulCompiler` property. A command containing no spaces must name an existing file; anything with arguments in it, such as `dotnet /path/to/ghul.dll`, is passed through as written. Takes precedence over the `GHUL_TEST_COMPILER` environment variable and over the publish directory described below. Only meaningful under `--use-dotnet-build` — the other modes invoke the compiler directly and resolve it themselves — so supplying it elsewhere is an error.
 - `--runtime-dll <path>` – use the supplied `ghul-runtime.dll` for compiled test binaries instead of the version that ships with `ghul-test`. The path must point to an existing file. Takes precedence over the `GHUL_RUNTIME_DLL` environment variable. Has no effect under `--use-dotnet-build`, which resolves the runtime via the test project's own `PackageReference`.
 - `<test-folder>` – one or more directories containing tests. Each is recursively searched for subdirectories with a `ghulflags` file if not using `--use-dotnet-build`.
 
@@ -59,6 +60,7 @@ Environment variables influence behaviour:
 - `HOST` and `TARGET` – specify the CLI used to run the compiler and the compiled binary (default `dotnet`).
 - `CI` – when set to `1` or `true`, enables CI mode. In this mode `ghul-runtime.dll` is taken from the test runner's own location unless overridden by `--runtime-dll` / `GHUL_RUNTIME_DLL`.
 - `GHUL_RUNTIME_DLL` – path to a `ghul-runtime.dll` to use for compiled test binaries, overriding the version that ships with `ghul-test`. Equivalent to passing `--runtime-dll`; the CLI flag wins if both are set.
+- `GHUL_TEST_COMPILER` – command each test project is built with under `--use-dotnet-build`. Equivalent to passing `--compiler`; the CLI flag wins if both are set.
 - `TEST_PROCESSES` – number of worker processes to use. If unset, a value derived from CPU count is used.
 
 The runner prints progress for each test and a final summary indicating total, enabled, passed and failed counts.
@@ -68,6 +70,18 @@ The runner prints progress for each test and a final summary indicating total, e
 When the compiler is invoked directly (the default and CI modes), the produced executable expects to find `ghul-runtime.dll` beside it. The runner therefore creates a symbolic link in the test directory pointing to the runtime library. This link is not needed when `--use-dotnet-build` is used. After the test completes successfully, the link is deleted during cleanup.
 
 By default the runtime DLL is sourced from the published compiler's directory (LOCAL mode) or the test runner's own install directory (CI mode). When the integration tests need to run against a runtime version other than the one `ghul-test` itself was packaged with — for example, when CI builds a compiler that depends on a newer `ghul.runtime` than the pinned `ghul.test` ships with — pass `--runtime-dll <path>` or set `GHUL_RUNTIME_DLL` to override the discovered location with an explicit DLL path.
+
+## Compiler Selection Under `--use-dotnet-build`
+
+Invoked directly, the runner knows exactly which compiler it is testing — the published one it found or was given. A `dotnet build` run does not: the project decides, and a project that leaves the decision to the .NET local tool manifest will build just as quietly against a published compiler as against the one being tested. A suite meant to exercise a compiler change can therefore pass without ever running it.
+
+So the runner chooses, in this order:
+
+1. `--compiler` / `GHUL_TEST_COMPILER`, if supplied.
+2. The compiler in the nearest `publish` directory at or above the working directory, if there is one. This is where a compiler being tested is normally published to, so it is preferred over the tool manifest.
+3. Otherwise nothing: the property is left alone and each project resolves the compiler for itself.
+
+Whichever applies is reported before the run starts. The choice is passed to MSBuild as the `GhulCompiler` property, through the environment, so a project that assigns `GhulCompiler` unconditionally in its own `PropertyGroup` overrides it — the `.ghulproj` files of a suite intended to test a compiler should leave the property unset.
 
 ## MSBuild Projects
 

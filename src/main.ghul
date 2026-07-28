@@ -41,6 +41,9 @@ namespace Tester is
             let runtime_dll_override mut =
                 System.Environment.get_environment_variable("GHUL_RUNTIME_DLL");
 
+            let compiler_override mut =
+                System.Environment.get_environment_variable("GHUL_TEST_COMPILER");
+
             let test_paths = new LIST[string]();
 
             let i mut = 0;
@@ -59,6 +62,15 @@ namespace Tester is
                     fi
 
                     runtime_dll_override = arguments[i];
+                elif arg =~ "--compiler" then
+                    i = i + 1;
+
+                    if i >= arguments.count then
+                        Std.write_line("--compiler requires a command argument");
+                        return 1;
+                    fi
+
+                    compiler_override = arguments[i];
                 else
                     test_paths.add(arg);
                 fi
@@ -70,10 +82,15 @@ namespace Tester is
 
             try
                 compiler_under_test.set_runtime_path(runtime_dll_override);
+                compiler_under_test.set_compiler_command(compiler_override);
             catch ex: Exception
                 Std.write_line(ex.message);
                 return 1;
             yrt
+
+            if run_mode == COMPILER_RUN_MODE.DOTNET then
+                report_compiler_under_test(compiler_under_test);
+            fi
 
             let queue = TEST_QUEUE(host, target, compiler_under_test, PROGRESS_REPORTER(test_paths));
 
@@ -100,6 +117,18 @@ namespace Tester is
             Std.write_line("{cast char(10060)} {queue.fail_count} tests failed {cast char(10060)}");
 
             return 1;
+        si
+
+        // Which compiler a `dotnet build` run reaches for is otherwise invisible
+        // -- a project whose compiler is left to the local tool manifest builds
+        // just as quietly with a published compiler as with the one being
+        // tested, so say which it is.
+        report_compiler_under_test(compiler_under_test: COMPILER_UNDER_TEST) static is
+            if let compiler_command = compiler_under_test.compiler_command then
+                Std.write_line("compiler under test: {compiler_command}");
+            else
+                Std.write_line("compiler under test: whatever each project resolves for itself");
+            fi
         si
 
         report_host_and_target(host: string, target: string) static is

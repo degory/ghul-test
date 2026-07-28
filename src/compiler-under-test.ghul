@@ -8,6 +8,8 @@ namespace Tester is
     use Collections.Iterable;
     use Collections.LIST;
 
+    use Pair = Collections.KeyValuePair;
+
     enum COMPILER_RUN_MODE is
         CI,
         LOCAL,
@@ -22,6 +24,7 @@ namespace Tester is
         _sdk_reference_path: string;
         _arguments: Iterable[string];
         _use_dotnet: bool;
+        _compiler_command: string?;
 
         init(run_mode: COMPILER_RUN_MODE) is
             _run_mode = run_mode;
@@ -29,6 +32,7 @@ namespace Tester is
             if _run_mode == COMPILER_RUN_MODE.DOTNET then
                 _executable = "dotnet";
                 _arguments = ["build"];
+                _compiler_command = discover_compiler_command();
             elif _run_mode == COMPILER_RUN_MODE.CI then
                 _executable = "dotnet";
                 _runtime_path = get_ghul_test_runtime_path();
@@ -59,7 +63,47 @@ namespace Tester is
 
             _runtime_path = Path.get_full_path(path);
         si
-        
+
+        // The command `dotnet build` runs to compile a test project, handed to
+        // MSBuild as the `GhulCompiler` property. Null means the property is
+        // left alone, so the project's own default applies -- for a project
+        // using the ghul.runtime targets, `dotnet ghul-compiler` from the local
+        // tool manifest.
+        compiler_command: string? => _compiler_command;
+
+        set_compiler_command(command: string?) is
+            if !command? \/ string.is_null_or_white_space(command) then
+                return;
+            fi
+
+            if _run_mode != COMPILER_RUN_MODE.DOTNET then
+                throw Exception("a compiler command can only be set for --use-dotnet-build runs");
+            fi
+
+            let trimmed = command.trim();
+
+            // A bare path is checked; anything with arguments in it (say
+            // `dotnet /path/to/ghul.dll`) is passed through as written.
+            if !trimmed.contains(" ") /\ !File.exists(trimmed) then
+                throw Exception("compiler not found: {trimmed}");
+            fi
+
+            _compiler_command = trimmed;
+        si
+
+        // A `publish` directory at or above the working directory is where the
+        // compiler being tested is published to, so prefer it over whatever the
+        // local tool manifest happens to pin.
+        discover_compiler_command() -> string? is
+            let publish = try_find_publish_directory(DirectoryInfo(Directory.get_current_directory()));
+
+            if !publish? then
+                return null;
+            fi
+
+            return try_find_published_compiler(publish);
+        si
+
         run_compiler(runner: RUNNER, test: TEST) -> bool is
             let arguments = new LIST[string]();
 
@@ -74,13 +118,28 @@ namespace Tester is
             let result mut = -1;
 
             if _run_mode == COMPILER_RUN_MODE.DOTNET then
-                result = runner.run(
-                    _executable,
-                    arguments,
-                    5000,
-                    "compiler.out", // MSBuild coerces stderr output to stdout
-                    null
-                );
+                if _compiler_command? then
+                    // MSBuild reads environment variables as properties, so
+                    // this sets `GhulCompiler` for the build. Passing it on the
+                    // command line instead would not survive a value containing
+                    // spaces.
+                    result = runner.run(
+                        _executable,
+                        arguments,
+                        5000,
+                        "compiler.out", // MSBuild coerces stderr output to stdout
+                        null,
+                        [Pair[string, string]("GhulCompiler", _compiler_command)]
+                    );
+                else
+                    result = runner.run(
+                        _executable,
+                        arguments,
+                        5000,
+                        "compiler.out", // MSBuild coerces stderr output to stdout
+                        null
+                    );
+                fi
             else
                 arguments.add_range(["--sdk-ref-path", _sdk_reference_path]);
                 arguments.add_range(test.source_files);
@@ -141,37 +200,50 @@ namespace Tester is
             ) != 0;
         si
 
-        find_publish_directory() -> string =>
-            find_publish_directory(new DirectoryInfo(Directory.get_current_directory()));
+        find_publish_directory() -> string is
+            let result = try_find_publish_directory(DirectoryInfo(Directory.get_current_directory()));
 
-        find_publish_directory(from: DirectoryInfo) -> string is
-            if !from? then
-                throw new Exception("could not find a publish directory");
+            if !result? then
+                throw Exception("could not find a publish directory");
             fi
-            
+
+            return result;
+        si
+
+        try_find_publish_directory(from: DirectoryInfo?) -> string? is
+            if !from? then
+                return null;
+            fi
+
             let publish = from.get_directories("publish") | .first();
 
-            if publish.has_value then
-                return publish.value.full_name;
+            if publish? then
+                return publish.full_name;
             fi
 
-            return find_publish_directory(from.parent);
+            return try_find_publish_directory(from.parent);
         si
 
         find_published_compiler() -> string is
-            let result mut = get_published_compiler_path("ghul");
+            let result = try_find_published_compiler(_publish);
 
-            if File.exists(result) then
-                return result;
+            if !result? then
+                throw Exception("Could not find published compiler: {get_published_compiler_path("[ghul|ghul.exe]")}");
             fi
 
-            result = get_published_compiler_path("ghul.exe");
+            return result;
+        si
 
-            if File.exists(result) then
-                return result;
-            fi
+        try_find_published_compiler(publish: string) -> string? is
+            for name in ["ghul", "ghul.exe"] do
+                let candidate = Path.join(publish, name);
 
-            throw new Exception("Could not find published compiler: {get_published_compiler_path("[ghul|ghul.exe]")}");
+                if File.exists(candidate) then
+                    return candidate;
+                fi
+            od
+
+            return null;
         si
         
         get_published_compiler_path(file_name: string) -> string =>
