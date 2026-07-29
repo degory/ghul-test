@@ -1,0 +1,28 @@
+namespace Tester is
+    use Collections.Iterable;
+    use Collections.List;
+    use Collections.LIST;
+
+    class TAG_FILTER is
+        _requested: List[string];
+
+        is_empty: bool => _requested.count == 0;
+
+        init(requested: Iterable[string]) is
+            _requested = LIST[string](requested);
+        si
+
+        matches(tags: Iterable[string]) -> bool is
+            if is_empty then
+                return true;
+            fi
+
+            return tags | .any(tag => _requested | .any(r => r =~ tag));
+        si
+
+        parse_tags(content: string) -> Iterable[string] static =>
+            content.split([' ', '\t', '\n', '\r']) |
+                .map(t => t.trim()) |
+                .filter(t => t.length > 0);
+    si
+si
