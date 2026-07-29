@@ -61,10 +61,11 @@ namespace Tests is
 
         get_mock_TEST() -> TEST is
             return NSubstitute.Substitute.`for`[TEST]([
-                "path/to/test",  // : string, 
+                "path/to/test",  // : string,
                 ["file_1.ghul", "file_2.ghul"], // : Iterable[string],
                 "--stuff", // : string,
-                false // : bool        
+                false, // : bool
+                new LIST[string]() // : Iterable[string]
             ]);
         si
         

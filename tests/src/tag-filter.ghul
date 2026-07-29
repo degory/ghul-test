@@ -1,0 +1,64 @@
+namespace Tests is
+    use Collections.LIST;
+
+    use Tester;
+
+    class TAG_FILTER_Should is
+        @test()
+
+        init() is si
+
+        TAG_FILTER__matches__given_no_requested_tags__matches_anything() is
+            @test()
+
+            let filter = TAG_FILTER(new LIST[string]());
+
+            should(filter.is_empty).be_true(null, null);
+            should(filter.matches(new LIST[string]())).be_true(null, null);
+            should(filter.matches(["smoke"])).be_true(null, null);
+        si
+
+        TAG_FILTER__matches__given_requested_tags__matches_test_with_shared_tag() is
+            @test()
+
+            let filter = TAG_FILTER(["smoke", "narrowing"]);
+
+            should(filter.matches(["narrowing", "unions"])).be_true(null, null);
+        si
+
+        TAG_FILTER__matches__given_requested_tags__does_not_match_test_with_no_shared_tag() is
+            @test()
+
+            let filter = TAG_FILTER(["smoke"]);
+
+            should(filter.matches(["narrowing", "unions"])).be_false(null, null);
+        si
+
+        TAG_FILTER__matches__given_requested_tags__does_not_match_untagged_test() is
+            @test()
+
+            let filter = TAG_FILTER(["smoke"]);
+
+            should(filter.matches(new LIST[string]())).be_false(null, null);
+        si
+
+        TAG_FILTER__parse_tags__splits_on_whitespace_and_trims_and_drops_empties() is
+            @test()
+
+            let tags = TAG_FILTER.parse_tags(" smoke  narrowing\nunions \t ") | .collect_list();
+
+            should(tags.count).be(3, null, null);
+            should(tags.contains("smoke")).be_true(null, null);
+            should(tags.contains("narrowing")).be_true(null, null);
+            should(tags.contains("unions")).be_true(null, null);
+        si
+
+        TAG_FILTER__parse_tags__given_empty_content__returns_no_tags() is
+            @test()
+
+            let tags = TAG_FILTER.parse_tags("") | .collect_list();
+
+            should(tags.count).be(0, null, null);
+        si
+    si
+si

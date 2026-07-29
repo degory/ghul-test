@@ -21,6 +21,8 @@ namespace Tester is
 
         _progress_reporter: PROGRESS_REPORTER;
 
+        _tag_filter: TAG_FILTER;
+
         progress: int;
         count: int => _tests.count;
 
@@ -32,12 +34,14 @@ namespace Tester is
             host_cli: string,
             target_cli: string,
             compiler_under_test: COMPILER_UNDER_TEST,
-            progress_reporter: PROGRESS_REPORTER)
+            progress_reporter: PROGRESS_REPORTER,
+            tag_filter: TAG_FILTER)
         is
             _host_cli = host_cli;
             _target_cli = target_cli;
             _compiler_under_test = compiler_under_test;
             _progress_reporter = progress_reporter;
+            _tag_filter = tag_filter;
 
             let requested_test_processes = System.Environment.get_environment_variable("TEST_PROCESSES");
 
@@ -138,6 +142,12 @@ namespace Tester is
                 return;
             fi
 
+            let tags = get_tags(path);
+
+            if !_tag_filter.matches(tags) then
+                return;
+            fi
+
             let flags = File.read_all_text(flags_path);
             let source_files = get_source_files(path);
             let is_build_failure_Expected = File.exists("{path}/fail.expected");
@@ -147,7 +157,8 @@ namespace Tester is
                     path,
                     source_files,
                     flags,
-                    is_build_failure_Expected
+                    is_build_failure_Expected,
+                    tags
                 )
             );
         si
@@ -157,7 +168,17 @@ namespace Tester is
         si
 
         get_source_files(path: string) -> Iterable[string] =>
-            Directory.get_files(path, "*.ghul") | 
+            Directory.get_files(path, "*.ghul") |
                 .map(path: string => Path.get_file_name(path));
+
+        get_tags(path: string) -> Iterable[string] is
+            let tags_path = "{path}/tags";
+
+            if !File.exists(tags_path) then
+                return new LIST[string]();
+            fi
+
+            return TAG_FILTER.parse_tags(File.read_all_text(tags_path)) | .collect_list();
+        si
     si
 si
