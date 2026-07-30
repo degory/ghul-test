@@ -10,6 +10,7 @@ on:
         required: true
 
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
   push:
     branches: [master, main]
 
@@ -135,7 +136,7 @@ jobs:
 
   code_review:
     name: Code review
-    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository }}
     permissions:
       contents: read
       pull-requests: write
