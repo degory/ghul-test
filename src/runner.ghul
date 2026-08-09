@@ -142,7 +142,17 @@ namespace Tester is
             run_diff("test output", "run.expected", "run.out", "run.diff", true);
         si
 
+        // A passing test's artifacts are deleted, so what a green run
+        // leaves behind is only the failures. That is the wrong way
+        // round for anything that wants to inspect what was built —
+        // auditing every emitted assembly, or looking at a test that
+        // passes but is suspected of passing for the wrong reason.
+        // GHUL_TEST_KEEP_ARTIFACTS leaves them in place.
         clean_up() is
+            if System.Environment.get_environment_variable("GHUL_TEST_KEEP_ARTIFACTS")? then
+                return;
+            fi
+
             if !_failure? then
                 delete_files([
                     "binary.exe",

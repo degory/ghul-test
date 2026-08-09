@@ -64,6 +64,7 @@ Environment variables influence behaviour:
 - `GHUL_RUNTIME_DLL` – path to a `ghul-runtime.dll` to use for compiled test binaries, overriding the version that ships with `ghul-test`. Equivalent to passing `--runtime-dll`; the CLI flag wins if both are set.
 - `GHUL_TEST_COMPILER` – command each test project is built with under `--use-dotnet-build`. Equivalent to passing `--compiler`; the CLI flag wins if both are set.
 - `TEST_PROCESSES` – number of worker processes to use. If unset, a value derived from CPU count is used.
+- `GHUL_TEST_KEEP_ARTIFACTS` – when set, keep every test's build and run artifacts instead of deleting them on success. A passing test normally cleans up after itself, so a green run leaves only the failures behind; set this to inspect what was actually built — to audit every emitted assembly, or to look at a test that passes but is suspected of passing for the wrong reason.
 
 The runner prints progress for each test and a final summary indicating total, enabled, passed and failed counts.
 
