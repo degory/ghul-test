@@ -17,7 +17,7 @@ namespace Tester is
             Std.output_encoding = new UTF8Encoding();
 
             if arguments.count == 0 then
-                Std.write_line("usage: ghul-test [--tag <name>]... <test-folder>...");
+                Std.write_line("usage: ghul-test [--tag <name>]... [--not-tag <name>]... <test-folder>...");
                 return 1;
             fi
             
@@ -46,6 +46,7 @@ namespace Tester is
 
             let test_paths = new LIST[string]();
             let requested_tags = new LIST[string]();
+            let excluded_tags = new LIST[string]();
 
             let i mut = 0;
 
@@ -81,6 +82,15 @@ namespace Tester is
                     fi
 
                     requested_tags.add(arguments[i]);
+                elif arg =~ "--not-tag" then
+                    i = i + 1;
+
+                    if i >= arguments.count then
+                        Std.write_line("--not-tag requires a tag name argument");
+                        return 1;
+                    fi
+
+                    excluded_tags.add(arguments[i]);
                 else
                     test_paths.add(arg);
                 fi
@@ -102,10 +112,14 @@ namespace Tester is
                 report_compiler_under_test(compiler_under_test);
             fi
 
-            let tag_filter = TAG_FILTER(requested_tags);
+            let tag_filter = TAG_FILTER(requested_tags, excluded_tags);
 
-            if !tag_filter.is_empty then
+            if requested_tags.count > 0 then
                 Std.write_line("filtering to tests tagged: {string.join(", ", requested_tags)}");
+            fi
+
+            if excluded_tags.count > 0 then
+                Std.write_line("excluding tests tagged: {string.join(", ", excluded_tags)}");
             fi
 
             let queue = TEST_QUEUE(host, target, compiler_under_test, PROGRESS_REPORTER(test_paths), tag_filter);

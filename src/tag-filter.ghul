@@ -3,22 +3,34 @@ namespace Tester is
     use Collections.List;
     use Collections.LIST;
 
+    // Selects tests by tag. A test runs when it carries at least one requested
+    // tag - or when none were requested - and carries none of the excluded
+    // ones. Exclusion wins, so a test matching both is skipped.
     class TAG_FILTER is
         _requested: List[string];
+        _excluded: List[string];
 
-        is_empty: bool => _requested.count == 0;
+        is_empty: bool => _requested.count == 0 /\ _excluded.count == 0;
 
-        init(requested: Iterable[string]) is
+        init(requested: Iterable[string], excluded: Iterable[string]) is
             _requested = LIST[string](requested);
+            _excluded = LIST[string](excluded);
         si
 
         matches(tags: Iterable[string]) -> bool is
-            if is_empty then
+            if _excluded.count > 0 /\ _has_any(tags, _excluded) then
+                return false;
+            fi
+
+            if _requested.count == 0 then
                 return true;
             fi
 
-            return tags | .any(tag => _requested | .any(r => r =~ tag));
+            return _has_any(tags, _requested);
         si
+
+        _has_any(tags: Iterable[string], wanted: List[string]) -> bool =>
+            tags | .any(tag => wanted | .any(w => w =~ tag));
 
         parse_tags(content: string) -> Iterable[string] static =>
             content.split([' ', '\t', '\n', '\r']) |

@@ -30,7 +30,7 @@ Optional expectation and configuration files may also be present:
 | `il.expected` | Expected IL disassembly output (from the `il.out` file). |
 | `ghulflags` | Mandatory file containing additional command line flags for the compiler. |
 | `disabled*` | Any file beginning with `disabled` causes the test to be skipped. |
-| `tags` | Zero or more whitespace-separated tag names (spaces or newlines), used to select a subset of tests with `--tag`. A test with no `tags` file has no tags. |
+| `tags` | Zero or more whitespace-separated tag names (spaces or newlines), used to select a subset of tests with `--tag` / `--not-tag`. A test with no `tags` file has no tags. |
 
 A basic “hello world” example can be found in the `integration-tests` folder of this repository.
 
@@ -48,13 +48,14 @@ Any mismatches cause a failure report containing a unified diff of the actual ve
 ## Command Line Usage
 
 ```text
-ghul-test [--use-dotnet-build] [--compiler <command>] [--runtime-dll <path>] [--tag <name>]... <test-folder> [...]
+ghul-test [--use-dotnet-build] [--compiler <command>] [--runtime-dll <path>] [--tag <name>]... [--not-tag <name>]... <test-folder> [...]
 ```
 
 - `--use-dotnet-build` – expects each test folder to be an MSBuild project. For ghūl projects the file should end with `.ghulproj`. The runner builds the project with `dotnet build` instead of invoking the compiler directly.
 - `--compiler <command>` – the command each test project is built with, supplied to MSBuild as the `GhulCompiler` property. A command containing no spaces must name an existing file; anything with arguments in it, such as `dotnet /path/to/ghul.dll`, is passed through as written. Takes precedence over the `GHUL_TEST_COMPILER` environment variable and over the publish directory described below. Only meaningful under `--use-dotnet-build` — the other modes invoke the compiler directly and resolve it themselves — so supplying it elsewhere is an error.
 - `--runtime-dll <path>` – use the supplied `ghul-runtime.dll` for compiled test binaries instead of the version that ships with `ghul-test`. The path must point to an existing file. Takes precedence over the `GHUL_RUNTIME_DLL` environment variable. Has no effect under `--use-dotnet-build`, which resolves the runtime via the test project's own `PackageReference`.
 - `--tag <name>` – restrict discovery to tests whose `tags` file contains at least one of the given names. Repeatable; the requested tags are matched as a union (a test runs if it carries *any* of them), not an intersection. A test with no `tags` file is excluded whenever any `--tag` is given. Omit entirely to run every discovered test regardless of tags, which is unchanged from before this flag existed.
+- `--not-tag <name>` – exclude tests whose `tags` file contains any of the given names. Repeatable, and matched as a union in the same way. A test with no `tags` file is never excluded by it. Exclusion is applied before inclusion and wins over it, so a test carrying both a requested and an excluded tag is skipped. Combines with `--tag`: `--tag generics --not-tag async` runs the generics tests that are not also async ones.
 - `<test-folder>` – one or more directories containing tests. Each is recursively searched for subdirectories with a `ghulflags` file if not using `--use-dotnet-build`.
 
 Environment variables influence behaviour:
