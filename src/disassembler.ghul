@@ -31,7 +31,12 @@ namespace Tester is
                     throw System.Exception("disassembler not found: {trimmed}");
                 fi
 
-                _executable = trimmed;
+                // Resolved here, because it is checked against this
+                // directory and then run from another: each test is
+                // launched with its own folder as the working directory,
+                // so a relative path would name a different file there,
+                // or nothing at all.
+                _executable = Path.get_full_path(trimmed);
             else
                 _executable = _discover();
             fi
@@ -48,7 +53,7 @@ namespace Tester is
             let from_environment = System.Environment.get_environment_variable("GHUL_TEST_ILDASM");
 
             if !string.is_null_or_white_space(from_environment) /\ File.exists(from_environment) then
-                return from_environment;
+                return Path.get_full_path(from_environment);
             fi
 
             let beside_tool = _beside_tool();

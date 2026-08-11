@@ -284,5 +284,26 @@ fi
 
 echo integration-tests/il-item-typo: PASS
 
+echo integration-tests/ildasm-override-relative...
+
+# A relative --ildasm path is checked against this directory and then run from
+# another: every test is launched with its own folder as the working
+# directory. Unresolved, it would name a different file there, or nothing.
+TEST_PROCESSES=1 CI=1 dotnet run -- --ildasm ./bin/Debug/net10.0/runtimes/linux-x64/native/ildasm integration-tests/il-expected | tee actual-output
+
+if [ "${PIPESTATUS[0]}" != "0" ]; then
+    echo integration-tests/ildasm-override-relative unexpectedly failed
+
+    exit 1
+fi
+
+if ! diff integration-tests/il-expected/expected-output actual-output ; then
+    echo integration-tests/ildasm-override-relative output did not match expected output
+
+    exit 1
+fi
+
+echo integration-tests/ildasm-override-relative: PASS
+
 
 exit 0
