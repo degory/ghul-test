@@ -241,5 +241,48 @@ fi
 
 echo integration-tests/il-item-missing: PASS
 
+echo integration-tests/il-item-property...
+
+# An il.item naming a field or property is a documented use, and the enclosing
+# class is written out around it, so the check that the item was found has to
+# accept a member directive rather than only a method.
+TEST_PROCESSES=1 CI=1 dotnet run integration-tests/il-item-property | tee actual-output
+
+if [ "${PIPESTATUS[0]}" != "0" ]; then
+    echo integration-tests/il-item-property unexpectedly failed
+
+    exit 1
+fi
+
+if ! diff integration-tests/il-item-property/expected-output actual-output ; then
+    echo integration-tests/il-item-property output did not match expected output
+
+    exit 1
+fi
+
+echo integration-tests/il-item-property: PASS
+
+
+echo integration-tests/il-item-typo...
+
+# A member that does not exist on a type that does. The enclosing class is
+# written out either way, so this is the case a check for the class alone
+# would wave through.
+TEST_PROCESSES=1 CI=1 dotnet run integration-tests/il-item-typo | tee actual-output
+
+if [ "${PIPESTATUS[0]}" != "1" ]; then
+    echo integration-tests/il-item-typo did not exit 1
+
+    exit 1
+fi
+
+if ! grep -q "which the emitted assembly does not contain" actual-output ; then
+    echo integration-tests/il-item-typo did not report the missing member
+
+    exit 1
+fi
+
+echo integration-tests/il-item-typo: PASS
+
 
 exit 0

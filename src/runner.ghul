@@ -289,7 +289,7 @@ namespace Tester is
             // says nothing about what it could not find, and exits zero.
             // Captured as a snapshot that is a test asserting nothing
             // about the construct it names, and passing for good.
-            if item? /\ !_names_a_member(raw_path) then
+            if item? /\ !_contains_item(raw_path, item) then
                 add_fail("il.item names '{item}', which the emitted assembly does not contain");
 
                 File.delete(raw_path);
@@ -304,11 +304,29 @@ namespace Tester is
             normalize_paths("il.out");
         si
 
-        _names_a_member(raw_path: string) -> bool static is
+        // Scoping to something absent is answered with silence and a
+        // zero exit, so what came back has to be checked against what
+        // was asked for. A named member is the sharper case: the
+        // enclosing class is written out whether or not the member was
+        // found, so an item naming one that does not exist yields a
+        // class shell with nothing in it, which a check for the class
+        // alone would accept.
+        _contains_item(raw_path: string, item: string) -> bool static is
+            let wants_member = item.contains("::");
+
             for line in File.read_all_lines(raw_path) do
                 let trimmed = line.trim();
 
-                if trimmed.starts_with(".class") \/ trimmed.starts_with(".method") then
+                if wants_member then
+                    if
+                        trimmed.starts_with(".method") \/
+                        trimmed.starts_with(".field") \/
+                        trimmed.starts_with(".property") \/
+                        trimmed.starts_with(".event")
+                    then
+                        return true;
+                    fi
+                elif trimmed.starts_with(".class") then
                     return true;
                 fi
             od
