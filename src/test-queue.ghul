@@ -10,19 +10,17 @@ namespace Tester is
     use Collections.MutableList;
     use Collections.LIST;
 
-    class TEST_QUEUE is
-        _host_cli: string;
-        _target_cli: string;
-        _compiler_under_test: COMPILER_UNDER_TEST;
-        _disassembler: DISASSEMBLER;
-
+    class TEST_QUEUE(
+        host_cli: string private,
+        target_cli: string private,
+        compiler_under_test: COMPILER_UNDER_TEST private,
+        disassembler: DISASSEMBLER private,
+        progress_reporter: PROGRESS_REPORTER private,
+        tag_filter: TAG_FILTER private
+    ) is
         _task_queue: TASK_QUEUE;
 
         _tests: MutableList[TEST];
-
-        _progress_reporter: PROGRESS_REPORTER;
-
-        _tag_filter: TAG_FILTER;
 
         progress: int;
         count: int => _tests.count;
@@ -31,21 +29,7 @@ namespace Tester is
         pass_count: int => _tests | .filter(t => t.has_passed).count();
         fail_count: int => _tests | .filter(t => t.has_failed).count();
 
-        init(
-            host_cli: string,
-            target_cli: string,
-            compiler_under_test: COMPILER_UNDER_TEST,
-            disassembler: DISASSEMBLER,
-            progress_reporter: PROGRESS_REPORTER,
-            tag_filter: TAG_FILTER)
-        is
-            _host_cli = host_cli;
-            _target_cli = target_cli;
-            _compiler_under_test = compiler_under_test;
-            _disassembler = disassembler;
-            _progress_reporter = progress_reporter;
-            _tag_filter = tag_filter;
-
+        init(..) is
             let requested_test_processes = System.Environment.get_environment_variable("TEST_PROCESSES");
 
             let actual_test_processes: int mut;
@@ -62,23 +46,21 @@ namespace Tester is
                 fi
             fi
             
-            _task_queue = new TASK_QUEUE(actual_test_processes);
+            _task_queue = TASK_QUEUE(actual_test_processes);
 
             Std.write_line("using {actual_test_processes} processes to run tests");
 
-            _tests = new LIST[TEST]();
+            _tests = LIST[TEST]();
         si
 
-        run_queued_tests() -> Iterable[Result] is
-            let i = 0;
-
+        run_queued_tests() is
             _progress_reporter.on_discovered(count);
 
             report_missing_disassembler();
 
             for test in _tests do
                 let runner =
-                    new RUNNER(
+                    RUNNER(
                         _host_cli,
                         _target_cli,
                         _compiler_under_test,
@@ -123,7 +105,7 @@ namespace Tester is
             try                
                 try_queue_test(path);
 
-                let entries = new LIST[string](Directory.get_directories(path));
+                let entries = LIST[string](Directory.get_directories(path));
                 
                 entries.sort();
 
@@ -156,14 +138,14 @@ namespace Tester is
 
             let flags = File.read_all_text(flags_path);
             let source_files = get_source_files(path);
-            let is_build_failure_Expected = File.exists("{path}/fail.expected");
+            let is_build_failure_expected = File.exists("{path}/fail.expected");
 
             queue_test(
-                new TEST(
+                TEST(
                     path,
                     source_files,
                     flags,
-                    is_build_failure_Expected,
+                    is_build_failure_expected,
                     tags
                 )
             );
@@ -196,13 +178,13 @@ namespace Tester is
 
         get_source_files(path: string) -> Iterable[string] =>
             Directory.get_files(path, "*.ghul") |
-                .map(path: string => Path.get_file_name(path));
+                .map(path: string => Path.get_file_name(path)!);
 
         get_tags(path: string) -> Iterable[string] is
             let tags_path = "{path}/tags";
 
             if !File.exists(tags_path) then
-                return new LIST[string]();
+                return LIST[string]();
             fi
 
             return TAG_FILTER.parse_tags(File.read_all_text(tags_path)) | .collect_list();

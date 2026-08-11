@@ -1,43 +1,25 @@
 namespace Tester is
     use Collections.Iterable;
-    
-    class TEST is
-        path: string;
-        source_files: Iterable[string];
-        flags: string;
 
-        is_build_fail_expected: bool;
-        tags: Iterable[string];
-
+    class TEST(
+        path: string,
+        source_files: Iterable[string],
+        flags: string,
+        is_build_fail_expected: bool,
+        tags: Iterable[string]
+    ) is
         has_executed: bool => result? /\ result.is_executed;
         has_passed: bool => result? /\ result.is_pass;
         has_failed: bool => result? /\ result.is_fail;
 
-        result: Result public;
-
-        init(
-            path: string,
-            source_files: Iterable[string],
-            flags: string,
-            is_build_fail_expected: bool,
-            tags: Iterable[string]
-        )
-        is
-            self.path = path;
-            self.source_files = source_files;
-            self.flags = flags;
-            self.is_build_fail_expected = is_build_fail_expected;
-            self.tags = tags;
-        si
+        result: Result? public;
 
         to_string() -> string is
-            if result? then
-                return result.format(path);  
-            else
-                return "no result: {path}";
+            if let self.result then
+                return result.format(path);
             fi
-            
-            return path;
-        si  
+
+            return "no result: {path}";
+        si
     si
 si

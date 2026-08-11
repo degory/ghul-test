@@ -4,21 +4,17 @@ namespace Tester is
     use Collections.Iterable;
     use Collections.LIST;
 
-    class TASK_QUEUE is
-        _max_tasks: int;
-
+    class TASK_QUEUE(max_tasks: int private) is
         _running_tasks: LIST[Tasks.TASK[Result]];
 
-        init(max_tasks: int) is
-            _max_tasks = max_tasks;
-
-            _running_tasks = new LIST[Tasks.TASK[Result]](max_tasks);
+        init(..) is
+            _running_tasks = LIST[Tasks.TASK[Result]](max_tasks);
         si
 
         queue(task: () -> Result) -> Iterable[Result] is
             let result = wait_any();
 
-            let new_task = new Tasks.TASK[Result](task);
+            let new_task = Tasks.TASK[Result](task);
 
             new_task.start();
 
@@ -27,7 +23,7 @@ namespace Tester is
             return result;
         si
 
-        drain() -> Iterable[Result] is
+        drain() -> Iterable[Result]? is
             if _running_tasks.count == 0 then
                 return null;
             fi
@@ -39,7 +35,7 @@ namespace Tester is
         wait_all() -> Iterable[Result] => wait(true);
 
         wait(all: bool) -> Iterable[Result] is
-            let result = new LIST[Result]();
+            let result = LIST[Result]();
 
             if !all /\ _running_tasks.count < _max_tasks then
                 return result;
@@ -47,7 +43,7 @@ namespace Tester is
 
             Tasks.TASK.wait_any(_running_tasks| .map(t -> Tasks.TASK => t).collect_array());
 
-            let new_tasks = new LIST[Tasks.TASK[Result]]();
+            let new_tasks = LIST[Tasks.TASK[Result]]();
 
             for task in _running_tasks do
                 if task.is_completed then

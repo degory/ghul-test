@@ -22,34 +22,21 @@ namespace Tester is
     use System.Text.RegularExpressions.Regex;
     use System.Text.RegularExpressions.RegexOptions;
 
-    class RUNNER is
-        _collate_environment: MutableMap[string,string] static;
+    class RUNNER(
+        host_cli: string private,
+        target_cli: string private,
+        compiler_under_test: COMPILER_UNDER_TEST private,
+        disassembler: DISASSEMBLER private,
+        test: TEST private
+    ) is
+        _collate_environment: MutableMap[string,string]? static;
 
-        _host_cli: string;
-        _target_cli: string;
+        _failure: FAILURE?;
 
-        _failure: FAILURE;
-        _compiler_under_test: COMPILER_UNDER_TEST;
-        _disassembler: DISASSEMBLER;
-
-        _test: TEST;
-
-        init(
-            host_cli: string,
-            target_cli: string,
-            compiler_under_test: COMPILER_UNDER_TEST,
-            disassembler: DISASSEMBLER,
-            test: TEST
-        ) is
-            _host_cli = host_cli;
-            _target_cli = target_cli;
-            _compiler_under_test = compiler_under_test;
-            _disassembler = disassembler;
-            _test = test;
-
+        init(..) is
             if !_collate_environment? then
-                _collate_environment = new MAP[string,string]();
-                _collate_environment.add("LC_COLLATE", "C");                    
+                _collate_environment = MAP[string,string]();
+                _collate_environment.add("LC_COLLATE", "C");
             fi
         si
 
@@ -57,7 +44,7 @@ namespace Tester is
             if _failure? then
                 return _failure;
             else
-                return new PASS(_test);
+                return PASS(_test);
             fi
         si
 
@@ -73,7 +60,7 @@ namespace Tester is
         run_test() -> Result is
             try
                 if Directory.get_files(_test.path, "disabled*")| .count() > 0 then
-                    return new SKIP(_test);
+                    return SKIP(_test);
                 fi
 
                 _run_test();
@@ -84,7 +71,7 @@ namespace Tester is
 
                 return get_result();
             catch ex: Exception
-                return new FAILURE(_test, ex.message, ex.stack_trace);
+                return FAILURE(_test, ex.message, ex.stack_trace);
             yrt
         si
 
@@ -495,8 +482,8 @@ namespace Tester is
             path: string,
             arguments: Iterable[string],
             timeout: int,
-            out_file: string,
-            err_file: string
+            out_file: string?,
+            err_file: string?
         ) -> int => 
             run(path, arguments, timeout, out_file, err_file, null);
 
@@ -504,9 +491,9 @@ namespace Tester is
             path: string,
             arguments: Iterable[string],
             timeout: int,
-            out_file: string,
-            err_file: string,
-            environment: Iterable[Pair[string,string]]
+            out_file: string?,
+            err_file: string?,
+            environment: Iterable[Pair[string,string]]?
         ) -> int
         is
             let process = start(path, arguments, environment);
@@ -517,8 +504,8 @@ namespace Tester is
         start(path: string, arguments: Iterable[string]) -> Process =>
             start(path, arguments, null);
 
-        start(path: string, arguments: Iterable[string], environment: Iterable[Pair[string,string]]) -> Process is
-            let start_info = new System.Diagnostics.ProcessStartInfo();
+        start(path: string, arguments: Iterable[string], environment: Iterable[Pair[string,string]]?) -> Process is
+            let start_info = System.Diagnostics.ProcessStartInfo();
 
             start_info.file_name = path;
 
@@ -530,19 +517,14 @@ namespace Tester is
                 od                        
             fi
 
-            let arguments_string = new StringBuilder();
-
-            if arguments? then                
-                start_info.arguments =
-                    arguments |
-                        .filter(a => a?)
-                        .map(arg => 
-                            arg
-                                // FIXME: not convinced either of these are necessary
-                                .replace("\\", "\\\\")
-                                .replace("\"", "\"\""))
-                        .to_string(" ");
-            fi
+            start_info.arguments =
+                arguments |
+                    .map(arg =>
+                        arg
+                            // FIXME: not convinced either of these are necessary
+                            .replace("\\", "\\\\")
+                            .replace("\"", "\"\""))
+                    .to_string(" ");
 
             start_info.working_directory = _test.path;
 
@@ -552,14 +534,14 @@ namespace Tester is
 
             let result = Process.start(start_info);
 
-            if result == null then
-                throw new Exception("failed to start process: {path} {start_info.arguments}");
+            if !result? then
+                throw Exception("failed to start process: {path} {start_info.arguments}");
             fi
             
             return result;
         si
 
-        wait(process: Process, timeout: int, out_file_name: string, err_file_name: string) -> int is
+        wait(process: Process, timeout: int, out_file_name: string?, err_file_name: string?) -> int is
             if out_file_name? then
                 let stdout = process.standard_output.read_to_end();
                 write_all_text(out_file_name, stdout);
@@ -579,17 +561,17 @@ namespace Tester is
             add_fail(message, null);
         si
         
-        add_fail(message: string, file_name: string) is
+        add_fail(message: string, file_name: string?) is
             let details: DETAILS mut;
 
             if file_name? then
-                details = new DETAILS(message, read_all_text_quiet(file_name));
+                details = DETAILS(message, read_all_text_quiet(file_name));
             else
-                details = new DETAILS(message);                
+                details = DETAILS(message);                
             fi
 
             if !_failure? then
-                _failure = new FAILURE(_test, details);
+                _failure = FAILURE(_test, details);
             else
                 _failure.add(details);
             fi

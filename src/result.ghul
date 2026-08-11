@@ -7,7 +7,7 @@ namespace Tester is
     use Collections.MutableList;
     use Collections.LIST;
 
-    class Result is
+    class Result abstract is
         test: TEST;
 
         _progress: int;
@@ -24,20 +24,20 @@ namespace Tester is
         progress_string: string => "{progress.to_string().pad_left(2)}%";
 
         is_pass: bool is
-            throw new System.NotImplementedException();            
+            throw System.NotImplementedException();            
         si
 
         is_fail: bool is
-            throw new System.NotImplementedException();            
+            throw System.NotImplementedException();            
         si
 
         is_executed: bool => is_pass \/ is_fail;
 
         head: string is
-            throw new System.NotImplementedException();
+            throw System.NotImplementedException();
         si
         
-        body: string => null;
+        body: string? => null;
 
         init(test: TEST) is
             self.test = test;
@@ -80,7 +80,7 @@ namespace Tester is
         is_fail: bool => true;
         head: string => "❌ fail";
 
-        body: string is
+        body: string? is
             if _details.count == 0 then
                 return null;
             elif _details.count == 1 then
@@ -92,7 +92,7 @@ namespace Tester is
 
         init(test: TEST) is
             super.init(test);
-            _details = new LIST[DETAILS]();
+            _details = LIST[DETAILS]();
         si
 
         init(test: TEST, details: DETAILS) is
@@ -101,11 +101,11 @@ namespace Tester is
         si
 
         init(test: TEST, message: string) is
-            init(test, new DETAILS(message));
+            init(test, DETAILS(message));
         si
 
-        init(test: TEST, message: string, details: string) is
-            init(test, new DETAILS(message, details));
+        init(test: TEST, message: string, details: string?) is
+            init(test, DETAILS(message, details));
         si
                         
         add(details: DETAILS) is
@@ -113,25 +113,18 @@ namespace Tester is
         si        
     si
     
-    class DETAILS is
-        message: string;
-        details: string;
-
+    class DETAILS(message: string, details: string?) is
         init(message: string) is
-            self.message = message;
+            init(message, null);
         si
-        
-        init(message: string, details: string) is
-            self.message = message;
-            self.details = details;
-        si
+
         
         to_string() -> string is
-            let result = new StringBuilder();
+            let result = StringBuilder();
 
             result.append(message);
             
-            if details? then
+            if let self.details then
                 result
                     .append(":");
 
