@@ -11,18 +11,18 @@ namespace Tests is
         return;
     si
 
-    get_stub_test() -> TEST => new TEST("path", new LIST[string](), "", false, new LIST[string]());
+    get_stub_test() -> TEST => TEST("path", LIST[string](), "", false, LIST[string]());
 
     // ghūl doesn't have extension methods, so wrap these for easier consumption:
-    should[T](iterable: Collections.Iterable[T]) -> GenericCollectionAssertions[T] => new GenericCollectionAssertions[T](iterable);
+    should[T](iterable: Collections.Iterable[T]) -> GenericCollectionAssertions[T] => GenericCollectionAssertions[T](iterable);
 
-    should(s: string) -> StringAssertions[StringAssertions] => new StringAssertions(s);
+    should(s: string) -> StringAssertions[StringAssertions] => StringAssertions(s);
 
-    should(o: object) -> ObjectAssertions[object,ObjectAssertions] => new ObjectAssertions(o);
+    should(o: object) -> ObjectAssertions[object,ObjectAssertions] => ObjectAssertions(o);
 
     should(b: bool) -> BooleanAssertions[BooleanAssertions] is
         let value: bool? = b;
 
-        return new BooleanAssertions(value);
+        return BooleanAssertions(value);
     si
 si

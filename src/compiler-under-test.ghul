@@ -46,19 +46,19 @@ namespace Tester is
                 _sdk_reference_path = discover_sdk_reference_path();
                 _arguments = ["--v3", "--test-run"];
             else
-                throw new Exception("unknown run mode: {_run_mode}");
+                throw Exception("unknown run mode: {_run_mode}");
             fi
         si
 
         runtime_path: string => _runtime_path;
 
-        set_runtime_path(path: string) is
-            if string.is_null_or_white_space(path) then
+        set_runtime_path(path: string?) is
+            if !path? \/ string.is_null_or_white_space(path) then
                 return;
             fi
 
             if !File.exists(path) then
-                throw new Exception("runtime DLL not found: {path}");
+                throw Exception("runtime DLL not found: {path}");
             fi
 
             _runtime_path = Path.get_full_path(path);
@@ -105,7 +105,7 @@ namespace Tester is
         si
 
         run_compiler(runner: RUNNER, test: TEST) -> bool is
-            let arguments = new LIST[string]();
+            let arguments = LIST[string]();
 
             arguments.add_range(_arguments);
 
@@ -155,7 +155,7 @@ namespace Tester is
             fi
 
             if !File.exists(runner.get_path("compiler.out")) then
-                throw new Exception("compiler output file not found");
+                throw Exception("compiler output file not found");
             fi
 
             if result != 0 then
@@ -163,7 +163,7 @@ namespace Tester is
             fi
 
             if _run_mode != COMPILER_RUN_MODE.DOTNET /\ !runner.read_all_text("compiler.out").contains("*** succeeded ***") then
-                throw new Exception("compiler success exit status but success message not found in output");
+                throw Exception("compiler success exit status but success message not found in output");
             fi
 
             // FIXME: this is a bit convoluted:
@@ -274,19 +274,19 @@ namespace Tester is
             let packs_root = Path.join([dotnet_root, "packs", "Microsoft.NETCore.App.Ref"]);
 
             if !Directory.exists(packs_root) then
-                throw new Exception("no .NET reference assembly packs found at {packs_root}");
+                throw Exception("no .NET reference assembly packs found at {packs_root}");
             fi
 
             let pack = find_latest_ref_pack(packs_root, framework_version);
 
             if !pack? then
-                throw new Exception("no Microsoft.NETCore.App.Ref pack matching {framework_version}.* under {packs_root}");
+                throw Exception("no Microsoft.NETCore.App.Ref pack matching {framework_version}.* under {packs_root}");
             fi
 
             let reference_path = Path.join([pack, "ref", target_framework]);
 
             if !Directory.exists(reference_path) then
-                throw new Exception("reference assemblies not found at {reference_path}");
+                throw Exception("reference assemblies not found at {reference_path}");
             fi
 
             return reference_path;
@@ -305,13 +305,13 @@ namespace Tester is
             let config_path = Path.join(directory, "{name}.runtimeconfig.json");
 
             if !File.exists(config_path) then
-                throw new Exception("runtime config not found at {config_path}");
+                throw Exception("runtime config not found at {config_path}");
             fi
 
             let target_framework = extract_json_string(File.read_all_text(config_path), "tfm");
 
             if !target_framework? then
-                throw new Exception("no \"tfm\" entry found in {config_path}");
+                throw Exception("no \"tfm\" entry found in {config_path}");
             fi
 
             return target_framework;
@@ -356,7 +356,7 @@ namespace Tester is
                 fi
             od
 
-            throw new Exception("could not determine the .NET install root from `dotnet --list-sdks`");
+            throw Exception("could not determine the .NET install root from `dotnet --list-sdks`");
         si
 
         find_latest_ref_pack(packs_root: string, framework_version: string) -> string? is
@@ -375,7 +375,11 @@ namespace Tester is
             return best;
         si
 
-        try_parse_version(text: string) -> System.Version? is
+        try_parse_version(text: string?) -> System.Version? is
+            if !text? then
+                return null;
+            fi
+
             try
                 return System.Version.parse(text);
             catch ex: Exception
@@ -384,7 +388,7 @@ namespace Tester is
         si
 
         run_and_capture(path: string, arguments: Iterable[string]) -> string is
-            let start_info = new System.Diagnostics.ProcessStartInfo();
+            let start_info = System.Diagnostics.ProcessStartInfo();
 
             start_info.file_name = path;
             start_info.arguments = arguments | .to_string(" ");
@@ -395,7 +399,7 @@ namespace Tester is
             let process = System.Diagnostics.Process.start(start_info);
 
             if !process? then
-                throw new Exception("failed to start `{path}`");
+                throw Exception("failed to start `{path}`");
             fi
 
             let output = process.standard_output.read_to_end();

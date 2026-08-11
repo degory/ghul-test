@@ -48,7 +48,7 @@ namespace Tester is
             _test = test;
 
             if !_collate_environment? then
-                _collate_environment = new MAP[string,string]();
+                _collate_environment = MAP[string,string]();
                 _collate_environment.add("LC_COLLATE", "C");                    
             fi
         si
@@ -57,7 +57,7 @@ namespace Tester is
             if _failure? then
                 return _failure;
             else
-                return new PASS(_test);
+                return PASS(_test);
             fi
         si
 
@@ -73,7 +73,7 @@ namespace Tester is
         run_test() -> Result is
             try
                 if Directory.get_files(_test.path, "disabled*")| .count() > 0 then
-                    return new SKIP(_test);
+                    return SKIP(_test);
                 fi
 
                 _run_test();
@@ -84,7 +84,7 @@ namespace Tester is
 
                 return get_result();
             catch ex: Exception
-                return new FAILURE(_test, ex.message, ex.stack_trace);
+                return FAILURE(_test, ex.message, ex.stack_trace);
             yrt
         si
 
@@ -518,7 +518,7 @@ namespace Tester is
             start(path, arguments, null);
 
         start(path: string, arguments: Iterable[string], environment: Iterable[Pair[string,string]]) -> Process is
-            let start_info = new System.Diagnostics.ProcessStartInfo();
+            let start_info = System.Diagnostics.ProcessStartInfo();
 
             start_info.file_name = path;
 
@@ -530,7 +530,7 @@ namespace Tester is
                 od                        
             fi
 
-            let arguments_string = new StringBuilder();
+            let arguments_string = StringBuilder();
 
             if arguments? then                
                 start_info.arguments =
@@ -553,7 +553,7 @@ namespace Tester is
             let result = Process.start(start_info);
 
             if result == null then
-                throw new Exception("failed to start process: {path} {start_info.arguments}");
+                throw Exception("failed to start process: {path} {start_info.arguments}");
             fi
             
             return result;
@@ -583,13 +583,13 @@ namespace Tester is
             let details: DETAILS mut;
 
             if file_name? then
-                details = new DETAILS(message, read_all_text_quiet(file_name));
+                details = DETAILS(message, read_all_text_quiet(file_name));
             else
-                details = new DETAILS(message);                
+                details = DETAILS(message);                
             fi
 
             if !_failure? then
-                _failure = new FAILURE(_test, details);
+                _failure = FAILURE(_test, details);
             else
                 _failure.add(details);
             fi

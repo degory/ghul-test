@@ -7,13 +7,16 @@ namespace Tests is
     use NSubstitute.SubstituteExtensions.returns;
 
     use Tester;
+
+    use TestClass = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute;
+    use Test = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute;
     
+    @TestClass()
     class RUNNER_Should is
-        @test()
 
         init() is si
 
-        get_private_instance_field(from: object, name: string) -> object is
+        get_private_instance_field(from: object, name: string) -> object? is
             let non_public = cast int(System.Reflection.BindingFlags.NON_PUBLIC);
             let instance = cast int(System.Reflection.BindingFlags.INSTANCE);
             let binding_flags = cast System.Reflection.BindingFlags(non_public + instance); 
@@ -41,7 +44,7 @@ namespace Tests is
             `field.set_value(from, value);
         si
 
-        get_private_static_field(from: object, name: string) -> object is
+        get_private_static_field(from: object, name: string) -> object? is
             let non_public = cast int(System.Reflection.BindingFlags.NON_PUBLIC);
             let instance = cast int(System.Reflection.BindingFlags.STATIC);
             let binding_flags = cast System.Reflection.BindingFlags(non_public + instance); 
@@ -65,7 +68,7 @@ namespace Tests is
                 ["file_1.ghul", "file_2.ghul"], // : Iterable[string],
                 "--stuff", // : string,
                 false, // : bool
-                new LIST[string]() // : Iterable[string]
+                LIST[string]() // : Iterable[string]
             ]);
         si
         
@@ -78,22 +81,22 @@ namespace Tests is
         si
 
         get_real_FAILURE() -> FAILURE is
-            return new FAILURE(
+            return FAILURE(
                 get_mock_TEST(),
                 "this is a message",
                 "and this is additional detail"
             );
         si
 
+        @Test()
         RUNNER__init__given_no_collate_environment__creates_collate_environment_of_correct_map_type() is
-            @test()
 
             let arguments = System.Array.empty`[object]();
 
             let compiler_under_test = get_mock_COMPILER_UNDER_TEST(COMPILER_RUN_MODE.CI);
             let test = get_mock_TEST();
 
-            let runner = new RUNNER("dotnet", "dotnet", compiler_under_test, new DISASSEMBLER(null), test);
+            let runner = RUNNER("dotnet", "dotnet", compiler_under_test, DISASSEMBLER(null), test);
 
             // get the private static field _collate_environment:
             let field_value = 
@@ -111,15 +114,15 @@ namespace Tests is
             should(isa Map[string,string](field_value)).be_true(null, null);
         si
 
+        @Test()
         RUNNER__init__given_no_collate_environment__adds_LC_COLLATE_key_with_value_C() is
-            @test()
 
             let arguments = System.Array.empty`[object]();
 
             let compiler_under_test = get_mock_COMPILER_UNDER_TEST(COMPILER_RUN_MODE.DOTNET);
             let test = get_mock_TEST();
 
-            let runner = new RUNNER("dotnet", "dotnet", compiler_under_test, new DISASSEMBLER(null), test);
+            let runner = RUNNER("dotnet", "dotnet", compiler_under_test, DISASSEMBLER(null), test);
 
             // get the private static field _collate_environment:
             let field_value = 
@@ -134,14 +137,14 @@ namespace Tests is
             should(collate_as_map["LC_COLLATE"]).be("C", null, null);
         si
 
+        @Test()
         RUNNER__get_result__given_failure__returns_failure() is
-            @test()
 
             let arguments = System.Array.empty`[object]();
 
             let compiler_under_test = get_mock_COMPILER_UNDER_TEST(COMPILER_RUN_MODE.LOCAL);
             let test = get_mock_TEST();
-            let runner = new RUNNER("dotnet", "dotnet", compiler_under_test, new DISASSEMBLER(null), test);
+            let runner = RUNNER("dotnet", "dotnet", compiler_under_test, DISASSEMBLER(null), test);
 
             let failure = get_real_FAILURE();
 
@@ -152,14 +155,14 @@ namespace Tests is
             should(result).be(failure, null, null);
         si
 
+        @Test()
         RUNNER__get_result__given_no_failure__returns_PASS() is
-            @test()
 
             let arguments = System.Array.empty`[object]();
 
             let compiler_under_test = get_mock_COMPILER_UNDER_TEST(COMPILER_RUN_MODE.CI);
             let test = get_mock_TEST();
-            let runner = new RUNNER("dotnet", "dotnet", compiler_under_test, new DISASSEMBLER(null), test);
+            let runner = RUNNER("dotnet", "dotnet", compiler_under_test, DISASSEMBLER(null), test);
 
             let result = runner.get_result();
 
