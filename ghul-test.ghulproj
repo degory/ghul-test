@@ -31,6 +31,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Microsoft's own disassembler, used to produce the IL a test's
+         il.expected snapshot is compared against. -->
+    <PackageReference Include="runtime.linux-x64.Microsoft.NETCore.ILDAsm" />
+    <PackageReference Include="runtime.win-x64.Microsoft.NETCore.ILDAsm" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Include="README.md" Pack="true" PackagePath="\"/>  
     <None Include="LICENSE*" Pack="true" PackagePath="\" />
 

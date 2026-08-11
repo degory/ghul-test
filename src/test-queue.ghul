@@ -14,6 +14,7 @@ namespace Tester is
         _host_cli: string;
         _target_cli: string;
         _compiler_under_test: COMPILER_UNDER_TEST;
+        _disassembler: DISASSEMBLER;
 
         _task_queue: TASK_QUEUE;
 
@@ -34,12 +35,14 @@ namespace Tester is
             host_cli: string,
             target_cli: string,
             compiler_under_test: COMPILER_UNDER_TEST,
+            disassembler: DISASSEMBLER,
             progress_reporter: PROGRESS_REPORTER,
             tag_filter: TAG_FILTER)
         is
             _host_cli = host_cli;
             _target_cli = target_cli;
             _compiler_under_test = compiler_under_test;
+            _disassembler = disassembler;
             _progress_reporter = progress_reporter;
             _tag_filter = tag_filter;
 
@@ -71,12 +74,15 @@ namespace Tester is
 
             _progress_reporter.on_discovered(count);
 
+            report_missing_disassembler();
+
             for test in _tests do
                 let runner =
                     new RUNNER(
                         _host_cli,
                         _target_cli,
                         _compiler_under_test,
+                        _disassembler,
                         test
                     );
 
@@ -161,6 +167,27 @@ namespace Tester is
                     tags
                 )
             );
+        si
+
+        // Asked once for the whole run rather than per test: whether a
+        // disassembler was found cannot change while tests are running,
+        // and every test wanting IL would otherwise say so separately,
+        // from tasks running at the same time.
+        report_missing_disassembler() is
+            if _disassembler.is_available then
+                return;
+            fi
+
+            let wanted =
+                _tests | .filter(test => File.exists("{test.path}/il.expected")) | .count();
+
+            if wanted == 0 then
+                return;
+            fi
+
+            Std.write_line(
+                "{wanted} test(s) expect IL but no disassembler was found: "
+                "set GHUL_TEST_ILDASM, or pass --ildasm <path>");
         si
 
         queue_test(test: TEST) is

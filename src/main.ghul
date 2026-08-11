@@ -44,6 +44,9 @@ namespace Tester is
             let compiler_override mut =
                 System.Environment.get_environment_variable("GHUL_TEST_COMPILER");
 
+            let ildasm_override: string? mut =
+                System.Environment.get_environment_variable("GHUL_TEST_ILDASM");
+
             let test_paths = new LIST[string]();
             let requested_tags = new LIST[string]();
 
@@ -72,6 +75,15 @@ namespace Tester is
                     fi
 
                     compiler_override = arguments[i];
+                elif arg =~ "--ildasm" then
+                    i = i + 1;
+
+                    if i >= arguments.count then
+                        Std.write_line("--ildasm requires a path argument");
+                        return 1;
+                    fi
+
+                    ildasm_override = arguments[i];
                 elif arg =~ "--tag" then
                     i = i + 1;
 
@@ -90,9 +102,13 @@ namespace Tester is
 
             let compiler_under_test = new COMPILER_UNDER_TEST(run_mode);
 
+            let disassembler: DISASSEMBLER mut;
+
             try
                 compiler_under_test.set_runtime_path(runtime_dll_override);
                 compiler_under_test.set_compiler_command(compiler_override);
+
+                disassembler = DISASSEMBLER(ildasm_override);
             catch ex: Exception
                 Std.write_line(ex.message);
                 return 1;
@@ -108,7 +124,14 @@ namespace Tester is
                 Std.write_line("filtering to tests tagged: {string.join(", ", requested_tags)}");
             fi
 
-            let queue = TEST_QUEUE(host, target, compiler_under_test, PROGRESS_REPORTER(test_paths), tag_filter);
+            let queue =
+                TEST_QUEUE(
+                    host,
+                    target,
+                    compiler_under_test,
+                    disassembler,
+                    PROGRESS_REPORTER(test_paths),
+                    tag_filter);
 
             for path in test_paths do
                 if !Directory.exists(path) then

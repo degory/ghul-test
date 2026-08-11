@@ -178,4 +178,154 @@ fi
 
 echo integration-tests/compiler-override-wrong-mode: PASS
 
+echo integration-tests/il-expected...
+
+# A test carrying il.expected has the emitted assembly disassembled and
+# compared, so this covers the whole path: running ildasm, dropping the lines
+# that describe the run rather than the assembly, and diffing what is left.
+TEST_PROCESSES=1 CI=1 dotnet run integration-tests/il-expected | tee actual-output
+
+if [ "${PIPESTATUS[0]}" != "0" ]; then
+    echo integration-tests/il-expected unexpectedly failed
+
+    exit 1
+fi
+
+if ! diff integration-tests/il-expected/expected-output actual-output ; then
+    echo integration-tests/il-expected output did not match expected output
+
+    exit 1
+fi
+
+echo integration-tests/il-expected: PASS
+
+echo integration-tests/ildasm-override-missing...
+
+# A disassembler named explicitly but absent must fail fast with one clear
+# message, not fall back to discovery and quietly use something else.
+TEST_PROCESSES=1 CI=1 dotnet run -- --ildasm /tmp/ghul-test-no-such-ildasm integration-tests/execution-pass | tee actual-output
+
+if [ "${PIPESTATUS[0]}" != "1" ]; then
+    echo integration-tests/ildasm-override-missing did not exit 1
+
+    exit 1
+fi
+
+if ! grep -q "disassembler not found" actual-output ; then
+    echo integration-tests/ildasm-override-missing did not report the missing disassembler
+
+    exit 1
+fi
+
+echo integration-tests/ildasm-override-missing: PASS
+
+echo integration-tests/il-item-missing...
+
+# An il.item the assembly does not contain has to be reported. The
+# disassembler says nothing about one and exits zero, writing only the
+# assembly preamble, so a snapshot captured from it would assert nothing about
+# the construct it names and pass for good.
+TEST_PROCESSES=1 CI=1 dotnet run integration-tests/il-item-missing | tee actual-output
+
+if [ "${PIPESTATUS[0]}" != "1" ]; then
+    echo integration-tests/il-item-missing did not exit 1
+
+    exit 1
+fi
+
+if ! grep -q "which the emitted assembly does not contain" actual-output ; then
+    echo integration-tests/il-item-missing did not report the missing item
+
+    exit 1
+fi
+
+echo integration-tests/il-item-missing: PASS
+
+echo integration-tests/il-item-property...
+
+# An il.item naming a field or property is a documented use, and the enclosing
+# class is written out around it, so the check that the item was found has to
+# accept a member directive rather than only a method.
+TEST_PROCESSES=1 CI=1 dotnet run integration-tests/il-item-property | tee actual-output
+
+if [ "${PIPESTATUS[0]}" != "0" ]; then
+    echo integration-tests/il-item-property unexpectedly failed
+
+    exit 1
+fi
+
+if ! diff integration-tests/il-item-property/expected-output actual-output ; then
+    echo integration-tests/il-item-property output did not match expected output
+
+    exit 1
+fi
+
+echo integration-tests/il-item-property: PASS
+
+
+echo integration-tests/il-item-typo...
+
+# A member that does not exist on a type that does. The enclosing class is
+# written out either way, so this is the case a check for the class alone
+# would wave through.
+TEST_PROCESSES=1 CI=1 dotnet run integration-tests/il-item-typo | tee actual-output
+
+if [ "${PIPESTATUS[0]}" != "1" ]; then
+    echo integration-tests/il-item-typo did not exit 1
+
+    exit 1
+fi
+
+if ! grep -q "which the emitted assembly does not contain" actual-output ; then
+    echo integration-tests/il-item-typo did not report the missing member
+
+    exit 1
+fi
+
+echo integration-tests/il-item-typo: PASS
+
+echo integration-tests/ildasm-override-relative...
+
+# A relative --ildasm path is checked against this directory and then run from
+# another: every test is launched with its own folder as the working
+# directory. Unresolved, it would name a different file there, or nothing.
+TEST_PROCESSES=1 CI=1 dotnet run -- --ildasm ./bin/Debug/net10.0/runtimes/linux-x64/native/ildasm integration-tests/il-expected | tee actual-output
+
+if [ "${PIPESTATUS[0]}" != "0" ]; then
+    echo integration-tests/ildasm-override-relative unexpectedly failed
+
+    exit 1
+fi
+
+if ! diff integration-tests/il-expected/expected-output actual-output ; then
+    echo integration-tests/ildasm-override-relative output did not match expected output
+
+    exit 1
+fi
+
+echo integration-tests/ildasm-override-relative: PASS
+
+echo integration-tests/ildasm-env-missing...
+
+# GHUL_TEST_ILDASM is documented as equivalent to --ildasm, so a path that
+# does not exist has to fail the same way rather than being ignored in favour
+# of the shipped copy - which would silently run something other than what was
+# asked for.
+TEST_PROCESSES=1 CI=1 GHUL_TEST_ILDASM=/tmp/ghul-test-no-such-ildasm dotnet run integration-tests/il-expected | tee actual-output
+
+if [ "${PIPESTATUS[0]}" != "1" ]; then
+    echo integration-tests/ildasm-env-missing did not exit 1
+
+    exit 1
+fi
+
+if ! grep -q "disassembler not found" actual-output ; then
+    echo integration-tests/ildasm-env-missing did not report the missing disassembler
+
+    exit 1
+fi
+
+echo integration-tests/ildasm-env-missing: PASS
+
+
 exit 0
