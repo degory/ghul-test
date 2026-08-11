@@ -199,5 +199,25 @@ fi
 
 echo integration-tests/il-expected: PASS
 
+echo integration-tests/ildasm-override-missing...
+
+# A disassembler named explicitly but absent must fail fast with one clear
+# message, not fall back to discovery and quietly use something else.
+TEST_PROCESSES=1 CI=1 dotnet run -- --ildasm /tmp/ghul-test-no-such-ildasm integration-tests/execution-pass | tee actual-output
+
+if [ "${PIPESTATUS[0]}" != "1" ]; then
+    echo integration-tests/ildasm-override-missing did not exit 1
+
+    exit 1
+fi
+
+if ! grep -q "disassembler not found" actual-output ; then
+    echo integration-tests/ildasm-override-missing did not report the missing disassembler
+
+    exit 1
+fi
+
+echo integration-tests/ildasm-override-missing: PASS
+
 
 exit 0

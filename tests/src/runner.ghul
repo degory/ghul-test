@@ -93,7 +93,7 @@ namespace Tests is
             let compiler_under_test = get_mock_COMPILER_UNDER_TEST(COMPILER_RUN_MODE.CI);
             let test = get_mock_TEST();
 
-            let runner = new RUNNER("dotnet", "dotnet", compiler_under_test, test);
+            let runner = new RUNNER("dotnet", "dotnet", compiler_under_test, new DISASSEMBLER(null), test);
 
             // get the private static field _collate_environment:
             let field_value = 
@@ -119,7 +119,7 @@ namespace Tests is
             let compiler_under_test = get_mock_COMPILER_UNDER_TEST(COMPILER_RUN_MODE.DOTNET);
             let test = get_mock_TEST();
 
-            let runner = new RUNNER("dotnet", "dotnet", compiler_under_test, test);
+            let runner = new RUNNER("dotnet", "dotnet", compiler_under_test, new DISASSEMBLER(null), test);
 
             // get the private static field _collate_environment:
             let field_value = 
@@ -141,7 +141,7 @@ namespace Tests is
 
             let compiler_under_test = get_mock_COMPILER_UNDER_TEST(COMPILER_RUN_MODE.LOCAL);
             let test = get_mock_TEST();
-            let runner = new RUNNER("dotnet", "dotnet", compiler_under_test, test);
+            let runner = new RUNNER("dotnet", "dotnet", compiler_under_test, new DISASSEMBLER(null), test);
 
             let failure = get_real_FAILURE();
 
@@ -159,7 +159,7 @@ namespace Tests is
 
             let compiler_under_test = get_mock_COMPILER_UNDER_TEST(COMPILER_RUN_MODE.CI);
             let test = get_mock_TEST();
-            let runner = new RUNNER("dotnet", "dotnet", compiler_under_test, test);
+            let runner = new RUNNER("dotnet", "dotnet", compiler_under_test, new DISASSEMBLER(null), test);
 
             let result = runner.get_result();
 

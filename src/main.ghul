@@ -101,9 +101,13 @@ namespace Tester is
 
             let compiler_under_test = new COMPILER_UNDER_TEST(run_mode);
 
+            let disassembler: DISASSEMBLER mut;
+
             try
                 compiler_under_test.set_runtime_path(runtime_dll_override);
                 compiler_under_test.set_compiler_command(compiler_override);
+
+                disassembler = DISASSEMBLER(ildasm_override);
             catch ex: Exception
                 Std.write_line(ex.message);
                 return 1;
@@ -124,7 +128,7 @@ namespace Tester is
                     host,
                     target,
                     compiler_under_test,
-                    DISASSEMBLER(ildasm_override),
+                    disassembler,
                     PROGRESS_REPORTER(test_paths),
                     tag_filter);
 

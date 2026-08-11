@@ -19,9 +19,21 @@ namespace Tester is
 
         _reported_missing: bool;
 
+        // A disassembler named explicitly is checked the way an
+        // explicitly named compiler or runtime is, and for the same
+        // reason: falling back to discovery would quietly use something
+        // other than what was asked for, and accepting the path unchecked
+        // would surface a typo as whatever the process launch happens to
+        // throw, per test, rather than as one clear message.
         init(command: string?) is
             if command? /\ !string.is_null_or_white_space(command) then
-                _executable = command;
+                let trimmed = command.trim();
+
+                if !File.exists(trimmed) then
+                    throw System.Exception("disassembler not found: {trimmed}");
+                fi
+
+                _executable = trimmed;
             else
                 _executable = _discover();
             fi
