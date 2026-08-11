@@ -42,7 +42,7 @@ A basic “hello world” example can be found in the `integration-tests` folder
 3. These files are sorted with `sort` (with `LC_COLLATE` set to `C` for stable output) into `err.sort` and `warn.sort`.
 4. `diff` compares `err.sort` to `err.expected` and `warn.sort` to `warn.expected`. Whitespace differences are ignored and carriage returns are stripped.
 5. If compilation succeeded, `ghul-runtime.dll` is symlinked into the test directory and the binary is executed via `dotnet`. Output is captured in `run.out` and compared to `run.expected`.
-6. If an `il.expected` file exists and the build succeeded, the emitted assembly is disassembled with `ildasm` into `il.out`, and `diff` compares the two. Lines that describe the run rather than the assembly are removed first: the disassembler's version banner, the MVID, the partial-disassembly warning, and the image base, which is where the file happened to be mapped and so differs on every run.
+6. If an `il.expected` file exists, `diff` compares it against `il.out`. A compiler that wrote `il.out` itself has already answered; when it wrote nothing and the build succeeded, the emitted assembly is disassembled with `ildasm` to produce it instead. A test therefore moves from one to the other by dropping whatever made its compiler write the file. Lines that describe the run rather than the assembly are removed first: the disassembler's version banner, the MVID, the partial-disassembly warning, and the image base, which is where the file happened to be mapped and so differs on every run.
 
 Any mismatches cause a failure report containing a unified diff of the actual versus expected output.
 

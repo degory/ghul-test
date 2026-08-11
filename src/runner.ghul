@@ -216,7 +216,18 @@ namespace Tester is
         run_diff_il_out(build_succeeded: bool) is
             let il_out_path = get_path("il.out");
 
-            if File.exists(get_path("il.expected")) /\ build_succeeded then
+            // A compiler that wrote the IL itself has already answered,
+            // and that answer is what its test's snapshot was captured
+            // from. Disassembling is for the case where nothing was
+            // written: a back end emitting binary directly produces no
+            // such file, and there would otherwise be nothing to
+            // compare. So a test moves from one to the other by dropping
+            // whatever made its compiler write the file.
+            if
+                !File.exists(il_out_path) /\
+                File.exists(get_path("il.expected")) /\
+                build_succeeded
+            then
                 run_disassembler(il_out_path);
             fi
 
