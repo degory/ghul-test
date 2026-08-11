@@ -12,7 +12,7 @@ namespace Tester is
     // anything written here: a snapshot is only worth as much as the
     // reader that produces it, and a hand-written metadata decoder would
     // be one more thing able to be wrong in the same way the compiler is.
-    class DISASSEMBLER is
+    class DISASSEMBLER(command: string? init) is
         // Absent when no disassembler could be found, which is not an
         // error until a test actually asks for IL.
         _executable: string?;
@@ -23,7 +23,7 @@ namespace Tester is
         // other than what was asked for, and accepting the path unchecked
         // would surface a typo as whatever the process launch happens to
         // throw, per test, rather than as one clear message.
-        init(command: string?) is
+        init(..) is
             if command? /\ !string.is_null_or_white_space(command) then
                 let trimmed = command.trim();
 

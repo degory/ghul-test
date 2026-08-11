@@ -16,8 +16,7 @@ namespace Tester is
         DOTNET
     si
 
-    class COMPILER_UNDER_TEST is
-        _run_mode: CompilerRunMode;
+    class COMPILER_UNDER_TEST(run_mode: CompilerRunMode private) is
         _publish: string;
         _executable: string;
         _runtime_path: string;
@@ -26,9 +25,7 @@ namespace Tester is
         _use_dotnet: bool;
         _compiler_command: string?;
 
-        init(run_mode: CompilerRunMode) is
-            _run_mode = run_mode;
-
+        init(..) is
             if _run_mode == CompilerRunMode.DOTNET then
                 _executable = "dotnet";
                 _arguments = ["build"];

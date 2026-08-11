@@ -3,13 +3,13 @@ namespace Tester is
     use Collections.List;
     use Collections.LIST;
 
-    class TAG_FILTER is
+    class TAG_FILTER(requested_tags: Iterable[string] init) is
         _requested: List[string];
 
         is_empty: bool => _requested.count == 0;
 
-        init(requested: Iterable[string]) is
-            _requested = LIST[string](requested);
+        init(..) is
+            _requested = LIST[string](requested_tags);
         si
 
         matches(tags: Iterable[string]) -> bool is

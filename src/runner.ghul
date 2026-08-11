@@ -22,34 +22,21 @@ namespace Tester is
     use System.Text.RegularExpressions.Regex;
     use System.Text.RegularExpressions.RegexOptions;
 
-    class RUNNER is
+    class RUNNER(
+        host_cli: string private,
+        target_cli: string private,
+        compiler_under_test: COMPILER_UNDER_TEST private,
+        disassembler: DISASSEMBLER private,
+        test: TEST private
+    ) is
         _collate_environment: MutableMap[string,string]? static;
 
-        _host_cli: string;
-        _target_cli: string;
-
         _failure: FAILURE?;
-        _compiler_under_test: COMPILER_UNDER_TEST;
-        _disassembler: DISASSEMBLER;
 
-        _test: TEST;
-
-        init(
-            host_cli: string,
-            target_cli: string,
-            compiler_under_test: COMPILER_UNDER_TEST,
-            disassembler: DISASSEMBLER,
-            test: TEST
-        ) is
-            _host_cli = host_cli;
-            _target_cli = target_cli;
-            _compiler_under_test = compiler_under_test;
-            _disassembler = disassembler;
-            _test = test;
-
+        init(..) is
             if !_collate_environment? then
                 _collate_environment = MAP[string,string]();
-                _collate_environment.add("LC_COLLATE", "C");                    
+                _collate_environment.add("LC_COLLATE", "C");
             fi
         si
 

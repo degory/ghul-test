@@ -113,18 +113,11 @@ namespace Tester is
         si        
     si
     
-    class DETAILS is
-        message: string;
-        details: string?;
-
+    class DETAILS(message: string, details: string?) is
         init(message: string) is
-            self.message = message;
+            init(message, null);
         si
-        
-        init(message: string, details: string?) is
-            self.message = message;
-            self.details = details;
-        si
+
         
         to_string() -> string is
             let result = StringBuilder();

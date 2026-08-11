@@ -10,19 +10,17 @@ namespace Tester is
     use Collections.MutableList;
     use Collections.LIST;
 
-    class TEST_QUEUE is
-        _host_cli: string;
-        _target_cli: string;
-        _compiler_under_test: COMPILER_UNDER_TEST;
-        _disassembler: DISASSEMBLER;
-
+    class TEST_QUEUE(
+        host_cli: string private,
+        target_cli: string private,
+        compiler_under_test: COMPILER_UNDER_TEST private,
+        disassembler: DISASSEMBLER private,
+        progress_reporter: PROGRESS_REPORTER private,
+        tag_filter: TAG_FILTER private
+    ) is
         _task_queue: TASK_QUEUE;
 
         _tests: MutableList[TEST];
-
-        _progress_reporter: PROGRESS_REPORTER;
-
-        _tag_filter: TAG_FILTER;
 
         progress: int;
         count: int => _tests.count;
@@ -31,21 +29,7 @@ namespace Tester is
         pass_count: int => _tests | .filter(t => t.has_passed).count();
         fail_count: int => _tests | .filter(t => t.has_failed).count();
 
-        init(
-            host_cli: string,
-            target_cli: string,
-            compiler_under_test: COMPILER_UNDER_TEST,
-            disassembler: DISASSEMBLER,
-            progress_reporter: PROGRESS_REPORTER,
-            tag_filter: TAG_FILTER)
-        is
-            _host_cli = host_cli;
-            _target_cli = target_cli;
-            _compiler_under_test = compiler_under_test;
-            _disassembler = disassembler;
-            _progress_reporter = progress_reporter;
-            _tag_filter = tag_filter;
-
+        init(..) is
             let requested_test_processes = System.Environment.get_environment_variable("TEST_PROCESSES");
 
             let actual_test_processes: int mut;
