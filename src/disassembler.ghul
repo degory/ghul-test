@@ -17,8 +17,6 @@ namespace Tester is
         // error until a test actually asks for IL.
         _executable: string?;
 
-        _reported_missing: bool;
-
         // A disassembler named explicitly is checked the way an
         // explicitly named compiler or runtime is, and for the same
         // reason: falling back to discovery would quietly use something
@@ -38,7 +36,6 @@ namespace Tester is
                 _executable = _discover();
             fi
 
-            _reported_missing = false;
         si
 
         is_available: bool => _executable?;
@@ -138,16 +135,5 @@ namespace Tester is
             line.contains(".NET IL Disassembler.") \/
             line.contains("THIS IS A PARTIAL DISASSEMBLY");
 
-        report_missing(runner: RUNNER) is
-            if _reported_missing then
-                return;
-            fi
-
-            _reported_missing = true;
-
-            Std.error.write_line(
-                "error: a test expects IL but no disassembler was found. "
-                "Set GHUL_TEST_ILDASM, or pass --ildasm <path>.");
-        si
     si
 si

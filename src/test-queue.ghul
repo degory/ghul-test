@@ -74,6 +74,8 @@ namespace Tester is
 
             _progress_reporter.on_discovered(count);
 
+            report_missing_disassembler();
+
             for test in _tests do
                 let runner =
                     new RUNNER(
@@ -165,6 +167,27 @@ namespace Tester is
                     tags
                 )
             );
+        si
+
+        // Asked once for the whole run rather than per test: whether a
+        // disassembler was found cannot change while tests are running,
+        // and every test wanting IL would otherwise say so separately,
+        // from tasks running at the same time.
+        report_missing_disassembler() is
+            if _disassembler.is_available then
+                return;
+            fi
+
+            let wanted =
+                _tests | .filter(test => File.exists("{test.path}/il.expected")) | .count();
+
+            if wanted == 0 then
+                return;
+            fi
+
+            Std.write_line(
+                "{wanted} test(s) expect IL but no disassembler was found: "
+                "set GHUL_TEST_ILDASM, or pass --ildasm <path>");
         si
 
         queue_test(test: TEST) is

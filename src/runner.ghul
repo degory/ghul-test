@@ -94,6 +94,13 @@ namespace Tester is
                 return;
             fi
 
+            // Left behind by a previous failing run, and a failing run
+            // is exactly what gets repeated. Whether the compiler wrote
+            // the IL itself is read from this file existing once it has
+            // run, so one surviving from last time would be taken for
+            // this run's answer and suppress the disassembly.
+            delete_files(["il.out", "il.raw", "il.err"]);
+
             let build_succeeded = _compiler_under_test.run_compiler(self, _test);
 
             let exit_after_grep_and_sort mut = false;
@@ -245,8 +252,6 @@ namespace Tester is
 
         run_disassembler(il_out_path: string) is
             if !_disassembler.is_available then
-                _disassembler.report_missing(self);
-
                 return;
             fi
 
