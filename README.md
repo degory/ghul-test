@@ -50,7 +50,8 @@ Any mismatches cause a failure report containing a unified diff of the actual ve
 
 The IL comparison uses Microsoft's `ildasm`, which ships with this tool for
 `linux-x64` and `win-x64` and is found beside it. Override with `--ildasm
-<path>` or the `GHUL_TEST_ILDASM` environment variable; on any other platform
+<path>` or the `GHUL_TEST_ILDASM` environment variable, either of which must
+name an existing file; on any other platform
 one of those is required, and a test wanting IL reports that none was found
 rather than passing quietly.
 

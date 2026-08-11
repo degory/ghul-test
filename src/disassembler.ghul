@@ -47,15 +47,10 @@ namespace Tester is
 
         executable: string? => _executable;
 
-        // Beside the running tool first, which is where the packaged
-        // native lands, then the environment.
+        // Where the packaged native lands. Reached only when nothing was
+        // named: an explicit path, whether from the flag or from the
+        // environment, is validated rather than quietly replaced by this.
         _discover() -> string? static is
-            let from_environment = System.Environment.get_environment_variable("GHUL_TEST_ILDASM");
-
-            if !string.is_null_or_white_space(from_environment) /\ File.exists(from_environment) then
-                return Path.get_full_path(from_environment);
-            fi
-
             let beside_tool = _beside_tool();
 
             if beside_tool? /\ File.exists(beside_tool) then

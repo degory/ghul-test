@@ -305,5 +305,27 @@ fi
 
 echo integration-tests/ildasm-override-relative: PASS
 
+echo integration-tests/ildasm-env-missing...
+
+# GHUL_TEST_ILDASM is documented as equivalent to --ildasm, so a path that
+# does not exist has to fail the same way rather than being ignored in favour
+# of the shipped copy - which would silently run something other than what was
+# asked for.
+TEST_PROCESSES=1 CI=1 GHUL_TEST_ILDASM=/tmp/ghul-test-no-such-ildasm dotnet run integration-tests/il-expected | tee actual-output
+
+if [ "${PIPESTATUS[0]}" != "1" ]; then
+    echo integration-tests/ildasm-env-missing did not exit 1
+
+    exit 1
+fi
+
+if ! grep -q "disassembler not found" actual-output ; then
+    echo integration-tests/ildasm-env-missing did not report the missing disassembler
+
+    exit 1
+fi
+
+echo integration-tests/ildasm-env-missing: PASS
+
 
 exit 0

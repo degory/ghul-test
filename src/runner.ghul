@@ -260,6 +260,7 @@ namespace Tester is
             fi
 
             let raw_path = get_path("il.raw");
+            let item = _requested_il_item();
 
             // The disassembler runs with the test folder as its working
             // directory, so both paths it is given are relative to that,
@@ -270,7 +271,7 @@ namespace Tester is
                 DISASSEMBLER.arguments(
                     _compiler_under_test.get_binary_path_relative_to_test_folder(self),
                     "il.raw",
-                    _requested_il_item()),
+                    item),
                 30000,
                 null,
                 "il.err"
@@ -281,8 +282,6 @@ namespace Tester is
 
                 return;
             fi
-
-            let item = _requested_il_item();
 
             // An item the assembly does not contain is not reported by
             // the disassembler: it writes the assembly-level preamble,
