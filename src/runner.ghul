@@ -123,7 +123,7 @@ namespace Tester is
 
             run_diff_il_out(build_succeeded);
 
-            if !build_succeeded then
+            if !build_succeeded \/ _test.is_library then
                 return;
             fi
 

@@ -8,6 +8,14 @@ namespace Tester is
         is_build_fail_expected: bool,
         tags: Iterable[string]
     ) is
+        // A library has no entry point, so there is nothing to run and
+        // never was: a test that builds one is asserting the shape of
+        // what was emitted, not what it does. Running it produces a
+        // host error about a missing runtime configuration, which says
+        // nothing about the test.
+        is_library: bool =>
+            flags.split([' ', '\t']) | .any(f => f =~ "--library");
+
         has_executed: bool => result? /\ result.is_executed;
         has_passed: bool => result? /\ result.is_pass;
         has_failed: bool => result? /\ result.is_fail;
