@@ -26,17 +26,15 @@ namespace Tester is
 
             // report_host_and_target(host, target);
 
-            let ci_string = 
-                System.Environment.get_environment_variable("CI");
+            let ci_string =
+                System.Environment.get_environment_variable("CI") ?? "";
 
-            let run_mode mut = COMPILER_RUN_MODE.LOCAL;
-
-            if
-                !string.is_null_or_white_space(ci_string) /\
-                (ci_string =~ "1" \/ ci_string.to_lower() =~ "true")
-            then
-                run_mode = COMPILER_RUN_MODE.CI;
-            fi
+            let run_mode mut =
+                if ci_string =~ "1" \/ ci_string.to_lower() =~ "true" then
+                    CompilerRunMode.CI
+                else
+                    CompilerRunMode.LOCAL
+                fi;
 
             let runtime_dll_override mut =
                 System.Environment.get_environment_variable("GHUL_RUNTIME_DLL");
@@ -56,7 +54,7 @@ namespace Tester is
                 let arg = arguments[i];
 
                 if arg =~ "--use-dotnet-build" then
-                    run_mode = COMPILER_RUN_MODE.DOTNET;
+                    run_mode = CompilerRunMode.DOTNET;
                 elif arg =~ "--runtime-dll" then
                     i = i + 1;
 
@@ -114,7 +112,7 @@ namespace Tester is
                 return 1;
             yrt
 
-            if run_mode == COMPILER_RUN_MODE.DOTNET then
+            if run_mode == CompilerRunMode.DOTNET then
                 report_compiler_under_test(compiler_under_test);
             fi
 
@@ -185,14 +183,7 @@ namespace Tester is
             throw Exception("unknown CLI environment: {name}");
         si
                 
-        get_cli_environment_variable(name: string) -> string static is
-            let result mut = System.Environment.get_environment_variable(name);
-
-            if !result? then
-                result = "dotnet";
-            fi
-
-            return result;
-        si
+        get_cli_environment_variable(name: string) -> string static =>
+            System.Environment.get_environment_variable(name) ?? "dotnet";
     si
 si

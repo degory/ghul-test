@@ -20,7 +20,7 @@ namespace Tests is
         @Test()
         Result__set_progress__given_value_of_minus_50__sets_progress_to_0() is
 
-            let result = Result(get_stub_test());
+            let result = SKIP(get_stub_test());
             
             result.progress = -50;
 
@@ -30,7 +30,7 @@ namespace Tests is
         @Test()
         Result__set_progress__given_value_of_minus_1__sets_progress_to_0() is
 
-            let result = Result(get_stub_test());
+            let result = SKIP(get_stub_test());
             
             result.progress = -1;
 
@@ -40,7 +40,7 @@ namespace Tests is
         @Test()
         Result__set_progress__given_value_of_0__sets_progress_to_0() is
 
-            let result = Result(get_stub_test());
+            let result = SKIP(get_stub_test());
             
             result.progress = 0;
 
@@ -50,7 +50,7 @@ namespace Tests is
         @Test()
         Result__set_progress__given_value_of_1__sets_progress_to_1() is
 
-            let result = Result(get_stub_test());
+            let result = SKIP(get_stub_test());
             
             result.progress = 1;
 
@@ -60,7 +60,7 @@ namespace Tests is
         @Test()
         Result__set_progress__given_value_of_33__sets_progress_to_33() is
 
-            let result = Result(get_stub_test());
+            let result = SKIP(get_stub_test());
             
             result.progress = 33;
 
@@ -70,7 +70,7 @@ namespace Tests is
         @Test()
         Result__set_progress__given_value_of_99__sets_progress_to_99() is
 
-            let result = Result(get_stub_test());
+            let result = SKIP(get_stub_test());
             
             result.progress = 99;
 
@@ -80,7 +80,7 @@ namespace Tests is
         @Test()
         Result__set_progress__given_value_of_100__sets_progress_to_100() is
 
-            let result = Result(get_stub_test());
+            let result = SKIP(get_stub_test());
             
             result.progress = 100;
 
@@ -90,7 +90,7 @@ namespace Tests is
         @Test()
         Result__set_progress__given_value_of_101__sets_progress_to_100() is
 
-            let result = Result(get_stub_test());
+            let result = SKIP(get_stub_test());
             
             result.progress = 101;
 
@@ -100,7 +100,7 @@ namespace Tests is
         @Test()
         Result__set_progress__given_value_of_1000__sets_progress_to_100() is
 
-            let result = Result(get_stub_test());
+            let result = SKIP(get_stub_test());
             
             result.progress = 1000;
 
@@ -110,7 +110,7 @@ namespace Tests is
         @Test()
         Result__progress_string__given_progress_is_0__returns_space_padded_0_percent() is
 
-            let result = Result(get_stub_test());
+            let result = SKIP(get_stub_test());
             
             result.progress = 0;
 
@@ -120,7 +120,7 @@ namespace Tests is
         @Test()
         Result__progress_string__given_progress_is_5__returns_space_padded_5_percent() is
 
-            let result = Result(get_stub_test());
+            let result = SKIP(get_stub_test());
             
             result.progress = 5;
 
@@ -130,7 +130,7 @@ namespace Tests is
         @Test()
         Result__progress_string__given_progress_is_12__returns_12_percent() is
 
-            let result = Result(get_stub_test());
+            let result = SKIP(get_stub_test());
             
             result.progress = 12;
 
@@ -140,7 +140,7 @@ namespace Tests is
         @Test()
         Result__progress_string__given_progress_is_100__returns_100_percent() is
 
-            let result = Result(get_stub_test());
+            let result = SKIP(get_stub_test());
             
             result.progress = 100;
 
@@ -200,7 +200,7 @@ namespace Tests is
             
             let skip = SKIP(get_stub_test());
 
-            should(skip.body).be(null, null, null);
+            should(skip.body?).be_false(null, null);
         si
 
         @Test()
@@ -276,7 +276,7 @@ namespace Tests is
             
             let pass = PASS(get_stub_test());
 
-            should(pass.body).be(null, null, null);
+            should(pass.body?).be_false(null, null);
         si
 
         @Test()
@@ -352,7 +352,7 @@ namespace Tests is
             
             let fail = FAILURE(get_stub_test());
 
-            should(fail.body).be(null, null, null);
+            should(fail.body?).be_false(null, null);
         si
 
         @Test()
@@ -363,7 +363,7 @@ namespace Tests is
 
             fail.add(details);
 
-            should(fail.body).be(details.to_string(), null, null);
+            should(fail.body!).be(details.to_string(), null, null);
         si
 
         @Test()
@@ -376,7 +376,7 @@ namespace Tests is
                 fail.add(d);                
             od
             
-            should(fail.body).be(details | .to_string("\n"), null, null);
+            should(fail.body!).be(details | .to_string("\n"), null, null);
         si
 
         @Test()

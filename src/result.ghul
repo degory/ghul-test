@@ -7,7 +7,7 @@ namespace Tester is
     use Collections.MutableList;
     use Collections.LIST;
 
-    class Result is
+    class Result abstract is
         test: TEST;
 
         _progress: int;
@@ -37,7 +37,7 @@ namespace Tester is
             throw System.NotImplementedException();
         si
         
-        body: string => null;
+        body: string? => null;
 
         init(test: TEST) is
             self.test = test;
@@ -80,7 +80,7 @@ namespace Tester is
         is_fail: bool => true;
         head: string => "❌ fail";
 
-        body: string is
+        body: string? is
             if _details.count == 0 then
                 return null;
             elif _details.count == 1 then
@@ -131,7 +131,7 @@ namespace Tester is
 
             result.append(message);
             
-            if details? then
+            if let self.details then
                 result
                     .append(":");
 

@@ -23,12 +23,12 @@ namespace Tester is
     use System.Text.RegularExpressions.RegexOptions;
 
     class RUNNER is
-        _collate_environment: MutableMap[string,string] static;
+        _collate_environment: MutableMap[string,string]? static;
 
         _host_cli: string;
         _target_cli: string;
 
-        _failure: FAILURE;
+        _failure: FAILURE?;
         _compiler_under_test: COMPILER_UNDER_TEST;
         _disassembler: DISASSEMBLER;
 
@@ -495,8 +495,8 @@ namespace Tester is
             path: string,
             arguments: Iterable[string],
             timeout: int,
-            out_file: string,
-            err_file: string
+            out_file: string?,
+            err_file: string?
         ) -> int => 
             run(path, arguments, timeout, out_file, err_file, null);
 
@@ -504,9 +504,9 @@ namespace Tester is
             path: string,
             arguments: Iterable[string],
             timeout: int,
-            out_file: string,
-            err_file: string,
-            environment: Iterable[Pair[string,string]]
+            out_file: string?,
+            err_file: string?,
+            environment: Iterable[Pair[string,string]]?
         ) -> int
         is
             let process = start(path, arguments, environment);
@@ -517,7 +517,7 @@ namespace Tester is
         start(path: string, arguments: Iterable[string]) -> Process =>
             start(path, arguments, null);
 
-        start(path: string, arguments: Iterable[string], environment: Iterable[Pair[string,string]]) -> Process is
+        start(path: string, arguments: Iterable[string], environment: Iterable[Pair[string,string]]?) -> Process is
             let start_info = System.Diagnostics.ProcessStartInfo();
 
             start_info.file_name = path;
@@ -530,19 +530,14 @@ namespace Tester is
                 od                        
             fi
 
-            let arguments_string = StringBuilder();
-
-            if arguments? then                
-                start_info.arguments =
-                    arguments |
-                        .filter(a => a?)
-                        .map(arg => 
-                            arg
-                                // FIXME: not convinced either of these are necessary
-                                .replace("\\", "\\\\")
-                                .replace("\"", "\"\""))
-                        .to_string(" ");
-            fi
+            start_info.arguments =
+                arguments |
+                    .map(arg =>
+                        arg
+                            // FIXME: not convinced either of these are necessary
+                            .replace("\\", "\\\\")
+                            .replace("\"", "\"\""))
+                    .to_string(" ");
 
             start_info.working_directory = _test.path;
 
@@ -552,14 +547,14 @@ namespace Tester is
 
             let result = Process.start(start_info);
 
-            if result == null then
+            if !result? then
                 throw Exception("failed to start process: {path} {start_info.arguments}");
             fi
             
             return result;
         si
 
-        wait(process: Process, timeout: int, out_file_name: string, err_file_name: string) -> int is
+        wait(process: Process, timeout: int, out_file_name: string?, err_file_name: string?) -> int is
             if out_file_name? then
                 let stdout = process.standard_output.read_to_end();
                 write_all_text(out_file_name, stdout);
@@ -579,7 +574,7 @@ namespace Tester is
             add_fail(message, null);
         si
         
-        add_fail(message: string, file_name: string) is
+        add_fail(message: string, file_name: string?) is
             let details: DETAILS mut;
 
             if file_name? then

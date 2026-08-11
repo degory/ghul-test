@@ -27,7 +27,7 @@ namespace Tester is
             return result;
         si
 
-        drain() -> Iterable[Result] is
+        drain() -> Iterable[Result]? is
             if _running_tasks.count == 0 then
                 return null;
             fi

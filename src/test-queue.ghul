@@ -69,9 +69,7 @@ namespace Tester is
             _tests = LIST[TEST]();
         si
 
-        run_queued_tests() -> Iterable[Result] is
-            let i = 0;
-
+        run_queued_tests() is
             _progress_reporter.on_discovered(count);
 
             report_missing_disassembler();
@@ -156,14 +154,14 @@ namespace Tester is
 
             let flags = File.read_all_text(flags_path);
             let source_files = get_source_files(path);
-            let is_build_failure_Expected = File.exists("{path}/fail.expected");
+            let is_build_failure_expected = File.exists("{path}/fail.expected");
 
             queue_test(
                 TEST(
                     path,
                     source_files,
                     flags,
-                    is_build_failure_Expected,
+                    is_build_failure_expected,
                     tags
                 )
             );

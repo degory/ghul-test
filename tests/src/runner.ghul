@@ -58,7 +58,7 @@ namespace Tests is
             return `field.get_value(null);
         si
 
-        get_mock_COMPILER_UNDER_TEST(run_mode: COMPILER_RUN_MODE) -> COMPILER_UNDER_TEST is
+        get_mock_COMPILER_UNDER_TEST(run_mode: CompilerRunMode) -> COMPILER_UNDER_TEST is
             return NSubstitute.Substitute.`for`[COMPILER_UNDER_TEST]([run_mode]:object);
         si
 
@@ -93,7 +93,7 @@ namespace Tests is
 
             let arguments = System.Array.empty`[object]();
 
-            let compiler_under_test = get_mock_COMPILER_UNDER_TEST(COMPILER_RUN_MODE.CI);
+            let compiler_under_test = get_mock_COMPILER_UNDER_TEST(CompilerRunMode.CI);
             let test = get_mock_TEST();
 
             let runner = RUNNER("dotnet", "dotnet", compiler_under_test, DISASSEMBLER(null), test);
@@ -119,7 +119,7 @@ namespace Tests is
 
             let arguments = System.Array.empty`[object]();
 
-            let compiler_under_test = get_mock_COMPILER_UNDER_TEST(COMPILER_RUN_MODE.DOTNET);
+            let compiler_under_test = get_mock_COMPILER_UNDER_TEST(CompilerRunMode.DOTNET);
             let test = get_mock_TEST();
 
             let runner = RUNNER("dotnet", "dotnet", compiler_under_test, DISASSEMBLER(null), test);
@@ -142,7 +142,7 @@ namespace Tests is
 
             let arguments = System.Array.empty`[object]();
 
-            let compiler_under_test = get_mock_COMPILER_UNDER_TEST(COMPILER_RUN_MODE.LOCAL);
+            let compiler_under_test = get_mock_COMPILER_UNDER_TEST(CompilerRunMode.LOCAL);
             let test = get_mock_TEST();
             let runner = RUNNER("dotnet", "dotnet", compiler_under_test, DISASSEMBLER(null), test);
 
@@ -160,7 +160,7 @@ namespace Tests is
 
             let arguments = System.Array.empty`[object]();
 
-            let compiler_under_test = get_mock_COMPILER_UNDER_TEST(COMPILER_RUN_MODE.CI);
+            let compiler_under_test = get_mock_COMPILER_UNDER_TEST(CompilerRunMode.CI);
             let test = get_mock_TEST();
             let runner = RUNNER("dotnet", "dotnet", compiler_under_test, DISASSEMBLER(null), test);
 
