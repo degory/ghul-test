@@ -30,6 +30,7 @@ namespace Tester is
 
         _failure: FAILURE;
         _compiler_under_test: COMPILER_UNDER_TEST;
+        _disassembler: DISASSEMBLER;
 
         _test: TEST;
 
@@ -37,11 +38,13 @@ namespace Tester is
             host_cli: string,
             target_cli: string,
             compiler_under_test: COMPILER_UNDER_TEST,
+            disassembler: DISASSEMBLER,
             test: TEST
         ) is
             _host_cli = host_cli;
             _target_cli = target_cli;
             _compiler_under_test = compiler_under_test;
+            _disassembler = disassembler;
             _test = test;
 
             if !_collate_environment? then
@@ -124,7 +127,7 @@ namespace Tester is
 
             run_diff("warnings", "warn.expected", "warn.sort", "warn.diff", true);
 
-            run_diff_il_out();
+            run_diff_il_out(build_succeeded);
 
             if !build_succeeded then
                 return;
@@ -168,6 +171,8 @@ namespace Tester is
                     "err.diff",
                     "out.il",
                     "il.out",
+                    "il.raw",
+                    "il.err",
                     "il.diff",
                     "run.out",
                     "run.err",
@@ -208,19 +213,108 @@ namespace Tester is
             return true;
         si
         
-        run_diff_il_out() is
-            let want_delete_il_out = false;
-            let il_out_path = get_path("il.out"); 
+        run_diff_il_out(build_succeeded: bool) is
+            let il_out_path = get_path("il.out");
 
+            if File.exists(get_path("il.expected")) /\ build_succeeded then
+                run_disassembler(il_out_path);
+            fi
+
+            // A test wanting IL that produced none compares an empty
+            // file against its snapshot, so the whole snapshot lands on
+            // the expected side of the diff and the test fails. Skipping
+            // the comparison instead would report a test that emitted
+            // nothing as passing.
             if !File.exists(il_out_path) then
                 File.create(il_out_path).close();
             fi
-            
-            run_diff("IL output", "il.expected", "il.out", "il.diff", true);
 
-            if want_delete_il_out then
-                File.delete(il_out_path);
-            fi            
+            run_diff("IL output", "il.expected", "il.out", "il.diff", true);
+        si
+
+        run_disassembler(il_out_path: string) is
+            if !_disassembler.is_available then
+                _disassembler.report_missing(self);
+
+                return;
+            fi
+
+            if !File.exists(_compiler_under_test.get_binary_path(self)) then
+                return;
+            fi
+
+            let raw_path = get_path("il.raw");
+
+            // The disassembler runs with the test folder as its working
+            // directory, so both paths it is given are relative to that,
+            // while everything checked here is relative to where
+            // ghul-test itself was started.
+            run(
+                _disassembler.executable!,
+                DISASSEMBLER.arguments(
+                    _compiler_under_test.get_binary_path_relative_to_test_folder(self),
+                    "il.raw",
+                    _requested_il_item()),
+                30000,
+                null,
+                "il.err"
+            );
+
+            if !File.exists(raw_path) then
+                add_fail("disassembler produced no output", "il.err");
+
+                return;
+            fi
+
+            _write_stable_il(raw_path, il_out_path);
+
+            File.delete(raw_path);
+
+            normalize_paths("il.out");
+        si
+
+        // A test naming an item in `il.item` has its snapshot scoped to
+        // that type or member. Without one the whole assembly is dumped,
+        // which is what a test asserting assembly-level shape wants.
+        _requested_il_item() -> string? is
+            let path = get_path("il.item");
+
+            if !File.exists(path) then
+                return null;
+            fi
+
+            return File.read_all_text(path).trim();
+        si
+
+        // A file whose namespace is compiler-generated takes its name
+        // from the source path, so the disassembly of a test with no
+        // namespace of its own carries the absolute path it was built
+        // at. `normalize_paths` deals with that; this deals with the
+        // lines ildasm writes that describe the run rather than the
+        // assembly.
+        _write_stable_il(raw_path: string, il_out_path: string) static is
+            let kept = LIST[string]();
+
+            // The banner is followed by blank lines, which would
+            // otherwise open every snapshot with whitespace that means
+            // nothing.
+            let seen_content mut = false;
+
+            for line in File.read_all_lines(raw_path) do
+                if DISASSEMBLER.is_unstable_line(line) then
+                    continue;
+                fi
+
+                if !seen_content /\ string.is_null_or_white_space(line) then
+                    continue;
+                fi
+
+                seen_content = true;
+
+                kept.add(line);
+            od
+
+            File.write_all_lines(il_out_path, kept);
         si
        
         run_grep(pattern: string, in_file: string, out_file: string) -> bool is

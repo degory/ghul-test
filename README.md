@@ -27,7 +27,8 @@ Optional expectation and configuration files may also be present:
 | `err.expected` | Expected compiler error output. Actual errors are extracted from `compiler.out`, sorted, and diffed against this file. |
 | `warn.expected` | Expected compiler warning output. Warnings undergo the same grep and sort process as errors. |
 | `run.expected` | Expected stdout from running the compiled binary. |
-| `il.expected` | Expected IL disassembly output (from the `il.out` file). |
+| `il.expected` | Expected IL. When present, the assembly the compiler emitted is disassembled into `il.out` and diffed against this file. A test that expects IL but emits none compares against an empty file, so it fails rather than being skipped. |
+| `il.item` | Optional, and only meaningful alongside `il.expected`: the one type or member to disassemble, as `Namespace.TYPE::member`. Without it the whole assembly is dumped, which is what a test asserting assembly-level shape wants. |
 | `ghulflags` | Mandatory file containing additional command line flags for the compiler. |
 | `disabled*` | Any file beginning with `disabled` causes the test to be skipped. |
 | `tags` | Zero or more whitespace-separated tag names (spaces or newlines), used to select a subset of tests with `--tag`. A test with no `tags` file has no tags. |
@@ -41,19 +42,28 @@ A basic “hello world” example can be found in the `integration-tests` folder
 3. These files are sorted with `sort` (with `LC_COLLATE` set to `C` for stable output) into `err.sort` and `warn.sort`.
 4. `diff` compares `err.sort` to `err.expected` and `warn.sort` to `warn.expected`. Whitespace differences are ignored and carriage returns are stripped.
 5. If compilation succeeded, `ghul-runtime.dll` is symlinked into the test directory and the binary is executed via `dotnet`. Output is captured in `run.out` and compared to `run.expected`.
-6. If an `il.expected` file exists, `diff` is run against the generated `il.out` file as well.
+6. If an `il.expected` file exists and the build succeeded, the emitted assembly is disassembled with `ildasm` into `il.out`, and `diff` compares the two. Lines that describe the run rather than the assembly are removed first: the disassembler's version banner, the MVID, the partial-disassembly warning, and the image base, which is where the file happened to be mapped and so differs on every run.
 
 Any mismatches cause a failure report containing a unified diff of the actual versus expected output.
+
+### Disassembler
+
+The IL comparison uses Microsoft's `ildasm`, which ships with this tool for
+`linux-x64` and `win-x64` and is found beside it. Override with `--ildasm
+<path>` or the `GHUL_TEST_ILDASM` environment variable; on any other platform
+one of those is required, and a test wanting IL reports that none was found
+rather than passing quietly.
 
 ## Command Line Usage
 
 ```text
-ghul-test [--use-dotnet-build] [--compiler <command>] [--runtime-dll <path>] [--tag <name>]... <test-folder> [...]
+ghul-test [--use-dotnet-build] [--compiler <command>] [--runtime-dll <path>] [--ildasm <path>] [--tag <name>]... <test-folder> [...]
 ```
 
 - `--use-dotnet-build` – expects each test folder to be an MSBuild project. For ghūl projects the file should end with `.ghulproj`. The runner builds the project with `dotnet build` instead of invoking the compiler directly.
 - `--compiler <command>` – the command each test project is built with, supplied to MSBuild as the `GhulCompiler` property. A command containing no spaces must name an existing file; anything with arguments in it, such as `dotnet /path/to/ghul.dll`, is passed through as written. Takes precedence over the `GHUL_TEST_COMPILER` environment variable and over the publish directory described below. Only meaningful under `--use-dotnet-build` — the other modes invoke the compiler directly and resolve it themselves — so supplying it elsewhere is an error.
 - `--runtime-dll <path>` – use the supplied `ghul-runtime.dll` for compiled test binaries instead of the version that ships with `ghul-test`. The path must point to an existing file. Takes precedence over the `GHUL_RUNTIME_DLL` environment variable. Has no effect under `--use-dotnet-build`, which resolves the runtime via the test project's own `PackageReference`.
+- `--ildasm <path>` – the disassembler used to produce `il.out` for tests carrying an `il.expected`. The path must point to an existing file. Takes precedence over the `GHUL_TEST_ILDASM` environment variable and over the copy that ships beside `ghul-test`.
 - `--tag <name>` – restrict discovery to tests whose `tags` file contains at least one of the given names. Repeatable; the requested tags are matched as a union (a test runs if it carries *any* of them), not an intersection. A test with no `tags` file is excluded whenever any `--tag` is given. Omit entirely to run every discovered test regardless of tags, which is unchanged from before this flag existed.
 - `<test-folder>` – one or more directories containing tests. Each is recursively searched for subdirectories with a `ghulflags` file if not using `--use-dotnet-build`.
 

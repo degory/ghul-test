@@ -178,4 +178,26 @@ fi
 
 echo integration-tests/compiler-override-wrong-mode: PASS
 
+echo integration-tests/il-expected...
+
+# A test carrying il.expected has the emitted assembly disassembled and
+# compared, so this covers the whole path: running ildasm, dropping the lines
+# that describe the run rather than the assembly, and diffing what is left.
+TEST_PROCESSES=1 CI=1 dotnet run integration-tests/il-expected | tee actual-output
+
+if [ "${PIPESTATUS[0]}" != "0" ]; then
+    echo integration-tests/il-expected unexpectedly failed
+
+    exit 1
+fi
+
+if ! diff integration-tests/il-expected/expected-output actual-output ; then
+    echo integration-tests/il-expected output did not match expected output
+
+    exit 1
+fi
+
+echo integration-tests/il-expected: PASS
+
+
 exit 0

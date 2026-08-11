@@ -14,6 +14,7 @@ namespace Tester is
         _host_cli: string;
         _target_cli: string;
         _compiler_under_test: COMPILER_UNDER_TEST;
+        _disassembler: DISASSEMBLER;
 
         _task_queue: TASK_QUEUE;
 
@@ -34,12 +35,14 @@ namespace Tester is
             host_cli: string,
             target_cli: string,
             compiler_under_test: COMPILER_UNDER_TEST,
+            disassembler: DISASSEMBLER,
             progress_reporter: PROGRESS_REPORTER,
             tag_filter: TAG_FILTER)
         is
             _host_cli = host_cli;
             _target_cli = target_cli;
             _compiler_under_test = compiler_under_test;
+            _disassembler = disassembler;
             _progress_reporter = progress_reporter;
             _tag_filter = tag_filter;
 
@@ -77,6 +80,7 @@ namespace Tester is
                         _host_cli,
                         _target_cli,
                         _compiler_under_test,
+                        _disassembler,
                         test
                     );
 

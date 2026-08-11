@@ -1,0 +1,141 @@
+namespace Tester is
+    use IO.File;
+    use IO.Path;
+    use IO.Std;
+
+    use Collections.LIST;
+
+    // Produces the IL text a test's `il.expected` snapshot is compared
+    // against, by disassembling the assembly the compiler emitted.
+    //
+    // The text comes from Microsoft's own ildasm rather than from
+    // anything written here: a snapshot is only worth as much as the
+    // reader that produces it, and a hand-written metadata decoder would
+    // be one more thing able to be wrong in the same way the compiler is.
+    class DISASSEMBLER is
+        // Absent when no disassembler could be found, which is not an
+        // error until a test actually asks for IL.
+        _executable: string?;
+
+        _reported_missing: bool;
+
+        init(command: string?) is
+            if command? /\ !string.is_null_or_white_space(command) then
+                _executable = command;
+            else
+                _executable = _discover();
+            fi
+
+            _reported_missing = false;
+        si
+
+        is_available: bool => _executable?;
+
+        executable: string? => _executable;
+
+        // Beside the running tool first, which is where the packaged
+        // native lands, then the environment.
+        _discover() -> string? static is
+            let from_environment = System.Environment.get_environment_variable("GHUL_TEST_ILDASM");
+
+            if !string.is_null_or_white_space(from_environment) /\ File.exists(from_environment) then
+                return from_environment;
+            fi
+
+            let beside_tool = _beside_tool();
+
+            if beside_tool? /\ File.exists(beside_tool) then
+                return beside_tool;
+            fi
+
+            return null;
+        si
+
+        _beside_tool() -> string? static is
+            let assembly = System.Reflection.Assembly.get_executing_assembly();
+
+            let location = assembly.location;
+
+            if string.is_null_or_white_space(location) then
+                return null;
+            fi
+
+            let folder = Path.get_directory_name(Path.get_full_path(location));
+
+            if !folder? then
+                return null;
+            fi
+
+            return Path.join([folder, "runtimes", _runtime_identifier(), "native", _file_name()]);
+        si
+
+        _runtime_identifier() -> string static =>
+            if System.Runtime.InteropServices.RuntimeInformation.is_o_s_platform(
+                System.Runtime.InteropServices.OSPlatform.windows)
+            then
+                "win-x64";
+            else
+                "linux-x64";
+            fi;
+
+        _file_name() -> string static =>
+            if System.Runtime.InteropServices.RuntimeInformation.is_o_s_platform(
+                System.Runtime.InteropServices.OSPlatform.windows)
+            then
+                "ildasm.exe";
+            else
+                "ildasm";
+            fi;
+
+        // Options are given with a leading `-`. The `/` spelling the
+        // usage text documents is read as a path on Linux, and the run
+        // fails with "MULTIPLE INPUT FILES SPECIFIED" rather than with
+        // anything naming the option.
+        // `item` scopes the dump to one type or member, so a snapshot
+        // holds the construct the test is about rather than the whole
+        // assembly - which keeps it readable and stops an unrelated
+        // change elsewhere in the assembly perturbing it.
+        arguments(
+            assembly_path: string,
+            output_path: string,
+            item: string?
+        ) -> Collections.List[string] static is
+            let result = LIST[string]();
+
+            result.add("-out={output_path}");
+
+            if item? /\ !string.is_null_or_white_space(item) then
+                result.add("-item={item.trim()}");
+            fi
+
+            result.add(assembly_path);
+
+            return result;
+        si
+
+        // Everything ildasm writes that is not a property of the
+        // assembly's contents. `Image base` is the sharpest of them: it
+        // is where the file happened to be mapped, so it differs on
+        // every run of ildasm over one unchanged file, and a snapshot
+        // holding it fails at random. The MVID changes whenever anything
+        // in the assembly does, and the banner carries the tool's own
+        // version.
+        is_unstable_line(line: string) -> bool static =>
+            line.starts_with("// Image base:") \/
+            line.starts_with("// MVID:") \/
+            line.contains(".NET IL Disassembler.") \/
+            line.contains("THIS IS A PARTIAL DISASSEMBLY");
+
+        report_missing(runner: RUNNER) is
+            if _reported_missing then
+                return;
+            fi
+
+            _reported_missing = true;
+
+            Std.error.write_line(
+                "error: a test expects IL but no disassembler was found. "
+                "Set GHUL_TEST_ILDASM, or pass --ildasm <path>.");
+        si
+    si
+si
