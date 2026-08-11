@@ -219,5 +219,27 @@ fi
 
 echo integration-tests/ildasm-override-missing: PASS
 
+echo integration-tests/il-item-missing...
+
+# An il.item the assembly does not contain has to be reported. The
+# disassembler says nothing about one and exits zero, writing only the
+# assembly preamble, so a snapshot captured from it would assert nothing about
+# the construct it names and pass for good.
+TEST_PROCESSES=1 CI=1 dotnet run integration-tests/il-item-missing | tee actual-output
+
+if [ "${PIPESTATUS[0]}" != "1" ]; then
+    echo integration-tests/il-item-missing did not exit 1
+
+    exit 1
+fi
+
+if ! grep -q "which the emitted assembly does not contain" actual-output ; then
+    echo integration-tests/il-item-missing did not report the missing item
+
+    exit 1
+fi
+
+echo integration-tests/il-item-missing: PASS
+
 
 exit 0

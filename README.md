@@ -28,7 +28,7 @@ Optional expectation and configuration files may also be present:
 | `warn.expected` | Expected compiler warning output. Warnings undergo the same grep and sort process as errors. |
 | `run.expected` | Expected stdout from running the compiled binary. |
 | `il.expected` | Expected IL. When present, the assembly the compiler emitted is disassembled into `il.out` and diffed against this file. A test that expects IL but emits none compares against an empty file, so it fails rather than being skipped. |
-| `il.item` | Optional, and only meaningful alongside `il.expected`: the one type or member to disassemble, as `Namespace.TYPE::member`. Without it the whole assembly is dumped, which is what a test asserting assembly-level shape wants. |
+| `il.item` | Optional, and only meaningful alongside `il.expected`: the one type or member to disassemble, as `Namespace.TYPE` or `Namespace.TYPE::member`. Without it the whole assembly is dumped, which is what a test asserting assembly-level shape wants. Naming something the assembly does not contain fails the test, because the disassembler reports no such thing itself. |
 | `ghulflags` | Mandatory file containing additional command line flags for the compiler. |
 | `disabled*` | Any file beginning with `disabled` causes the test to be skipped. |
 | `tags` | Zero or more whitespace-separated tag names (spaces or newlines), used to select a subset of tests with `--tag`. A test with no `tags` file has no tags. |

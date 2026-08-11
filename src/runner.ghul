@@ -277,11 +277,38 @@ namespace Tester is
                 return;
             fi
 
+            let item = _requested_il_item();
+
+            // An item the assembly does not contain is not reported by
+            // the disassembler: it writes the assembly-level preamble,
+            // says nothing about what it could not find, and exits zero.
+            // Captured as a snapshot that is a test asserting nothing
+            // about the construct it names, and passing for good.
+            if item? /\ !_names_a_member(raw_path) then
+                add_fail("il.item names '{item}', which the emitted assembly does not contain");
+
+                File.delete(raw_path);
+
+                return;
+            fi
+
             _write_stable_il(raw_path, il_out_path);
 
             File.delete(raw_path);
 
             normalize_paths("il.out");
+        si
+
+        _names_a_member(raw_path: string) -> bool static is
+            for line in File.read_all_lines(raw_path) do
+                let trimmed = line.trim();
+
+                if trimmed.starts_with(".class") \/ trimmed.starts_with(".method") then
+                    return true;
+                fi
+            od
+
+            return false;
         si
 
         // A test naming an item in `il.item` has its snapshot scoped to

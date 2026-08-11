@@ -1,0 +1,7 @@
+namespace IlExpected is
+    class MAIN is
+        entry() static is
+            IO.Std.write_line("hello, world");
+        si
+    si
+si
