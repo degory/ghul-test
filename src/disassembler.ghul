@@ -54,10 +54,42 @@ namespace Tester is
             let beside_tool = _beside_tool();
 
             if beside_tool? /\ File.exists(beside_tool) then
+                _make_executable(beside_tool);
+
                 return beside_tool;
             fi
 
             return null;
+        si
+
+        // A NuGet package carries no Unix permissions, so the native
+        // arrives without its execute bit and launching it fails with
+        // "Permission denied" - naming the path, which exists, rather
+        // than anything about permissions. Only the copy shipped inside
+        // the tool is touched: a path someone named is theirs.
+        _make_executable(path: string) static is
+            if System.Runtime.InteropServices.RuntimeInformation.is_o_s_platform(
+                System.Runtime.InteropServices.OSPlatform.windows)
+            then
+                return;
+            fi
+
+            try
+                let mode = cast int(File.get_unix_file_mode(path));
+
+                let wanted =
+                    mode |
+                    cast int(IO.UnixFileMode.USER_EXECUTE) |
+                    cast int(IO.UnixFileMode.GROUP_EXECUTE) |
+                    cast int(IO.UnixFileMode.OTHER_EXECUTE);
+
+                if mode != wanted then
+                    File.set_unix_file_mode(path, cast IO.UnixFileMode(wanted));
+                fi
+            catch ex: System.Exception
+                // An install directory that cannot be written to leaves
+                // the launch to fail and report itself.
+            yrt
         si
 
         _beside_tool() -> string? static is

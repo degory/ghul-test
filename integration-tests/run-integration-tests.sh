@@ -327,5 +327,32 @@ fi
 
 echo integration-tests/ildasm-env-missing: PASS
 
+echo integration-tests/ildasm-not-executable...
+
+# A NuGet package carries no Unix permissions, so the disassembler shipped
+# inside the tool arrives without its execute bit and launching it fails with
+# "Permission denied" naming a path that exists. Only reproducible against the
+# packaged layout, which is what every consumer installs, so the built tool is
+# run directly here with the bit cleared.
+chmod -x bin/Debug/net10.0/runtimes/linux-x64/native/ildasm
+
+rm -f integration-tests/il-expected/hello-world/il.out
+
+TEST_PROCESSES=1 CI=1 dotnet bin/Debug/net10.0/ghul-test.dll integration-tests/il-expected | tee actual-output
+
+if [ "${PIPESTATUS[0]}" != "0" ]; then
+    echo integration-tests/ildasm-not-executable unexpectedly failed
+
+    exit 1
+fi
+
+if [ ! -x bin/Debug/net10.0/runtimes/linux-x64/native/ildasm ]; then
+    echo integration-tests/ildasm-not-executable did not restore the execute bit
+
+    exit 1
+fi
+
+echo integration-tests/ildasm-not-executable: PASS
+
 
 exit 0
