@@ -1,0 +1,154 @@
+namespace Tester is
+    use System.BitConverter;
+    use System.Convert;
+    use System.Text.Encoding;
+
+    use System.Reflection.Metadata.EntityHandle;
+    use System.Reflection.Metadata.HandleKind;
+    use System.Reflection.Metadata.MemberReferenceHandle;
+    use System.Reflection.Metadata.MetadataReader;
+    use System.Reflection.Metadata.PEReaderExtensions;
+    use System.Reflection.Metadata.TypeReferenceHandle;
+    use System.Reflection.PortableExecutable.PEReader;
+
+    use IO.File;
+
+    use Collections.LIST;
+
+    // One `@IL.output` region the compiler marked: the ildasm item
+    // (`Namespace.Type::method`) its instruction offsets belong to, since IL
+    // offsets restart at zero in each method and only mean something within
+    // one; the pragma's file name; the byte-offset range the marked statement
+    // emitted; and a compilation-global sequence number so regions in more
+    // than one method rebuild source order when the runner lays them out.
+    class IL_OUTPUT_RANGE(
+        item: string,
+        path: string,
+        start_offset: int,
+        end_offset: int,
+        sequence: int
+    );
+
+    // Reads the synthetic `IL_OUTPUT_ATTRIBUTE` the compiler writes on each
+    // method containing an `@IL.output` pragma, decoding the four parallel
+    // arrays it carries (paths, starts, ends, sequences). Returns null when
+    // the assembly has none - a test not using `@IL.output`, or one whose
+    // compiler build marked nothing.
+    //
+    // The attribute is referenced by name only and never resolved, so this
+    // reads the raw blob rather than going through the attribute type system.
+    class IL_OUTPUT_ATTRIBUTE_READER is
+        ATTRIBUTE_TYPE_NAME: string static => "IL_OUTPUT_ATTRIBUTE";
+
+        read(assembly_path: string) -> LIST[IL_OUTPUT_RANGE]? static is
+            let result = LIST[IL_OUTPUT_RANGE]();
+
+            let use stream = File.open_read(assembly_path);
+            let use pe = PEReader(stream);
+            let md = PEReaderExtensions.get_metadata_reader(pe);
+
+            for type_handle in md.type_definitions do
+                let type = md.get_type_definition(type_handle);
+                let type_name = md.get_string(type.name);
+                let namespace_name = md.get_string(type.namespace);
+
+                let qualifier mut = type_name;
+
+                if !string.is_null_or_white_space(namespace_name) then
+                    qualifier = "{namespace_name}.{type_name}";
+                fi
+
+                for method_handle in type.get_methods() do
+                    let method = md.get_method_definition(method_handle);
+                    let method_name = md.get_string(method.name);
+
+                    for attribute_handle in method.get_custom_attributes() do
+                        let attribute = md.get_custom_attribute(attribute_handle);
+
+                        if _matches(md, attribute.constructor) then
+                            let bytes = md.get_blob_bytes(attribute.value);
+                            let item = "{qualifier}::{method_name}";
+
+                            _decode(bytes, item, result);
+                        fi
+                    od
+                od
+            od
+
+            if result.count == 0 then
+                return null;
+            fi
+
+            return result;
+        si
+
+        // The attribute is a MemberRef whose parent TypeRef is named
+        // `IL_OUTPUT_ATTRIBUTE` (in `Ghul.Internal`).
+        _matches(md: MetadataReader, ctor: EntityHandle) -> bool static is
+            if ctor.kind == HandleKind.MEMBER_REFERENCE then
+                let member = md.get_member_reference(cast MemberReferenceHandle(ctor));
+                let parent = member.parent;
+
+                if parent.kind == HandleKind.TYPE_REFERENCE then
+                    let type = md.get_type_reference(cast TypeReferenceHandle(parent));
+
+                    return md.get_string(type.name).contains(ATTRIBUTE_TYPE_NAME);
+                fi
+            fi
+
+            return false;
+        si
+
+        // ECMA-335 II.23.3 value blob: a two-byte prologue, then the four
+        // fixed array arguments (paths, starts, ends, sequences) - each a
+        // four-byte length followed by its elements - and a trailing
+        // named-argument count of zero. Strings are SerStrings (a one-byte
+        // length then UTF-8; these file names are short) and the integers
+        // are little-endian int32.
+        _decode(
+            bytes: ubyte[],
+            item: string,
+            result: LIST[IL_OUTPUT_RANGE]
+        ) static is
+            let i mut = 2;
+
+            let path_count = BitConverter.to_int32(bytes, i);
+            i = i + 4;
+
+            let paths = LIST[string]();
+
+            for _ in 0..path_count do
+                let length = cast int(bytes[i]);
+                i = i + 1;
+
+                paths.add(Encoding.utf8.get_string(bytes, i, length));
+
+                i = i + length;
+            od
+
+            let starts = _read_int32_array(bytes, i);
+            i = i + 4 + starts.count * 4;
+
+            let ends = _read_int32_array(bytes, i);
+            i = i + 4 + ends.count * 4;
+
+            let sequences = _read_int32_array(bytes, i);
+
+            for k in 0..paths.count do
+                result.add(
+                    IL_OUTPUT_RANGE(item, paths[k], starts[k], ends[k], sequences[k]));
+            od
+        si
+
+        _read_int32_array(bytes: ubyte[], start: int) -> LIST[int] static is
+            let count = BitConverter.to_int32(bytes, start);
+            let result = LIST[int]();
+
+            for k in 0..count do
+                result.add(BitConverter.to_int32(bytes, start + 4 + k * 4));
+            od
+
+            return result;
+        si
+    si
+si

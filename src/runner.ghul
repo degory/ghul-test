@@ -1,5 +1,6 @@
 namespace Tester is
     use System.Exception;
+    use System.Convert;
     use System.Text.StringBuilder;
 
     use Collections.Iterable;
@@ -242,7 +243,24 @@ namespace Tester is
                 return;
             fi
 
-            if !File.exists(_compiler_under_test.get_binary_path(self)) then
+            let binary_path = _compiler_under_test.get_binary_path(self);
+
+            if !File.exists(binary_path) then
+                return;
+            fi
+
+            // A test whose source marks statements with `@IL.output` carries
+            // the marked ranges out of the assembly as a method attribute.
+            // Each range's offsets are scoped to its own method, so the
+            // disassembly is sliced per method rather than over the whole
+            // assembly (where offsets are not unique).
+            let ranges = IL_OUTPUT_ATTRIBUTE_READER.read(binary_path);
+
+            if ranges? then
+                _slice_il_output(ranges!, il_out_path);
+
+                normalize_paths("il.out");
+
                 return;
             fi
 
@@ -289,6 +307,98 @@ namespace Tester is
 
             normalize_paths("il.out");
         si
+
+        // Disassembles each method that carries an `@IL.output` range and
+        // keeps the instructions whose IL offset falls in that range,
+        // emitting them in source (sequence) order. One `ildasm` call per
+        // method, since offsets are unique only within a method.
+        _slice_il_output(ranges: LIST[IL_OUTPUT_RANGE], il_out_path: string) is
+            let slices = MAP[int, LIST[string]]();
+            let max_sequence mut = 0;
+
+            let binary_rel =
+                _compiler_under_test.get_binary_path_relative_to_test_folder(self);
+
+            for item in _distinct_items(ranges) do
+                run(
+                    _disassembler.executable!,
+                    DISASSEMBLER.arguments(binary_rel, "il.tmp", item),
+                    30000,
+                    null,
+                    "il.err"
+                );
+
+                let tmp_path = get_path("il.tmp");
+
+                if !File.exists(tmp_path) then
+                    add_fail(
+                        "@IL.output: disassembler produced no output for {item}",
+                        "il.err");
+
+                    return;
+                fi
+
+                let il_lines = File.read_all_lines(tmp_path);
+
+                for range in ranges do
+                    if range.item =~ item then
+                        for line in il_lines do
+                            let match = IL_LINE.match(line);
+
+                            if match.success then
+                                let offset =
+                                    Convert.to_int32(match.groups[1].value, 16);
+
+                                if
+                                    range.start_offset <= offset /\
+                                    offset < range.end_offset
+                                then
+                                    if !slices.contains_key(range.sequence) then
+                                        slices[range.sequence] = LIST[string]();
+                                    fi
+
+                                    slices[range.sequence].add(
+                                        match.groups[2].value.trim());
+
+                                    if range.sequence > max_sequence then
+                                        max_sequence = range.sequence;
+                                    fi
+                                fi
+                            fi
+                        od
+                    fi
+                od
+
+                File.delete(tmp_path);
+            od
+
+            let lines = LIST[string]();
+
+            for sequence in 1::max_sequence do
+                if slices.contains_key(sequence) then
+                    for line in slices[sequence] do
+                        lines.add(line);
+                    od
+                fi
+            od
+
+            File.write_all_lines(il_out_path, lines);
+        si
+
+        _distinct_items(ranges: LIST[IL_OUTPUT_RANGE]) -> LIST[string] is
+            let items = LIST[string]();
+
+            for range in ranges do
+                if !items.contains(range.item) then
+                    items.add(range.item);
+                fi
+            od
+
+            return items;
+        si
+
+        IL_LINE: Regex static =>
+            Regex("^\\s*IL_([0-9a-fA-F]+):\\s*(.*)$");
 
         // Scoping to something absent is answered with silence and a
         // zero exit, so what came back has to be checked against what
