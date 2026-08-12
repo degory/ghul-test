@@ -1,5 +1,6 @@
 namespace Tester is
     use System.Exception;
+    use System.Convert;
     use System.Text.StringBuilder;
 
     use Collections.Iterable;
@@ -242,7 +243,24 @@ namespace Tester is
                 return;
             fi
 
-            if !File.exists(_compiler_under_test.get_binary_path(self)) then
+            let binary_path = _compiler_under_test.get_binary_path(self);
+
+            if !File.exists(binary_path) then
+                return;
+            fi
+
+            // A test whose source marks statements with `@IL.output` carries
+            // the marked ranges out of the assembly as a method attribute.
+            // Each range's offsets are scoped to its own method, so the
+            // disassembly is sliced per method rather than over the whole
+            // assembly (where offsets are not unique).
+            let ranges = IL_OUTPUT_ATTRIBUTE_READER.read(binary_path);
+
+            if ranges? then
+                _slice_il_output(ranges!, il_out_path);
+
+                normalize_paths("il.out");
+
                 return;
             fi
 
@@ -289,6 +307,145 @@ namespace Tester is
 
             normalize_paths("il.out");
         si
+
+        // Disassembles each method that carries an `@IL.output` range and
+        // keeps the instructions whose IL offset falls in that range,
+        // emitting them in source (sequence) order. One `ildasm` call per
+        // method, since offsets are unique only within a method.
+        _slice_il_output(ranges: LIST[IL_OUTPUT_RANGE], il_out_path: string) is
+            let slices = MAP[int, LIST[string]]();
+
+            // The span the compiler actually used, rather than one this
+            // end assumes: which number it starts from is its business,
+            // and a region numbered outside a range guessed here would
+            // drop out of the snapshot without saying so.
+            let min_sequence mut = 0;
+            let max_sequence mut = 0;
+            let seen_any mut = false;
+
+            let binary_rel =
+                _compiler_under_test.get_binary_path_relative_to_test_folder(self);
+
+            for item in _distinct_items(ranges) do
+                run(
+                    _disassembler.executable!,
+                    DISASSEMBLER.arguments(binary_rel, "il.tmp", item),
+                    30000,
+                    null,
+                    "il.err"
+                );
+
+                let tmp_path = get_path("il.tmp");
+
+                if !File.exists(tmp_path) then
+                    add_fail(
+                        "@IL.output: disassembler produced no output for {item}",
+                        "il.err");
+
+                    return;
+                fi
+
+                let il_lines = File.read_all_lines(tmp_path);
+
+                // Scoping to something the assembly does not contain is
+                // answered with a preamble and a zero exit, exactly as it
+                // is for `il.item`. Every method has a body of at least
+                // one instruction, so a dump carrying no instruction at
+                // all means the item named nothing - which would
+                // otherwise drop this method's marked statements from the
+                // snapshot without saying so.
+                if !(il_lines | .any(l => IL_LINE.match(l).success)) then
+                    add_fail(
+                        "@IL.output: '{item}' names a method the emitted assembly "
+                        "does not contain");
+
+                    File.delete(tmp_path);
+
+                    return;
+                fi
+
+                for range in ranges do
+                    if range.item =~ item then
+                        let kept = LIST[string]();
+
+                        for line in il_lines do
+                            let match = IL_LINE.match(line);
+
+                            if match.success then
+                                let offset =
+                                    Convert.to_int32(match.groups[1].value, 16);
+
+                                if
+                                    range.start_offset <= offset /\
+                                    offset < range.end_offset
+                                then
+                                    kept.add(match.groups[2].value.trim());
+                                fi
+                            fi
+                        od
+
+                        // A region that emitted instructions but matched
+                        // none of them means the offsets and the
+                        // disassembly disagree, which would otherwise
+                        // leave the statement silently absent.
+                        if kept.count == 0 /\ range.start_offset < range.end_offset then
+                            add_fail(
+                                "@IL.output: no instruction of '{item}' lies in "
+                                "{range.start_offset}..{range.end_offset}");
+
+                            File.delete(tmp_path);
+
+                            return;
+                        fi
+
+                        if kept.count > 0 then
+                            slices[range.sequence] = kept;
+
+                            if !seen_any \/ range.sequence < min_sequence then
+                                min_sequence = range.sequence;
+                            fi
+
+                            if !seen_any \/ range.sequence > max_sequence then
+                                max_sequence = range.sequence;
+                            fi
+
+                            seen_any = true;
+                        fi
+                    fi
+                od
+
+                File.delete(tmp_path);
+            od
+
+            let lines = LIST[string]();
+
+            if seen_any then
+                for sequence in min_sequence::max_sequence do
+                    if slices.contains_key(sequence) then
+                        for line in slices[sequence] do
+                            lines.add(line);
+                        od
+                    fi
+                od
+            fi
+
+            File.write_all_lines(il_out_path, lines);
+        si
+
+        _distinct_items(ranges: LIST[IL_OUTPUT_RANGE]) -> LIST[string] is
+            let items = LIST[string]();
+
+            for range in ranges do
+                if !items.contains(range.item) then
+                    items.add(range.item);
+                fi
+            od
+
+            return items;
+        si
+
+        IL_LINE: Regex static =>
+            Regex("^\\s*IL_([0-9a-fA-F]+):\\s*(.*)$");
 
         // Scoping to something absent is answered with silence and a
         // zero exit, so what came back has to be checked against what
