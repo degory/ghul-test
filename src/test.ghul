@@ -13,7 +13,8 @@ namespace Tester is
         // what was emitted, not what it does. Running it produces a
         // host error about a missing runtime configuration, which says
         // nothing about the test.
-        is_library: bool => flags.contains("--library");
+        is_library: bool =>
+            flags.split([' ', '\t', '\r', '\n']) | .any(f => f =~ "--library");
 
         has_executed: bool => result? /\ result.is_executed;
         has_passed: bool => result? /\ result.is_pass;

@@ -340,8 +340,27 @@ namespace Tester is
 
                 let il_lines = File.read_all_lines(tmp_path);
 
+                // Scoping to something the assembly does not contain is
+                // answered with a preamble and a zero exit, exactly as it
+                // is for `il.item`. Every method has a body of at least
+                // one instruction, so a dump carrying no instruction at
+                // all means the item named nothing - which would
+                // otherwise drop this method's marked statements from the
+                // snapshot without saying so.
+                if !(il_lines | .any(l => IL_LINE.match(l).success)) then
+                    add_fail(
+                        "@IL.output: '{item}' names a method the emitted assembly "
+                        "does not contain");
+
+                    File.delete(tmp_path);
+
+                    return;
+                fi
+
                 for range in ranges do
                     if range.item =~ item then
+                        let kept = LIST[string]();
+
                         for line in il_lines do
                             let match = IL_LINE.match(line);
 
@@ -353,19 +372,32 @@ namespace Tester is
                                     range.start_offset <= offset /\
                                     offset < range.end_offset
                                 then
-                                    if !slices.contains_key(range.sequence) then
-                                        slices[range.sequence] = LIST[string]();
-                                    fi
-
-                                    slices[range.sequence].add(
-                                        match.groups[2].value.trim());
-
-                                    if range.sequence > max_sequence then
-                                        max_sequence = range.sequence;
-                                    fi
+                                    kept.add(match.groups[2].value.trim());
                                 fi
                             fi
                         od
+
+                        // A region that emitted instructions but matched
+                        // none of them means the offsets and the
+                        // disassembly disagree, which would otherwise
+                        // leave the statement silently absent.
+                        if kept.count == 0 /\ range.start_offset < range.end_offset then
+                            add_fail(
+                                "@IL.output: no instruction of '{item}' lies in "
+                                "{range.start_offset}..{range.end_offset}");
+
+                            File.delete(tmp_path);
+
+                            return;
+                        fi
+
+                        if kept.count > 0 then
+                            slices[range.sequence] = kept;
+
+                            if range.sequence > max_sequence then
+                                max_sequence = range.sequence;
+                            fi
+                        fi
                     fi
                 od
 
