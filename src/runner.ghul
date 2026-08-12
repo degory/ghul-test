@@ -314,7 +314,14 @@ namespace Tester is
         // method, since offsets are unique only within a method.
         _slice_il_output(ranges: LIST[IL_OUTPUT_RANGE], il_out_path: string) is
             let slices = MAP[int, LIST[string]]();
+
+            // The span the compiler actually used, rather than one this
+            // end assumes: which number it starts from is its business,
+            // and a region numbered outside a range guessed here would
+            // drop out of the snapshot without saying so.
+            let min_sequence mut = 0;
             let max_sequence mut = 0;
+            let seen_any mut = false;
 
             let binary_rel =
                 _compiler_under_test.get_binary_path_relative_to_test_folder(self);
@@ -394,9 +401,15 @@ namespace Tester is
                         if kept.count > 0 then
                             slices[range.sequence] = kept;
 
-                            if range.sequence > max_sequence then
+                            if !seen_any \/ range.sequence < min_sequence then
+                                min_sequence = range.sequence;
+                            fi
+
+                            if !seen_any \/ range.sequence > max_sequence then
                                 max_sequence = range.sequence;
                             fi
+
+                            seen_any = true;
                         fi
                     fi
                 od
@@ -406,13 +419,15 @@ namespace Tester is
 
             let lines = LIST[string]();
 
-            for sequence in 1::max_sequence do
-                if slices.contains_key(sequence) then
-                    for line in slices[sequence] do
-                        lines.add(line);
-                    od
-                fi
-            od
+            if seen_any then
+                for sequence in min_sequence::max_sequence do
+                    if slices.contains_key(sequence) then
+                        for line in slices[sequence] do
+                            lines.add(line);
+                        od
+                    fi
+                od
+            fi
 
             File.write_all_lines(il_out_path, lines);
         si
