@@ -167,5 +167,22 @@ namespace Tester is
             line.contains(".NET IL Disassembler.") \/
             line.contains("THIS IS A PARTIAL DISASSEMBLY");
 
+        // ildasm opens the types and members with this banner. Everything
+        // before it describes the assembly as a container rather than
+        // what it holds: the extern references and their versions, the
+        // module name, and the PE header fields. A snapshot asserting a
+        // construct has no business holding any of that - the extern
+        // versions in particular move whenever a dependency is bumped,
+        // which fails every whole-assembly snapshot at once for a reason
+        // none of them is about.
+        is_members_section_start(line: string) -> bool static =>
+            line.contains("CLASS MEMBERS DECLARATION");
+
+        // The members run to a rule of `=` characters, or to the closing
+        // banner where the disassembly carries no rule.
+        is_members_section_end(line: string) -> bool static =>
+            line.starts_with("// =====") \/
+            line.contains("DISASSEMBLY COMPLETE");
+
     si
 si

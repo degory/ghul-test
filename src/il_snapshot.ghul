@@ -1,0 +1,69 @@
+namespace Tester is
+    use Collections.LIST;
+    use Collections.List;
+
+    // Reduces a disassembly to the part a snapshot is about.
+    //
+    // ildasm describes the assembly as a container before it describes
+    // what the assembly holds: the extern references and their versions,
+    // the module name, and the PE header fields. None of that is what an
+    // `il.expected` asserts, and the extern versions move whenever a
+    // dependency is bumped - which fails every whole-assembly snapshot at
+    // once, for a reason none of them is about.
+    class IL_SNAPSHOT is
+        narrow(lines: List[string]) -> List[string] static is
+            let kept = LIST[string]();
+
+            // A disassembly naming its members section is narrowed to it.
+            // One that does not is kept whole: better a snapshot holding
+            // more than it needs than every snapshot silently emptied by
+            // a banner ildasm stopped writing.
+            let has_members_section =
+                lines | .any(line => DISASSEMBLER.is_members_section_start(line));
+
+            let in_members mut = !has_members_section;
+
+            // The section opens with blank lines, which would otherwise
+            // start every snapshot with whitespace that means nothing.
+            let seen_content mut = false;
+
+            for line in lines do
+                if !in_members then
+                    in_members = DISASSEMBLER.is_members_section_start(line);
+
+                    continue;
+                fi
+
+                if
+                    has_members_section /\
+                    DISASSEMBLER.is_members_section_end(line)
+                then
+                    break;
+                fi
+
+                if DISASSEMBLER.is_unstable_line(line) then
+                    continue;
+                fi
+
+                if !seen_content /\ string.is_null_or_white_space(line) then
+                    continue;
+                fi
+
+                seen_content = true;
+
+                kept.add(line);
+            od
+
+            // A snapshot ending in whitespace invites an editor to strip
+            // it and fail the next run.
+            while
+                kept.count > 0 /\
+                string.is_null_or_white_space(kept[kept.count - 1])
+            do
+                kept.remove_at(kept.count - 1);
+            od
+
+            return kept;
+        si
+    si
+si
