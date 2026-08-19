@@ -122,8 +122,8 @@ namespace Tester is
             // Written with character classes because a pattern holding a
             // literal space would not survive being joined into the
             // command line unquoted.
-            run_grep(":[[:space:]]*error[[:space:]]*[a-z0-9-]*:", "compiler.out", "err.grep");
-            run_grep(":[[:space:]]*warn(ing)?[[:space:]]*[a-z0-9-]*:", "compiler.out", "warn.grep");
+            run_grep(":[[:space:]]*error(:|[[:space:]]+[a-z0-9-]*:)", "compiler.out", "err.grep");
+            run_grep(":[[:space:]]*warn(ing)?(:|[[:space:]]+[a-z0-9-]*:)", "compiler.out", "warn.grep");
 
             run_sort("err.grep", "err.sort");
             run_sort("warn.grep", "warn.sort");
