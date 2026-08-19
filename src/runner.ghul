@@ -105,8 +105,25 @@ namespace Tester is
                 fi
             fi
 
-            run_grep("error:", "compiler.out", "err.grep");
-            run_grep("warn:", "compiler.out", "warn.grep");
+            // Matches both diagnostic formats the compiler emits: the
+            // default `file: l,c..l,c: error: text` and MSBuild's canonical
+            // `file(l,c,l,c): error code: text`, which a test selects with
+            // --msbuild-diagnostics. Matching on severity followed by a
+            // colon or a code, rather than the bare word, keeps a message
+            // that happens to contain "error" out of the error list.
+            //
+            // The optional code between severity and colon has to be a
+            // ghūl slug - lowercase kebab-case - so that a
+            // --use-dotnet-build test's snapshot keeps to the ghūl
+            // diagnostics it asserts rather than absorbing the build
+            // engine's own lines, whose codes are uppercase-prefixed
+            // (MSB3073, CS0012).
+            //
+            // Written with character classes because a pattern holding a
+            // literal space would not survive being joined into the
+            // command line unquoted.
+            run_grep(":[[:space:]]*error(:|[[:space:]]+[a-z0-9-]*:)", "compiler.out", "err.grep");
+            run_grep(":[[:space:]]*warn(ing)?(:|[[:space:]]+[a-z0-9-]*:)", "compiler.out", "warn.grep");
 
             run_sort("err.grep", "err.sort");
             run_sort("warn.grep", "warn.sort");
@@ -506,7 +523,9 @@ namespace Tester is
             return
                 run(
                     "grep",
-                    ["-F", pattern, in_file],
+                    // -E, not -F: the diagnostic patterns above are
+                    // extended regular expressions.
+                    ["-E", pattern, in_file],
                     5000,
                     out_file,
                     null,
