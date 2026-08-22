@@ -68,10 +68,6 @@ namespace Tester is
         // tool manifest.
         compiler_command: string? => _compiler_command;
 
-        // Whether this run compiles through MSBuild, whose console logger
-        // renders each diagnostic more than once on captured output.
-        is_dotnet_build: bool => _run_mode == CompilerRunMode.DOTNET;
-
         set_compiler_command(command: string?) is
             if !command? \/ string.is_null_or_white_space(command) then
                 return;

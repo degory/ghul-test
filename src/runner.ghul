@@ -105,6 +105,15 @@ namespace Tester is
                 fi
             fi
 
+            // A dotnet-build capture holds each diagnostic twice: MSBuild's
+            // console logger renders every error and warning as it occurs,
+            // then re-lists them all after the "Build FAILED." / "Build
+            // succeeded." banner. Cut the log at that banner so the snapshot
+            // sees one rendering per diagnostic and still counts genuine
+            // repeats; a plain run's capture has no such banner and passes
+            // through unchanged.
+            trim_build_log("compiler.out", "compiler.trim");
+
             // Matches both diagnostic formats the compiler emits: the
             // default `file: l,c..l,c: error: text` and MSBuild's canonical
             // `file(l,c,l,c): error code: text`, which a test selects with
@@ -122,8 +131,8 @@ namespace Tester is
             // Written with character classes because a pattern holding a
             // literal space would not survive being joined into the
             // command line unquoted.
-            run_grep(":[[:space:]]*error(:|[[:space:]]+[a-z0-9-]*:)", "compiler.out", "err.grep");
-            run_grep(":[[:space:]]*warn(ing)?(:|[[:space:]]+[a-z0-9-]*:)", "compiler.out", "warn.grep");
+            run_grep(":[[:space:]]*error(:|[[:space:]]+[a-z0-9-]*:)", "compiler.trim", "err.grep");
+            run_grep(":[[:space:]]*warn(ing)?(:|[[:space:]]+[a-z0-9-]*:)", "compiler.trim", "warn.grep");
 
             run_sort("err.grep", "err.sort");
             run_sort("warn.grep", "warn.sort");
@@ -172,8 +181,9 @@ namespace Tester is
                 delete_files([
                     "binary.exe",
                     "binary.exe.mdb",
-                    "binary.runtimeconfig.json",                 
+                    "binary.runtimeconfig.json",
                     "compiler.out",
+                    "compiler.trim",
                     "sed.out",
                     "warn.grep",
                     "warn.diff",
@@ -519,6 +529,32 @@ namespace Tester is
                 IL_SNAPSHOT.narrow(File.read_all_lines(raw_path)));
         si
        
+        // The build log truncated at MSBuild's end-of-build banner. A
+        // dotnet-build capture holds each diagnostic twice: the console
+        // logger renders every error and warning as it occurs, then
+        // re-lists them all after the banner. Cutting there leaves one
+        // rendering per diagnostic and keeps genuine repeats countable. A
+        // plain run's capture - the compiler invoked directly - has no
+        // such banner and passes through unchanged.
+        trim_build_log(in_file: string, out_file: string) is
+            if !File.exists(get_path(in_file)) then
+                return;
+            fi
+
+            let builder = System.Text.StringBuilder();
+
+            for line in read_all_text(in_file).split(['\n']) do
+                if line.starts_with("Build FAILED") \/ line.starts_with("Build succeeded") then
+                    break;
+                fi
+
+                builder.append(line);
+                builder.append("\n");
+            od
+
+            write_all_text(out_file, builder.to_string());
+        si
+
         run_grep(pattern: string, in_file: string, out_file: string) -> bool is
             return
                 run(
@@ -534,18 +570,10 @@ namespace Tester is
         si
 
         run_sort(in_file: string, out_file: string) -> bool is
-            // -u for a dotnet-build run: MSBuild's console logger renders every
-            // diagnostic twice on captured output - once as it occurs, once in
-            // the list after "Build FAILED." - and the snapshot asserts the
-            // diagnostics a build surfaces, not how many times the logger
-            // chose to print each one. A plain run captures the compiler
-            // directly, where a repeated line is a real repeated diagnostic.
-            let arguments = if _compiler_under_test.is_dotnet_build then ["-u", in_file] else [in_file] fi;
-
             return
                 run(
                     "sort",
-                    arguments,
+                    [in_file],
                     5000,
                     out_file,
                     null,
