@@ -534,10 +534,18 @@ namespace Tester is
         si
 
         run_sort(in_file: string, out_file: string) -> bool is
+            // -u for a dotnet-build run: MSBuild's console logger renders every
+            // diagnostic twice on captured output - once as it occurs, once in
+            // the list after "Build FAILED." - and the snapshot asserts the
+            // diagnostics a build surfaces, not how many times the logger
+            // chose to print each one. A plain run captures the compiler
+            // directly, where a repeated line is a real repeated diagnostic.
+            let arguments = if _compiler_under_test.is_dotnet_build then ["-u", in_file] else [in_file] fi;
+
             return
                 run(
                     "sort",
-                    [in_file],
+                    arguments,
                     5000,
                     out_file,
                     null,
