@@ -43,10 +43,10 @@ namespace Tests is
 
             let narrowed = IL_SNAPSHOT.narrow(_whole_assembly());
 
-            should(narrowed.count).be(4, null, null);
+            should(narrowed.count).be(4, "", []);
             should(narrowed[0]).be(
-                ".class public auto ansi beforefieldinit Test.MAIN", null, null);
-            should(narrowed[3]).be("}} // end of class Test.MAIN", null, null);
+                ".class public auto ansi beforefieldinit Test.MAIN", "", []);
+            should(narrowed[3]).be("}} // end of class Test.MAIN", "", []);
         si
 
         @Test()
@@ -54,10 +54,10 @@ namespace Tests is
 
             let narrowed = IL_SNAPSHOT.narrow(_whole_assembly());
 
-            should(narrowed | .any(line => line.contains(".ver "))).be_false(null, null);
+            should(narrowed | .any(line => line.contains(".ver "))).be_false("", []);
             should(
                 narrowed | .any(line => line.contains(".assembly extern"))
-            ).be_false(null, null);
+            ).be_false("", []);
         si
 
         // The whole point of narrowing: a snapshot must not move when a
@@ -73,10 +73,10 @@ namespace Tests is
             let before = IL_SNAPSHOT.narrow(_whole_assembly());
             let after = IL_SNAPSHOT.narrow(bumped);
 
-            should(after.count).be(before.count, null, null);
+            should(after.count).be(before.count, "", []);
 
             for i in 0..before.count do
-                should(after[i]).be(before[i], null, null);
+                should(after[i]).be(before[i], "", []);
             od
         si
 
@@ -87,9 +87,9 @@ namespace Tests is
 
             let narrowed = IL_SNAPSHOT.narrow(sliced);
 
-            should(narrowed.count).be(2, null, null);
-            should(narrowed[0]).be("ldloc.0", null, null);
-            should(narrowed[1]).be("throw", null, null);
+            should(narrowed.count).be(2, "", []);
+            should(narrowed[0]).be("ldloc.0", "", []);
+            should(narrowed[1]).be("throw", "", []);
         si
 
         @Test()
@@ -105,8 +105,8 @@ namespace Tests is
 
             let narrowed = IL_SNAPSHOT.narrow(lines);
 
-            should(narrowed.count).be(1, null, null);
-            should(narrowed[0]).be(".class public Test.MAIN", null, null);
+            should(narrowed.count).be(1, "", []);
+            should(narrowed[0]).be(".class public Test.MAIN", "", []);
         si
     si
 si

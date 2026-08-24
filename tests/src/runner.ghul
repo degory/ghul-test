@@ -111,7 +111,7 @@ namespace Tests is
                 Std.error.write_line("field_value type: {field_value.get_type().to_string()}");
             fi
 
-            should(isa Map[string,string](field_value)).be_true(null, null);
+            should(isa Map[string,string](field_value)).be_true("", []);
         si
 
         @Test()
@@ -133,8 +133,8 @@ namespace Tests is
 
             let collate_as_map = cast MutableMap[string,string](field_value);
 
-            should(collate_as_map.contains_key("LC_COLLATE")).be_true(null, null);
-            should(collate_as_map["LC_COLLATE"]).be("C", null, null);
+            should(collate_as_map.contains_key("LC_COLLATE")).be_true("", []);
+            should(collate_as_map["LC_COLLATE"]).be("C", "", []);
         si
 
         @Test()
@@ -152,7 +152,7 @@ namespace Tests is
 
             let result = runner.get_result();
 
-            should(result).be(failure, null, null);
+            should(result).be(failure, "", []);
         si
 
         @Test()
@@ -166,7 +166,7 @@ namespace Tests is
 
             let result = runner.get_result();
 
-            should(isa PASS(result)).be_true(null, null);
+            should(isa PASS(result)).be_true("", []);
         si
     si
 si
