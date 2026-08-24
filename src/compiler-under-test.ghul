@@ -25,6 +25,7 @@ namespace Tester is
         _use_dotnet: bool;
         _compiler_command: string?;
 
+        @suppress("field-definite-assignment")
         init(..) is
             if _run_mode == CompilerRunMode.DOTNET then
                 _executable = "dotnet";

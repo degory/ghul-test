@@ -27,7 +27,7 @@ namespace Tests is
 
             cut.set_runtime_path(null);
 
-            should(cut.runtime_path).be(original, null, null);
+            should(cut.runtime_path).be(original, "", []);
         si
 
         @Test()
@@ -38,7 +38,7 @@ namespace Tests is
 
             cut.set_runtime_path("");
 
-            should(cut.runtime_path).be(original, null, null);
+            should(cut.runtime_path).be(original, "", []);
         si
 
         @Test()
@@ -49,7 +49,7 @@ namespace Tests is
 
             cut.set_runtime_path("   ");
 
-            should(cut.runtime_path).be(original, null, null);
+            should(cut.runtime_path).be(original, "", []);
         si
 
         @Test()
@@ -60,7 +60,7 @@ namespace Tests is
 
             cut.set_runtime_path(new_path);
 
-            should(cut.runtime_path).be(new_path, null, null);
+            should(cut.runtime_path).be(new_path, "", []);
         si
 
         @Test()
@@ -75,7 +75,7 @@ namespace Tests is
                 threw = true;
             yrt
 
-            should(threw).be(true, null, null);
+            should(threw).be(true, "", []);
         si
     si
 si

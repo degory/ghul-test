@@ -39,6 +39,7 @@ namespace Tester is
         running: string[] public;
         last: string public;
 
+        @suppress("field-definite-assignment")
         init() is si
     si
 
@@ -73,6 +74,7 @@ namespace Tester is
             fi
         si
 
+        @suppress("field-definite-assignment")
         init(..) is
             _debug = System.Environment.get_environment_variable("GHUL_TEST_PROGRESS_DEBUG")?;
 

@@ -16,9 +16,9 @@ namespace Tests is
 
             let filter = TAG_FILTER(LIST[string]());
 
-            should(filter.is_empty).be_true(null, null);
-            should(filter.matches(LIST[string]())).be_true(null, null);
-            should(filter.matches(["smoke"])).be_true(null, null);
+            should(filter.is_empty).be_true("", []);
+            should(filter.matches(LIST[string]())).be_true("", []);
+            should(filter.matches(["smoke"])).be_true("", []);
         si
 
         @Test()
@@ -26,7 +26,7 @@ namespace Tests is
 
             let filter = TAG_FILTER(["smoke", "narrowing"]);
 
-            should(filter.matches(["narrowing", "unions"])).be_true(null, null);
+            should(filter.matches(["narrowing", "unions"])).be_true("", []);
         si
 
         @Test()
@@ -34,7 +34,7 @@ namespace Tests is
 
             let filter = TAG_FILTER(["smoke"]);
 
-            should(filter.matches(["narrowing", "unions"])).be_false(null, null);
+            should(filter.matches(["narrowing", "unions"])).be_false("", []);
         si
 
         @Test()
@@ -42,7 +42,7 @@ namespace Tests is
 
             let filter = TAG_FILTER(["smoke"]);
 
-            should(filter.matches(LIST[string]())).be_false(null, null);
+            should(filter.matches(LIST[string]())).be_false("", []);
         si
 
         @Test()
@@ -50,10 +50,10 @@ namespace Tests is
 
             let tags = TAG_FILTER.parse_tags(" smoke  narrowing\nunions \t ") | .collect_list();
 
-            should(tags.count).be(3, null, null);
-            should(tags.contains("smoke")).be_true(null, null);
-            should(tags.contains("narrowing")).be_true(null, null);
-            should(tags.contains("unions")).be_true(null, null);
+            should(tags.count).be(3, "", []);
+            should(tags.contains("smoke")).be_true("", []);
+            should(tags.contains("narrowing")).be_true("", []);
+            should(tags.contains("unions")).be_true("", []);
         si
 
         @Test()
@@ -61,7 +61,7 @@ namespace Tests is
 
             let tags = TAG_FILTER.parse_tags("") | .collect_list();
 
-            should(tags.count).be(0, null, null);
+            should(tags.count).be(0, "", []);
         si
     si
 si
