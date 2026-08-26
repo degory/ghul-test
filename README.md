@@ -121,3 +121,7 @@ This repository includes helper scripts under `./scripts`:
 
 Refer to the [ghūl compiler integration tests](https://github.com/degory/ghul/tree/main/integration-tests) for many real‑world examples of this structure.
 
+
+## issues
+
+[View open issues](https://github.com/degory/ghul/issues?q=is%3Aopen+is%3Aissue+label%3Aghul-test) or [raise a new one](https://github.com/degory/ghul/issues/new?labels=ghul-test).
