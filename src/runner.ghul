@@ -1,27 +1,27 @@
 namespace Tester is
-    use System.Exception;
-    use System.Convert;
-    use System.Text.StringBuilder;
+    use System.Exception
+    use System.Convert
+    use System.Text.StringBuilder
 
-    use Collections.Iterable;
-    use Collections.List;
-    use Collections.MutableList;
-    use Collections.Map;
-    use Collections.MutableMap;
-    use Collections.LIST;
-    use Collections.MAP;
+    use Collections.Iterable
+    use Collections.List
+    use Collections.MutableList
+    use Collections.Map
+    use Collections.MutableMap
+    use Collections.LIST
+    use Collections.MAP
 
-    use Pair = Collections.KeyValuePair;
+    use Pair = Collections.KeyValuePair
 
-    use IO.Std;
-    use IO.File;
-    use IO.Directory;
+    use IO.Std
+    use IO.File
+    use IO.Directory
 
-    use System.Diagnostics.Process;
-    use System.Diagnostics.ProcessStartInfo;
+    use System.Diagnostics.Process
+    use System.Diagnostics.ProcessStartInfo
 
-    use System.Text.RegularExpressions.Regex;
-    use System.Text.RegularExpressions.RegexOptions;
+    use System.Text.RegularExpressions.Regex
+    use System.Text.RegularExpressions.RegexOptions
 
     class RUNNER(
         host_cli: string private,
@@ -30,13 +30,13 @@ namespace Tester is
         disassembler: DISASSEMBLER private,
         test: TEST private
     ) is
-        _collate_environment: MutableMap[string,string]? static;
+        _collate_environment: MutableMap[string,string]? static
 
-        _failure: FAILURE?;
+        _failure: FAILURE?
 
         init(..) is
             if !_collate_environment? then
-                _collate_environment = MAP[string,string]();
+                _collate_environment = MAP[string,string]()
                 _collate_environment.add("LC_COLLATE", "C");
             fi
         si
@@ -50,25 +50,25 @@ namespace Tester is
         si
 
         get_run() -> () -> Result
-            is               
+            is
                 return () -> Result is
-                    let result = run_test();
-                    
+                    let result = run_test()
+
                     return result;
                 si;
             si
-        
+
         run_test() -> Result is
             try
                 if Directory.get_files(_test.path, "disabled*")| .count() > 0 then
                     return SKIP(_test);
                 fi
 
-                _run_test();
+                _run_test()
 
-                clean_up();
+                clean_up()
 
-                mark_if_failed();
+                mark_if_failed()
 
                 return get_result();
             catch ex: Exception
@@ -78,7 +78,7 @@ namespace Tester is
 
         _run_test() is
             if _test.source_files| .count() == 0 then
-                add_fail("no source files found");
+                add_fail("no source files found")
                 return;
             fi
 
@@ -87,20 +87,20 @@ namespace Tester is
             // the IL itself is read from this file existing once it has
             // run, so one surviving from last time would be taken for
             // this run's answer and suppress the disassembly.
-            delete_files(["il.out", "il.raw", "il.err"]);
+            delete_files(["il.out", "il.raw", "il.err"])
 
-            let build_succeeded = _compiler_under_test.run_compiler(self, _test);
+            let build_succeeded = _compiler_under_test.run_compiler(self, _test)
 
-            let exit_after_grep_and_sort mut = false;
+            let exit_after_grep_and_sort mut = false
 
             if build_succeeded then
                 if _test.is_build_fail_expected then
-                    add_fail("unexpected build success: {_test.path}");
+                    add_fail("unexpected build success: {_test.path}")
                     exit_after_grep_and_sort = true;
                 fi
             else
                 if !_test.is_build_fail_expected then
-                    add_fail("unexpected build failure", "compiler.out");
+                    add_fail("unexpected build failure", "compiler.out")
                     exit_after_grep_and_sort = true;
                 fi
             fi
@@ -112,7 +112,7 @@ namespace Tester is
             // sees one rendering per diagnostic and still counts genuine
             // repeats; a plain run's capture has no such banner and passes
             // through unchanged.
-            trim_build_log("compiler.out", "compiler.trim");
+            trim_build_log("compiler.out", "compiler.trim")
 
             // Matches both diagnostic formats the compiler emits: the
             // default `file: l,c..l,c: error: text` and MSBuild's canonical
@@ -131,37 +131,37 @@ namespace Tester is
             // Written with character classes because a pattern holding a
             // literal space would not survive being joined into the
             // command line unquoted.
-            run_grep(":[[:space:]]*error(:|[[:space:]]+[a-z0-9-]*:)", "compiler.trim", "err.grep");
-            run_grep(":[[:space:]]*warn(ing)?(:|[[:space:]]+[a-z0-9-]*:)", "compiler.trim", "warn.grep");
+            run_grep(":[[:space:]]*error(:|[[:space:]]+[a-z0-9-]*:)", "compiler.trim", "err.grep")
+            run_grep(":[[:space:]]*warn(ing)?(:|[[:space:]]+[a-z0-9-]*:)", "compiler.trim", "warn.grep")
 
-            run_sort("err.grep", "err.sort");
-            run_sort("warn.grep", "warn.sort");
+            run_sort("err.grep", "err.sort")
+            run_sort("warn.grep", "warn.sort")
 
-            normalize_paths("err.sort");
-            normalize_paths("warn.sort");
+            normalize_paths("err.sort")
+            normalize_paths("warn.sort")
 
             if exit_after_grep_and_sort then
                 return;
             fi
 
-            run_diff("errors", "err.expected", "err.sort", "err.diff", true);
+            run_diff("errors", "err.expected", "err.sort", "err.diff", true)
 
-            run_diff("warnings", "warn.expected", "warn.sort", "warn.diff", true);
+            run_diff("warnings", "warn.expected", "warn.sort", "warn.diff", true)
 
-            run_diff_il_out(build_succeeded);
+            run_diff_il_out(build_succeeded)
 
             if !build_succeeded \/ _test.is_library then
                 return;
             fi
 
-            _compiler_under_test.run_ln_runtime(self);
+            _compiler_under_test.run_ln_runtime(self)
 
             if !run_binary() then
                 return;
             fi
 
-            normalize_paths("run.out");
-            strip_stack_trace_locations("run.out");
+            normalize_paths("run.out")
+            strip_stack_trace_locations("run.out")
 
             run_diff("test output", "run.expected", "run.out", "run.diff", true);
         si
@@ -201,16 +201,16 @@ namespace Tester is
                     "run.diff",
                     "ghul-runtime.dll"
                 ]);
-            fi            
+            fi
         si
-        
+
         run_binary() -> bool is
             // this needs to be a path relative to the directory
             // that ghul-test was run from
-            let binary_path = _compiler_under_test.get_binary_path(self);
+            let binary_path = _compiler_under_test.get_binary_path(self)
 
             if !File.exists(binary_path) then
-                add_fail("no binary found: {binary_path}");
+                add_fail("no binary found: {binary_path}")
                 return false;
             fi
 
@@ -223,20 +223,20 @@ namespace Tester is
                     5000,
                     "run.out",
                     "run.err"
-                );
-            
-            if 
+                )
+
+            if
                 exit_status != 0
             then
-                add_fail("binary exited with non-zero status ({exit_status})", "run.err");
+                add_fail("binary exited with non-zero status ({exit_status})", "run.err")
                 return false;
             fi
 
             return true;
         si
-        
+
         run_diff_il_out(build_succeeded: bool) is
-            let il_out_path = get_path("il.out");
+            let il_out_path = get_path("il.out")
 
             // A compiler that wrote the IL itself has already answered,
             // and that answer is what its test's snapshot was captured
@@ -270,7 +270,7 @@ namespace Tester is
                 return;
             fi
 
-            let binary_path = _compiler_under_test.get_binary_path(self);
+            let binary_path = _compiler_under_test.get_binary_path(self)
 
             if !File.exists(binary_path) then
                 return;
@@ -281,18 +281,18 @@ namespace Tester is
             // Each range's offsets are scoped to its own method, so the
             // disassembly is sliced per method rather than over the whole
             // assembly (where offsets are not unique).
-            let ranges = IL_OUTPUT_ATTRIBUTE_READER.read(binary_path);
+            let ranges = IL_OUTPUT_ATTRIBUTE_READER.read(binary_path)
 
             if ranges? then
-                _slice_il_output(ranges, il_out_path);
+                _slice_il_output(ranges, il_out_path)
 
-                normalize_paths("il.out");
+                normalize_paths("il.out")
 
                 return;
             fi
 
-            let raw_path = get_path("il.raw");
-            let item = _requested_il_item();
+            let raw_path = get_path("il.raw")
+            let item = _requested_il_item()
 
             // The disassembler runs with the test folder as its working
             // directory, so both paths it is given are relative to that,
@@ -307,10 +307,10 @@ namespace Tester is
                 30000,
                 null,
                 "il.err"
-            );
+            )
 
             if !File.exists(raw_path) then
-                add_fail("disassembler produced no output", "il.err");
+                add_fail("disassembler produced no output", "il.err")
 
                 return;
             fi
@@ -321,16 +321,16 @@ namespace Tester is
             // Captured as a snapshot that is a test asserting nothing
             // about the construct it names, and passing for good.
             if item? /\ !_contains_item(raw_path, item) then
-                add_fail("il.item names '{item}', which the emitted assembly does not contain");
+                add_fail("il.item names '{item}', which the emitted assembly does not contain")
 
-                File.delete(raw_path);
+                File.delete(raw_path)
 
                 return;
             fi
 
-            _write_stable_il(raw_path, il_out_path);
+            _write_stable_il(raw_path, il_out_path)
 
-            File.delete(raw_path);
+            File.delete(raw_path)
 
             normalize_paths("il.out");
         si
@@ -340,18 +340,18 @@ namespace Tester is
         // emitting them in source (sequence) order. One `ildasm` call per
         // method, since offsets are unique only within a method.
         _slice_il_output(ranges: LIST[IL_OUTPUT_RANGE], il_out_path: string) is
-            let slices = MAP[int, LIST[string]]();
+            let slices = MAP[int, LIST[string]]()
 
             // The span the compiler actually used, rather than one this
             // end assumes: which number it starts from is its business,
             // and a region numbered outside a range guessed here would
             // drop out of the snapshot without saying so.
-            let min_sequence mut = 0;
-            let max_sequence mut = 0;
-            let seen_any mut = false;
+            let min_sequence mut = 0
+            let max_sequence mut = 0
+            let seen_any mut = false
 
             let binary_rel =
-                _compiler_under_test.get_binary_path_relative_to_test_folder(self);
+                _compiler_under_test.get_binary_path_relative_to_test_folder(self)
 
             for item in _distinct_items(ranges) do
                 run(
@@ -360,19 +360,19 @@ namespace Tester is
                     30000,
                     null,
                     "il.err"
-                );
+                )
 
-                let tmp_path = get_path("il.tmp");
+                let tmp_path = get_path("il.tmp")
 
                 if !File.exists(tmp_path) then
                     add_fail(
                         "@IL.output: disassembler produced no output for {item}",
-                        "il.err");
+                        "il.err")
 
                     return;
                 fi
 
-                let il_lines = File.read_all_lines(tmp_path);
+                let il_lines = File.read_all_lines(tmp_path)
 
                 // Scoping to something the assembly does not contain is
                 // answered with a preamble and a zero exit, exactly as it
@@ -384,23 +384,23 @@ namespace Tester is
                 if !(il_lines | .any(l => IL_LINE.match(l).success)) then
                     add_fail(
                         "@IL.output: '{item}' names a method the emitted assembly "
-                        "does not contain");
+                        "does not contain")
 
-                    File.delete(tmp_path);
+                    File.delete(tmp_path)
 
                     return;
                 fi
 
                 for range in ranges do
                     if range.item =~ item then
-                        let kept = LIST[string]();
+                        let kept = LIST[string]()
 
                         for line in il_lines do
-                            let match = IL_LINE.match(line);
+                            let match = IL_LINE.match(line)
 
                             if match.success then
                                 let offset =
-                                    Convert.to_int32(match.groups[1].value, 16);
+                                    Convert.to_int32(match.groups[1].value, 16)
 
                                 if
                                     range.start_offset <= offset /\
@@ -418,15 +418,15 @@ namespace Tester is
                         if kept.count == 0 /\ range.start_offset < range.end_offset then
                             add_fail(
                                 "@IL.output: no instruction of '{item}' lies in "
-                                "{range.start_offset}..{range.end_offset}");
+                                "{range.start_offset}..{range.end_offset}")
 
-                            File.delete(tmp_path);
+                            File.delete(tmp_path)
 
                             return;
                         fi
 
                         if kept.count > 0 then
-                            slices[range.sequence] = kept;
+                            slices[range.sequence] = kept
 
                             if !seen_any \/ range.sequence < min_sequence then
                                 min_sequence = range.sequence;
@@ -444,7 +444,7 @@ namespace Tester is
                 File.delete(tmp_path);
             od
 
-            let lines = LIST[string]();
+            let lines = LIST[string]()
 
             if seen_any then
                 for sequence in min_sequence::max_sequence do
@@ -460,7 +460,7 @@ namespace Tester is
         si
 
         _distinct_items(ranges: LIST[IL_OUTPUT_RANGE]) -> LIST[string] is
-            let items = LIST[string]();
+            let items = LIST[string]()
 
             for range in ranges do
                 if !items.contains(range.item) then
@@ -472,7 +472,7 @@ namespace Tester is
         si
 
         IL_LINE: Regex static =>
-            Regex("^\\s*IL_([0-9a-fA-F]+):\\s*(.*)$");
+            Regex("^\\s*IL_([0-9a-fA-F]+):\\s*(.*)$")
 
         // Scoping to something absent is answered with silence and a
         // zero exit, so what came back has to be checked against what
@@ -482,10 +482,10 @@ namespace Tester is
         // class shell with nothing in it, which a check for the class
         // alone would accept.
         _contains_item(raw_path: string, item: string) -> bool static is
-            let wants_member = item.contains("::");
+            let wants_member = item.contains("::")
 
             for line in File.read_all_lines(raw_path) do
-                let trimmed = line.trim();
+                let trimmed = line.trim()
 
                 if wants_member then
                     if
@@ -508,7 +508,7 @@ namespace Tester is
         // that type or member. Without one the whole assembly is dumped,
         // which is what a test asserting assembly-level shape wants.
         _requested_il_item() -> string? is
-            let path = get_path("il.item");
+            let path = get_path("il.item")
 
             if !File.exists(path) then
                 return null;
@@ -528,7 +528,7 @@ namespace Tester is
                 il_out_path,
                 IL_SNAPSHOT.narrow(File.read_all_lines(raw_path)));
         si
-       
+
         // The build log truncated at MSBuild's end-of-build banner. A
         // dotnet-build capture holds each diagnostic twice: the console
         // logger renders every error and warning as it occurs, then
@@ -541,14 +541,14 @@ namespace Tester is
                 return;
             fi
 
-            let builder = System.Text.StringBuilder();
+            let builder = System.Text.StringBuilder()
 
             for line in read_all_text(in_file).split(['\n']) do
                 if line.starts_with("Build FAILED") \/ line.starts_with("Build succeeded") then
                     break;
                 fi
 
-                builder.append(line);
+                builder.append(line)
                 builder.append("\n");
             od
 
@@ -582,13 +582,13 @@ namespace Tester is
         si
 
         normalize_paths(file_name: string) is
-            let path = get_path(file_name);
+            let path = get_path(file_name)
 
             if !File.exists(path) then
                 return;
             fi
 
-            let test_directory = IO.Path.get_full_path(_test.path);
+            let test_directory = IO.Path.get_full_path(_test.path)
 
             if string.is_null_or_empty(test_directory) then
                 return;
@@ -599,31 +599,31 @@ namespace Tester is
                     test_directory;
                 else
                     "{test_directory}/";
-                fi;
+                fi
 
-            let content = File.read_all_text(path);
+            let content = File.read_all_text(path)
 
             File.write_all_text(path, content.replace(prefix, ""));
         si
 
         strip_stack_trace_locations(file_name: string) is
-            let path = get_path(file_name);
+            let path = get_path(file_name)
 
             if !File.exists(path) then
                 return;
             fi
 
-            let content = File.read_all_text(path);
+            let content = File.read_all_text(path)
 
             // Strip the ` in <path>:line <N>` suffix from each `   at …`
             // frame so snapshots don't pin absolute paths or line numbers.
             // Frames without an `in …` suffix (typically ones without debug
             // info) are left intact.
-            let pattern = Regex("^( {3}at .+) in [^:]*:line [0-9]+\\s*$", RegexOptions.MULTILINE);
+            let pattern = Regex("^( {3}at .+) in [^:]*:line [0-9]+\\s*$", RegexOptions.MULTILINE)
 
             File.write_all_text(path, pattern.replace(content, "$1"));
         si
-        
+
         run_diff(
             description: string,
             expected_file_name: string mut,
@@ -632,9 +632,9 @@ namespace Tester is
             ignore_space_changes: bool
         ) -> bool
         is
-            let expected_path = get_path(expected_file_name);
-            let actual_path = get_path(actual_file_name);
-            let out_path = get_path(out_file_name);
+            let expected_path = get_path(expected_file_name)
+            let actual_path = get_path(actual_file_name)
+            let out_path = get_path(out_file_name)
 
             if
                 !File.exists(expected_path)
@@ -648,7 +648,7 @@ namespace Tester is
                 return false;
             fi
 
-            let args: string[] mut;
+            let args: string[] mut
 
             if ignore_space_changes then
                 args = ["-b", "--strip-trailing-cr", expected_file_name, actual_file_name];
@@ -662,12 +662,12 @@ namespace Tester is
                 5000,
                 out_file_name,
                 null
-            );
+            )
 
             if result != 0 then
                 add_fail(description, out_file_name);
             fi
-                
+
             return result == 0;
         si
 
@@ -677,8 +677,8 @@ namespace Tester is
             timeout: int,
             out_file: string?,
             err_file: string?
-        ) -> int => 
-            run(path, arguments, timeout, out_file, err_file, null);
+        ) -> int =>
+            run(path, arguments, timeout, out_file, err_file, null)
 
         run(
             path: string,
@@ -689,25 +689,25 @@ namespace Tester is
             environment: Iterable[Pair[string,string]]?
         ) -> int
         is
-            let process = start(path, arguments, environment);
-            
+            let process = start(path, arguments, environment)
+
             return wait(process, timeout, out_file, err_file);
         si
 
         start(path: string, arguments: Iterable[string]) -> Process =>
-            start(path, arguments, null);
+            start(path, arguments, null)
 
         start(path: string, arguments: Iterable[string], environment: Iterable[Pair[string,string]]?) -> Process is
-            let start_info = System.Diagnostics.ProcessStartInfo();
+            let start_info = System.Diagnostics.ProcessStartInfo()
 
-            start_info.file_name = path;
+            start_info.file_name = path
 
-            start_info.use_shell_execute = false;
+            start_info.use_shell_execute = false
 
             if environment? then
                 for element in environment do
                     start_info.environment.add(element.key, element.value);
-                od                        
+                od
             fi
 
             start_info.arguments =
@@ -717,35 +717,35 @@ namespace Tester is
                             // FIXME: not convinced either of these are necessary
                             .replace("\\", "\\\\")
                             .replace("\"", "\"\""))
-                    .to_string(" ");
+                    .to_string(" ")
 
-            start_info.working_directory = _test.path;
+            start_info.working_directory = _test.path
 
-            start_info.redirect_standard_output = true;
-            start_info.redirect_standard_error = true;
-            start_info.use_shell_execute = false;
+            start_info.redirect_standard_output = true
+            start_info.redirect_standard_error = true
+            start_info.use_shell_execute = false
 
-            let result = Process.start(start_info);
+            let result = Process.start(start_info)
 
             if !result? then
                 throw Exception("failed to start process: {path} {start_info.arguments}");
             fi
-            
+
             return result;
         si
 
         wait(process: Process, timeout: int, out_file_name: string?, err_file_name: string?) -> int is
             if out_file_name? then
-                let stdout = process.standard_output.read_to_end();
+                let stdout = process.standard_output.read_to_end()
                 write_all_text(out_file_name, stdout);
             fi
-            
+
             if err_file_name? then
-                let stderr = process.standard_error.read_to_end();
+                let stderr = process.standard_error.read_to_end()
                 write_all_text(err_file_name, stderr);
             fi
-            
-            process.wait_for_exit(5000);
+
+            process.wait_for_exit(5000)
 
             return process.exit_code;
         si
@@ -753,14 +753,14 @@ namespace Tester is
         add_fail(message: string) is
             add_fail(message, null);
         si
-        
+
         add_fail(message: string, file_name: string?) is
-            let details: DETAILS mut;
+            let details: DETAILS mut
 
             if file_name? then
                 details = DETAILS(message, read_all_text_quiet(file_name));
             else
-                details = DETAILS(message);                
+                details = DETAILS(message);
             fi
 
             if !_failure? then
@@ -783,35 +783,35 @@ namespace Tester is
                 delete_file(file_name);
             od
         si
-        
+
         delete_file(file_name: string) is
-            let file_path = get_path(file_name);
+            let file_path = get_path(file_name)
 
             if File.exists(file_path) then
                 File.delete(file_path);
             fi
         si
-        
+
         get_path(file_name: string) -> string =>
-            IO.Path.join(_test.path, file_name);
+            IO.Path.join(_test.path, file_name)
 
         get_path() -> string =>
-            _test.path;
+            _test.path
 
         write_all_text(file_name: string, text: string) is
             File.write_all_text(get_path(file_name), text);
         si
-        
+
         read_all_text(file_name: string) -> string =>
-            File.read_all_text(get_path(file_name));
+            File.read_all_text(get_path(file_name))
 
         read_all_text_quiet(file_name: string) -> string is
-            let file_path = get_path(file_name);
+            let file_path = get_path(file_name)
 
             if !File.exists(file_path) then
                 return "(could not read file: {file_path})";
             fi
-            
+
             return File.read_all_text(get_path(file_name));
         si
     si

@@ -1,14 +1,14 @@
 namespace Tester is
-    use System.Exception;
+    use System.Exception
 
-    use IO.Std;
-    use IO.Directory;
-    use IO.File;
-    use IO.Path;
+    use IO.Std
+    use IO.Directory
+    use IO.File
+    use IO.Path
 
-    use Collections.Iterable;
-    use Collections.MutableList;
-    use Collections.LIST;
+    use Collections.Iterable
+    use Collections.MutableList
+    use Collections.LIST
 
     class TEST_QUEUE(
         host_cli: string private,
@@ -18,26 +18,26 @@ namespace Tester is
         progress_reporter: PROGRESS_REPORTER private,
         tag_filter: TAG_FILTER private
     ) is
-        _task_queue: TASK_QUEUE;
+        _task_queue: TASK_QUEUE
 
-        _tests: MutableList[TEST];
+        _tests: MutableList[TEST]
 
-        progress: int;
-        count: int => _tests.count;
+        progress: int
+        count: int => _tests.count
 
-        executed_count: int => _tests | .filter(t => t.has_executed).count();
-        pass_count: int => _tests | .filter(t => t.has_passed).count();
-        fail_count: int => _tests | .filter(t => t.has_failed).count();
+        executed_count: int => _tests | .filter(t => t.has_executed).count()
+        pass_count: int => _tests | .filter(t => t.has_passed).count()
+        fail_count: int => _tests | .filter(t => t.has_failed).count()
 
         init(..) is
-            let requested_test_processes = System.Environment.get_environment_variable("TEST_PROCESSES");
+            let requested_test_processes = System.Environment.get_environment_variable("TEST_PROCESSES")
 
-            let actual_test_processes: int mut;
+            let actual_test_processes: int mut
 
             if requested_test_processes? then
-                actual_test_processes = System.Convert.to_int32(requested_test_processes);                
+                actual_test_processes = System.Convert.to_int32(requested_test_processes);
             else
-                let cpu_count = System.Environment.processor_count;
+                let cpu_count = System.Environment.processor_count
 
                 if cpu_count <= 6 then
                     actual_test_processes = cpu_count * 2;
@@ -45,18 +45,18 @@ namespace Tester is
                     actual_test_processes = cpu_count * 3 / 2;
                 fi
             fi
-            
-            _task_queue = TASK_QUEUE(actual_test_processes);
 
-            Std.write_line("using {actual_test_processes} processes to run tests");
+            _task_queue = TASK_QUEUE(actual_test_processes)
+
+            Std.write_line("using {actual_test_processes} processes to run tests")
 
             _tests = LIST[TEST]();
         si
 
         run_queued_tests() is
-            _progress_reporter.on_discovered(count);
+            _progress_reporter.on_discovered(count)
 
-            report_missing_disassembler();
+            report_missing_disassembler()
 
             for test in _tests do
                 let runner =
@@ -66,21 +66,21 @@ namespace Tester is
                         _compiler_under_test,
                         _disassembler,
                         test
-                    );
+                    )
 
-                let results = _task_queue.queue(runner.get_run());
+                let results = _task_queue.queue(runner.get_run())
 
-                report_progress(results);
+                report_progress(results)
 
                 // `queue` returns once the task is running, so this reports a
                 // test that has actually started, not one waiting for a slot.
                 _progress_reporter.on_start(test.path);
             od
 
-            let results mut = _task_queue.drain();
+            let results mut = _task_queue.drain()
 
             while results? do
-                report_progress(results);
+                report_progress(results)
                 results = _task_queue.drain();
             od
 
@@ -89,25 +89,25 @@ namespace Tester is
 
         report_progress(results: Iterable[Result]) is
             for result in results do
-                let p = 100 * progress / count;
+                let p = 100 * progress / count
 
-                result.progress = p;
+                result.progress = p
 
-                Std.write_line(result);
+                Std.write_line(result)
 
-                progress = progress + 1;
+                progress = progress + 1
 
                 _progress_reporter.on_finish(result);
             od
         si
 
         try_queue_tests(path: string) is
-            try                
-                try_queue_test(path);
+            try
+                try_queue_test(path)
 
-                let entries = LIST[string](Directory.get_directories(path));
-                
-                entries.sort();
+                let entries = LIST[string](Directory.get_directories(path))
+
+                entries.sort()
 
                 for entry in entries do
                     // FIXME: appears not to be needed:
@@ -118,27 +118,27 @@ namespace Tester is
                     try_queue_tests(entry);
                 od
             catch ex: Exception
-                Std.write_line("probably not a directory: {path}");
+                Std.write_line("probably not a directory: {path}")
                 Std.write_line("caught: {ex}");
-            yrt            
+            yrt
         si
 
         try_queue_test(path: string) is
-            let flags_path = "{path}/ghulflags";
+            let flags_path = "{path}/ghulflags"
 
             if !File.exists(flags_path) then
                 return;
             fi
 
-            let tags = get_tags(path);
+            let tags = get_tags(path)
 
             if !_tag_filter.matches(tags) then
                 return;
             fi
 
-            let flags = File.read_all_text(flags_path);
-            let source_files = get_source_files(path);
-            let is_build_failure_expected = File.exists("{path}/fail.expected");
+            let flags = File.read_all_text(flags_path)
+            let source_files = get_source_files(path)
+            let is_build_failure_expected = File.exists("{path}/fail.expected")
 
             queue_test(
                 TEST(
@@ -161,7 +161,7 @@ namespace Tester is
             fi
 
             let wanted =
-                _tests | .filter(test => File.exists("{test.path}/il.expected")) | .count();
+                _tests | .filter(test => File.exists("{test.path}/il.expected")) | .count()
 
             if wanted == 0 then
                 return;
@@ -178,10 +178,10 @@ namespace Tester is
 
         get_source_files(path: string) -> Iterable[string] =>
             Directory.get_files(path, "*.ghul") |
-                .map(path: string => Path.get_file_name(path)!);
+                .map(path: string => Path.get_file_name(path)!)
 
         get_tags(path: string) -> Iterable[string] is
-            let tags_path = "{path}/tags";
+            let tags_path = "{path}/tags"
 
             if !File.exists(tags_path) then
                 return LIST[string]();

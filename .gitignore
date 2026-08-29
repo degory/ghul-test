@@ -25,3 +25,4 @@ integration-tests/**/*.grep
 integration-tests/**/*.diff
 integration-tests/**/*.sort
 integration-tests/**/*.err
+integration-tests/**/*.trim

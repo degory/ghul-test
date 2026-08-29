@@ -1,93 +1,93 @@
 namespace Tester is
-    use System.Exception;
-    use System.Text.StringBuilder;
-    use System.Text.UTF8Encoding;
+    use System.Exception
+    use System.Text.StringBuilder
+    use System.Text.UTF8Encoding
 
-    use Collections.Iterable;
-    use Collections.List;
-    use Collections.MutableList;
-    use Collections.LIST;
+    use Collections.Iterable
+    use Collections.List
+    use Collections.MutableList
+    use Collections.LIST
 
-    use IO.Std;
-    use IO.Directory;
-    use IO.File;
+    use IO.Std
+    use IO.Directory
+    use IO.File
 
     class Main is
         @suppress("definite-assignment")
         entry(arguments: string[]) -> int static is
-            Std.output_encoding = UTF8Encoding();
+            Std.output_encoding = UTF8Encoding()
 
             if arguments.count == 0 then
-                Std.write_line("usage: ghul-test [--tag <name>]... <test-folder>...");
+                Std.write_line("usage: ghul-test [--tag <name>]... <test-folder>...")
                 return 1;
             fi
-            
-            let host = get_cli_environment_variable("HOST");
-            let target = get_cli_environment_variable("TARGET");
+
+            let host = get_cli_environment_variable("HOST")
+            let target = get_cli_environment_variable("TARGET")
 
             // report_host_and_target(host, target);
 
             let ci_string =
-                System.Environment.get_environment_variable("CI") ?? "";
+                System.Environment.get_environment_variable("CI") ?? ""
 
             let run_mode mut =
                 if ci_string =~ "1" \/ ci_string.to_lower() =~ "true" then
                     CompilerRunMode.CI
                 else
                     CompilerRunMode.LOCAL
-                fi;
+                fi
 
             let runtime_dll_override mut =
-                System.Environment.get_environment_variable("GHUL_RUNTIME_DLL");
+                System.Environment.get_environment_variable("GHUL_RUNTIME_DLL")
 
             let compiler_override mut =
-                System.Environment.get_environment_variable("GHUL_TEST_COMPILER");
+                System.Environment.get_environment_variable("GHUL_TEST_COMPILER")
 
             let ildasm_override: string? mut =
-                System.Environment.get_environment_variable("GHUL_TEST_ILDASM");
+                System.Environment.get_environment_variable("GHUL_TEST_ILDASM")
 
-            let test_paths = LIST[string]();
-            let requested_tags = LIST[string]();
+            let test_paths = LIST[string]()
+            let requested_tags = LIST[string]()
 
-            let i mut = 0;
+            let i mut = 0
 
             while i < arguments.count do
-                let arg = arguments[i];
+                let arg = arguments[i]
 
                 if arg =~ "--use-dotnet-build" then
                     run_mode = CompilerRunMode.DOTNET;
                 elif arg =~ "--runtime-dll" then
-                    i = i + 1;
+                    i = i + 1
 
                     if i >= arguments.count then
-                        Std.write_line("--runtime-dll requires a path argument");
+                        Std.write_line("--runtime-dll requires a path argument")
                         return 1;
                     fi
 
                     runtime_dll_override = arguments[i];
                 elif arg =~ "--compiler" then
-                    i = i + 1;
+                    i = i + 1
 
                     if i >= arguments.count then
-                        Std.write_line("--compiler requires a command argument");
+                        Std.write_line("--compiler requires a command argument")
                         return 1;
                     fi
 
                     compiler_override = arguments[i];
                 elif arg =~ "--ildasm" then
-                    i = i + 1;
+                    i = i + 1
 
                     if i >= arguments.count then
-                        Std.write_line("--ildasm requires a path argument");
+                        Std.write_line("--ildasm requires a path argument")
                         return 1;
                     fi
 
                     ildasm_override = arguments[i];
                 elif arg =~ "--tag" then
-                    i = i + 1;
+                    i = i + 1
 
                     if i >= arguments.count then
-                        Std.write_line("--tag requires a tag name argument");
+                        Std.write_line("--tag requires a tag name argument")
                         return 1;
                     fi
 
@@ -99,17 +99,17 @@ namespace Tester is
                 i = i + 1;
             od
 
-            let compiler_under_test = COMPILER_UNDER_TEST(run_mode);
+            let compiler_under_test = COMPILER_UNDER_TEST(run_mode)
 
-            let disassembler: DISASSEMBLER mut;
+            let disassembler: DISASSEMBLER mut
 
             try
-                compiler_under_test.set_runtime_path(runtime_dll_override);
-                compiler_under_test.set_compiler_command(compiler_override);
+                compiler_under_test.set_runtime_path(runtime_dll_override)
+                compiler_under_test.set_compiler_command(compiler_override)
 
                 disassembler = DISASSEMBLER(ildasm_override);
             catch ex: Exception
-                Std.write_line(ex.message);
+                Std.write_line(ex.message)
                 return 1;
             yrt
 
@@ -117,7 +117,7 @@ namespace Tester is
                 report_compiler_under_test(compiler_under_test);
             fi
 
-            let tag_filter = TAG_FILTER(requested_tags);
+            let tag_filter = TAG_FILTER(requested_tags)
 
             if !tag_filter.is_empty then
                 Std.write_line("filtering to tests tagged: {string.join(", ", requested_tags)}");
@@ -130,29 +130,29 @@ namespace Tester is
                     compiler_under_test,
                     disassembler,
                     PROGRESS_REPORTER(test_paths),
-                    tag_filter);
+                    tag_filter)
 
             for path in test_paths do
                 if !Directory.exists(path) then
-                    Std.write_line("not a directory: {path}");
+                    Std.write_line("not a directory: {path}")
                     return 1;
                 fi
 
                 queue.try_queue_tests(path);
             od
 
-            queue.run_queued_tests();
+            queue.run_queued_tests()
 
-            Std.write_line("{queue.count} tests discovered");
-            Std.write_line("{queue.executed_count} tests enabled");
-            Std.write_line("{queue.pass_count}/{queue.executed_count} tests passed");
+            Std.write_line("{queue.count} tests discovered")
+            Std.write_line("{queue.executed_count} tests enabled")
+            Std.write_line("{queue.pass_count}/{queue.executed_count} tests passed")
 
             if queue.fail_count == 0 then
-                Std.write_line("{cast char(9989)} all tests passed {cast char(9989)}");
+                Std.write_line("{cast char(9989)} all tests passed {cast char(9989)}")
                 return 0;
             fi
 
-            Std.write_line("{cast char(10060)} {queue.fail_count} tests failed {cast char(10060)}");
+            Std.write_line("{cast char(10060)} {queue.fail_count} tests failed {cast char(10060)}")
 
             return 1;
         si
@@ -170,7 +170,7 @@ namespace Tester is
         si
 
         report_host_and_target(host: string, target: string) static is
-            Std.write_line("compiler hosted on: {get_cli_description(host)}");
+            Std.write_line("compiler hosted on: {get_cli_description(host)}")
             Std.write_line("built tests executed on: {get_cli_description(target)}");
         si
 
@@ -183,7 +183,7 @@ namespace Tester is
 
             throw Exception("unknown CLI environment: {name}");
         si
-                
+
         get_cli_environment_variable(name: string) -> string static =>
             System.Environment.get_environment_variable(name) ?? "dotnet";
     si

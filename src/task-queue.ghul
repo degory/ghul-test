@@ -1,24 +1,24 @@
 namespace Tester is
-    use IO.Std;
+    use IO.Std
 
-    use Collections.Iterable;
-    use Collections.LIST;
+    use Collections.Iterable
+    use Collections.LIST
 
     class TASK_QUEUE(max_tasks: int private) is
-        _running_tasks: LIST[Tasks.TASK[Result]];
+        _running_tasks: LIST[Tasks.TASK[Result]]
 
         init(..) is
             _running_tasks = LIST[Tasks.TASK[Result]](max_tasks);
         si
 
         queue(task: () -> Result) -> Iterable[Result] is
-            let result = wait_any();
+            let result = wait_any()
 
-            let new_task = Tasks.TASK[Result](task);
+            let new_task = Tasks.TASK[Result](task)
 
-            new_task.start();
+            new_task.start()
 
-            _running_tasks.add(new_task);
+            _running_tasks.add(new_task)
 
             return result;
         si
@@ -31,29 +31,29 @@ namespace Tester is
             return wait_all();
         si
 
-        wait_any() -> Iterable[Result] => wait(false);
-        wait_all() -> Iterable[Result] => wait(true);
+        wait_any() -> Iterable[Result] => wait(false)
+        wait_all() -> Iterable[Result] => wait(true)
 
         wait(all: bool) -> Iterable[Result] is
-            let result = LIST[Result]();
+            let result = LIST[Result]()
 
             if !all /\ _running_tasks.count < _max_tasks then
                 return result;
             fi
 
-            Tasks.TASK.wait_any(_running_tasks| .map(t -> Tasks.TASK => t).collect_array());
+            Tasks.TASK.wait_any(_running_tasks| .map(t -> Tasks.TASK => t).collect_array())
 
-            let new_tasks = LIST[Tasks.TASK[Result]]();
+            let new_tasks = LIST[Tasks.TASK[Result]]()
 
             for task in _running_tasks do
                 if task.is_completed then
                     result.add(task.result);
                 else
                     new_tasks.add(task);
-                fi                
+                fi
             od
 
-            _running_tasks = new_tasks;
+            _running_tasks = new_tasks
 
             return result;
         si

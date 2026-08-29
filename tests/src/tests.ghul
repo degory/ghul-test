@@ -1,27 +1,27 @@
 namespace Tests is
-    use Collections.LIST;
-    
-    use FluentAssertions.Collections.GenericCollectionAssertions;
-    use FluentAssertions.Primitives;
-    use FluentAssertions.Numeric;
+    use Collections.LIST
 
-    use Tester;
+    use FluentAssertions.Collections.GenericCollectionAssertions
+    use FluentAssertions.Primitives
+    use FluentAssertions.Numeric
+
+    use Tester
 
     entry() is
         return;
     si
 
-    get_stub_test() -> TEST => TEST("path", LIST[string](), "", false, LIST[string]());
+    get_stub_test() -> TEST => TEST("path", LIST[string](), "", false, LIST[string]())
 
     // ghūl doesn't have extension methods, so wrap these for easier consumption:
-    should[T](iterable: Collections.Iterable[T]) -> GenericCollectionAssertions[T] => GenericCollectionAssertions[T](iterable);
+    should[T](iterable: Collections.Iterable[T]) -> GenericCollectionAssertions[T] => GenericCollectionAssertions[T](iterable)
 
-    should(s: string) -> StringAssertions[StringAssertions] => StringAssertions(s);
+    should(s: string) -> StringAssertions[StringAssertions] => StringAssertions(s)
 
-    should(o: object) -> ObjectAssertions[object,ObjectAssertions] => ObjectAssertions(o);
+    should(o: object) -> ObjectAssertions[object,ObjectAssertions] => ObjectAssertions(o)
 
     should(b: bool) -> BooleanAssertions[BooleanAssertions] is
-        let value: bool? = b;
+        let value: bool? = b
 
         return BooleanAssertions(value);
     si

@@ -1,16 +1,16 @@
 namespace Tester is
-    use System.Text.StringBuilder;
+    use System.Text.StringBuilder
 
-    use IO.Std;
+    use IO.Std
 
-    use Collections.Iterable;
-    use Collections.MutableList;
-    use Collections.LIST;
+    use Collections.Iterable
+    use Collections.MutableList
+    use Collections.LIST
 
     class Result abstract is
-        test: TEST;
+        test: TEST
 
-        _progress: int;
+        _progress: int
         progress: int public => _progress, = value is
             if value < 0 then
                 _progress = 0;
@@ -18,34 +18,34 @@ namespace Tester is
                 _progress = 100;
             else
                 _progress = value;
-            fi            
+            fi
         si
 
-        progress_string: string => "{progress.to_string().pad_left(2)}%";
+        progress_string: string => "{progress.to_string().pad_left(2)}%"
 
         is_pass: bool is
-            throw System.NotImplementedException();            
+            throw System.NotImplementedException();
         si
 
         is_fail: bool is
-            throw System.NotImplementedException();            
+            throw System.NotImplementedException();
         si
 
-        is_executed: bool => is_pass \/ is_fail;
+        is_executed: bool => is_pass \/ is_fail
 
         head: string is
             throw System.NotImplementedException();
         si
-        
-        body: string? => null;
+
+        body: string? => null
 
         init(test: TEST) is
-            self.test = test;
+            self.test = test
             test.result = self;
         si
-        
+
         format(test_name: string) -> string is
-            let result mut = "{progress_string} {head}: {test_name}";
+            let result mut = "{progress_string} {head}: {test_name}"
 
             if body? /\ body !~ "" then
                 result = "{result}: {body}";
@@ -54,31 +54,31 @@ namespace Tester is
             return result;
         si
 
-        to_string() -> string => format(test.path);            
+        to_string() -> string => format(test.path);
     si
 
     class SKIP: Result is
-        is_pass: bool => false;
-        is_fail: bool => false;
-        head: string => "   skip";
+        is_pass: bool => false
+        is_fail: bool => false
+        head: string => "   skip"
 
         init(test: TEST) is super.init(test); si
     si
 
     class PASS: Result is
-        is_pass: bool => true;
-        is_fail: bool => false;
-        head: string => "✅ pass";
+        is_pass: bool => true
+        is_fail: bool => false
+        head: string => "✅ pass"
 
-        init(test: TEST) is super.init(test); si        
+        init(test: TEST) is super.init(test); si
     si
 
     class FAILURE: Result is
-        _details: MutableList[DETAILS];
+        _details: MutableList[DETAILS]
 
-        is_pass: bool => false;
-        is_fail: bool => true;
-        head: string => "❌ fail";
+        is_pass: bool => false
+        is_fail: bool => true
+        head: string => "❌ fail"
 
         body: string? is
             if _details.count == 0 then
@@ -87,16 +87,16 @@ namespace Tester is
                 return _details[0].to_string();
             else
                 return _details | .to_string("\n");
-            fi            
+            fi
         si
 
         init(test: TEST) is
-            super.init(test);
+            super.init(test)
             _details = LIST[DETAILS]();
         si
 
         init(test: TEST, details: DETAILS) is
-            init(test);
+            init(test)
             add(details);
         si
 
@@ -107,26 +107,26 @@ namespace Tester is
         init(test: TEST, message: string, details: string?) is
             init(test, DETAILS(message, details));
         si
-                        
+
         add(details: DETAILS) is
             _details.add(details);
-        si        
+        si
     si
-    
+
     class DETAILS(message: string, details: string?) is
         init(message: string) is
             init(message, null);
         si
 
-        
-        to_string() -> string is
-            let result = StringBuilder();
 
-            result.append(message);
-            
+        to_string() -> string is
+            let result = StringBuilder()
+
+            result.append(message)
+
             if let self.details then
                 result
-                    .append(":");
+                    .append(":")
 
                 if !details.contains('\n') then
                     result
@@ -142,6 +142,6 @@ namespace Tester is
             fi
 
             return result.to_string();
-        si        
+        si
     si
 si
