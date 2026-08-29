@@ -1,10 +1,10 @@
 namespace Tests is
-    use Collections.LIST;
+    use Collections.LIST
 
-    use Tester;
+    use Tester
 
-    use TestClass = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute;
-    use Test = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute;
+    use TestClass = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute
+    use Test = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute
 
     @TestClass()
     class TAG_FILTER_Should is
@@ -14,17 +14,17 @@ namespace Tests is
         @Test()
         TAG_FILTER__matches__given_no_requested_tags__matches_anything() is
 
-            let filter = TAG_FILTER(LIST[string]());
+            let filter = TAG_FILTER(LIST[string]())
 
-            should(filter.is_empty).be_true("", []);
-            should(filter.matches(LIST[string]())).be_true("", []);
+            should(filter.is_empty).be_true("", [])
+            should(filter.matches(LIST[string]())).be_true("", [])
             should(filter.matches(["smoke"])).be_true("", []);
         si
 
         @Test()
         TAG_FILTER__matches__given_requested_tags__matches_test_with_shared_tag() is
 
-            let filter = TAG_FILTER(["smoke", "narrowing"]);
+            let filter = TAG_FILTER(["smoke", "narrowing"])
 
             should(filter.matches(["narrowing", "unions"])).be_true("", []);
         si
@@ -32,7 +32,7 @@ namespace Tests is
         @Test()
         TAG_FILTER__matches__given_requested_tags__does_not_match_test_with_no_shared_tag() is
 
-            let filter = TAG_FILTER(["smoke"]);
+            let filter = TAG_FILTER(["smoke"])
 
             should(filter.matches(["narrowing", "unions"])).be_false("", []);
         si
@@ -40,7 +40,7 @@ namespace Tests is
         @Test()
         TAG_FILTER__matches__given_requested_tags__does_not_match_untagged_test() is
 
-            let filter = TAG_FILTER(["smoke"]);
+            let filter = TAG_FILTER(["smoke"])
 
             should(filter.matches(LIST[string]())).be_false("", []);
         si
@@ -48,18 +48,18 @@ namespace Tests is
         @Test()
         TAG_FILTER__parse_tags__splits_on_whitespace_and_trims_and_drops_empties() is
 
-            let tags = TAG_FILTER.parse_tags(" smoke  narrowing\nunions \t ") | .collect_list();
+            let tags = TAG_FILTER.parse_tags(" smoke  narrowing\nunions \t ") | .collect_list()
 
-            should(tags.count).be(3, "", []);
-            should(tags.contains("smoke")).be_true("", []);
-            should(tags.contains("narrowing")).be_true("", []);
+            should(tags.count).be(3, "", [])
+            should(tags.contains("smoke")).be_true("", [])
+            should(tags.contains("narrowing")).be_true("", [])
             should(tags.contains("unions")).be_true("", []);
         si
 
         @Test()
         TAG_FILTER__parse_tags__given_empty_content__returns_no_tags() is
 
-            let tags = TAG_FILTER.parse_tags("") | .collect_list();
+            let tags = TAG_FILTER.parse_tags("") | .collect_list()
 
             should(tags.count).be(0, "", []);
         si

@@ -1,0 +1,4 @@
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+/home/degory/.nuget/packages/ghul.runtime/15.1.1/build/ghul.runtime.targets(317,5): error MSB3073: The command "/bin/false @"/tmp/ghul-build-a9156da9-c68c-41c3-980d-e98af26b58d2.rsp"" exited with code 1. [/home/degory/src/ghul-language/worktrees/ghul-test/strip-semicolons/integration-tests/dotnet-build/hello-world/hello-world.ghulproj]
+

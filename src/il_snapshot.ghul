@@ -1,6 +1,6 @@
 namespace Tester is
-    use Collections.LIST;
-    use Collections.List;
+    use Collections.LIST
+    use Collections.List
 
     // Reduces a disassembly to the part a snapshot is about.
     //
@@ -12,24 +12,24 @@ namespace Tester is
     // once, for a reason none of them is about.
     class IL_SNAPSHOT is
         narrow(lines: List[string]) -> List[string] static is
-            let kept = LIST[string]();
+            let kept = LIST[string]()
 
             // A disassembly naming its members section is narrowed to it.
             // One that does not is kept whole: better a snapshot holding
             // more than it needs than every snapshot silently emptied by
             // a banner ildasm stopped writing.
             let has_members_section =
-                lines | .any(line => DISASSEMBLER.is_members_section_start(line));
+                lines | .any(line => DISASSEMBLER.is_members_section_start(line))
 
-            let in_members mut = !has_members_section;
+            let in_members mut = !has_members_section
 
             // The section opens with blank lines, which would otherwise
             // start every snapshot with whitespace that means nothing.
-            let seen_content mut = false;
+            let seen_content mut = false
 
             for line in lines do
                 if !in_members then
-                    in_members = DISASSEMBLER.is_members_section_start(line);
+                    in_members = DISASSEMBLER.is_members_section_start(line)
 
                     continue;
                 fi
@@ -49,7 +49,7 @@ namespace Tester is
                     continue;
                 fi
 
-                seen_content = true;
+                seen_content = true
 
                 kept.add(line);
             od

@@ -1,5 +1,5 @@
 namespace Tester is
-    use Collections.Iterable;
+    use Collections.Iterable
 
     class TEST(
         path: string,
@@ -14,13 +14,13 @@ namespace Tester is
         // host error about a missing runtime configuration, which says
         // nothing about the test.
         is_library: bool =>
-            flags.split([' ', '\t', '\r', '\n']) | .any(f => f =~ "--library");
+            flags.split([' ', '\t', '\r', '\n']) | .any(f => f =~ "--library")
 
-        has_executed: bool => result? /\ result.is_executed;
-        has_passed: bool => result? /\ result.is_pass;
-        has_failed: bool => result? /\ result.is_fail;
+        has_executed: bool => result? /\ result.is_executed
+        has_passed: bool => result? /\ result.is_pass
+        has_failed: bool => result? /\ result.is_fail
 
-        result: Result? public;
+        result: Result? public
 
         to_string() -> string is
             if let self.result then

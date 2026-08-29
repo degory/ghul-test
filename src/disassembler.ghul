@@ -1,9 +1,9 @@
 namespace Tester is
-    use IO.File;
-    use IO.Path;
-    use IO.Std;
+    use IO.File
+    use IO.Path
+    use IO.Std
 
-    use Collections.LIST;
+    use Collections.LIST
 
     // Produces the IL text a test's `il.expected` snapshot is compared
     // against, by disassembling the assembly the compiler emitted.
@@ -15,7 +15,7 @@ namespace Tester is
     class DISASSEMBLER(command: string? init) is
         // Absent when no disassembler could be found, which is not an
         // error until a test actually asks for IL.
-        _executable: string?;
+        _executable: string?
 
         // A disassembler named explicitly is checked the way an
         // explicitly named compiler or runtime is, and for the same
@@ -25,7 +25,7 @@ namespace Tester is
         // throw, per test, rather than as one clear message.
         init(..) is
             if command? /\ !string.is_null_or_white_space(command) then
-                let trimmed = command.trim();
+                let trimmed = command.trim()
 
                 if !File.exists(trimmed) then
                     throw System.Exception("disassembler not found: {trimmed}");
@@ -43,18 +43,18 @@ namespace Tester is
 
         si
 
-        is_available: bool => _executable?;
+        is_available: bool => _executable?
 
-        executable: string? => _executable;
+        executable: string? => _executable
 
         // Where the packaged native lands. Reached only when nothing was
         // named: an explicit path, whether from the flag or from the
         // environment, is validated rather than quietly replaced by this.
         _discover() -> string? static is
-            let beside_tool = _beside_tool();
+            let beside_tool = _beside_tool()
 
             if beside_tool? /\ File.exists(beside_tool) then
-                _make_executable(beside_tool);
+                _make_executable(beside_tool)
 
                 return beside_tool;
             fi
@@ -75,13 +75,13 @@ namespace Tester is
             fi
 
             try
-                let mode = cast int(File.get_unix_file_mode(path));
+                let mode = cast int(File.get_unix_file_mode(path))
 
                 let wanted =
                     mode |
                     cast int(IO.UnixFileMode.USER_EXECUTE) |
                     cast int(IO.UnixFileMode.GROUP_EXECUTE) |
-                    cast int(IO.UnixFileMode.OTHER_EXECUTE);
+                    cast int(IO.UnixFileMode.OTHER_EXECUTE)
 
                 if mode != wanted then
                     File.set_unix_file_mode(path, cast IO.UnixFileMode(wanted));
@@ -93,15 +93,15 @@ namespace Tester is
         si
 
         _beside_tool() -> string? static is
-            let assembly = System.Reflection.Assembly.get_executing_assembly();
+            let assembly = System.Reflection.Assembly.get_executing_assembly()
 
-            let location = assembly.location;
+            let location = assembly.location
 
             if string.is_null_or_white_space(location) then
                 return null;
             fi
 
-            let folder = Path.get_directory_name(Path.get_full_path(location));
+            let folder = Path.get_directory_name(Path.get_full_path(location))
 
             if !folder? then
                 return null;
@@ -117,7 +117,7 @@ namespace Tester is
                 "win-x64";
             else
                 "linux-x64";
-            fi;
+            fi
 
         _file_name() -> string static =>
             if System.Runtime.InteropServices.RuntimeInformation.is_o_s_platform(
@@ -126,7 +126,7 @@ namespace Tester is
                 "ildasm.exe";
             else
                 "ildasm";
-            fi;
+            fi
 
         // Options are given with a leading `-`. The `/` spelling the
         // usage text documents is read as a path on Linux, and the run
@@ -141,15 +141,15 @@ namespace Tester is
             output_path: string,
             item: string?
         ) -> Collections.List[string] static is
-            let result = LIST[string]();
+            let result = LIST[string]()
 
-            result.add("-out={output_path}");
+            result.add("-out={output_path}")
 
             if item? /\ !string.is_null_or_white_space(item) then
                 result.add("-item={item.trim()}");
             fi
 
-            result.add(assembly_path);
+            result.add(assembly_path)
 
             return result;
         si
@@ -165,7 +165,7 @@ namespace Tester is
             line.starts_with("// Image base:") \/
             line.starts_with("// MVID:") \/
             line.contains(".NET IL Disassembler.") \/
-            line.contains("THIS IS A PARTIAL DISASSEMBLY");
+            line.contains("THIS IS A PARTIAL DISASSEMBLY")
 
         // ildasm opens the types and members with this banner. Everything
         // before it describes the assembly as a container rather than
@@ -176,7 +176,7 @@ namespace Tester is
         // which fails every whole-assembly snapshot at once for a reason
         // none of them is about.
         is_members_section_start(line: string) -> bool static =>
-            line.contains("CLASS MEMBERS DECLARATION");
+            line.contains("CLASS MEMBERS DECLARATION")
 
         // The members run to a rule of `=` characters, or to the closing
         // banner where the disassembly carries no rule.

@@ -1,13 +1,13 @@
 namespace Tests is
-    use System.Exception;
-    use System.Reflection.Assembly;
+    use System.Exception
+    use System.Reflection.Assembly
 
-    use IO.Path;
+    use IO.Path
 
-    use Tester;
+    use Tester
 
-    use TestClass = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute;
-    use Test = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute;
+    use TestClass = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute
+    use Test = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute
 
     @TestClass()
     class COMPILER_UNDER_TEST_Should is
@@ -22,10 +22,10 @@ namespace Tests is
         @Test()
         COMPILER_UNDER_TEST__set_runtime_path__given_null__leaves_runtime_path_unchanged() is
 
-            let cut = COMPILER_UNDER_TEST(CompilerRunMode.CI);
-            let original = cut.runtime_path;
+            let cut = COMPILER_UNDER_TEST(CompilerRunMode.CI)
+            let original = cut.runtime_path
 
-            cut.set_runtime_path(null);
+            cut.set_runtime_path(null)
 
             should(cut.runtime_path).be(original, "", []);
         si
@@ -33,10 +33,10 @@ namespace Tests is
         @Test()
         COMPILER_UNDER_TEST__set_runtime_path__given_empty_string__leaves_runtime_path_unchanged() is
 
-            let cut = COMPILER_UNDER_TEST(CompilerRunMode.CI);
-            let original = cut.runtime_path;
+            let cut = COMPILER_UNDER_TEST(CompilerRunMode.CI)
+            let original = cut.runtime_path
 
-            cut.set_runtime_path("");
+            cut.set_runtime_path("")
 
             should(cut.runtime_path).be(original, "", []);
         si
@@ -44,10 +44,10 @@ namespace Tests is
         @Test()
         COMPILER_UNDER_TEST__set_runtime_path__given_whitespace_only__leaves_runtime_path_unchanged() is
 
-            let cut = COMPILER_UNDER_TEST(CompilerRunMode.CI);
-            let original = cut.runtime_path;
+            let cut = COMPILER_UNDER_TEST(CompilerRunMode.CI)
+            let original = cut.runtime_path
 
-            cut.set_runtime_path("   ");
+            cut.set_runtime_path("   ")
 
             should(cut.runtime_path).be(original, "", []);
         si
@@ -55,10 +55,10 @@ namespace Tests is
         @Test()
         COMPILER_UNDER_TEST__set_runtime_path__given_existing_path__overrides_runtime_path() is
 
-            let cut = COMPILER_UNDER_TEST(CompilerRunMode.CI);
-            let new_path = get_existing_file_path();
+            let cut = COMPILER_UNDER_TEST(CompilerRunMode.CI)
+            let new_path = get_existing_file_path()
 
-            cut.set_runtime_path(new_path);
+            cut.set_runtime_path(new_path)
 
             should(cut.runtime_path).be(new_path, "", []);
         si
@@ -66,8 +66,8 @@ namespace Tests is
         @Test()
         COMPILER_UNDER_TEST__set_runtime_path__given_nonexistent_path__throws() is
 
-            let cut = COMPILER_UNDER_TEST(CompilerRunMode.CI);
-            let threw mut = false;
+            let cut = COMPILER_UNDER_TEST(CompilerRunMode.CI)
+            let threw mut = false
 
             try
                 cut.set_runtime_path("/tmp/ghul-test-this-path-must-not-exist.dll");

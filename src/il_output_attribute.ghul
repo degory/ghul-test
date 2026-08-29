@@ -1,19 +1,19 @@
 namespace Tester is
-    use System.BitConverter;
-    use System.Convert;
-    use System.Text.Encoding;
+    use System.BitConverter
+    use System.Convert
+    use System.Text.Encoding
 
-    use System.Reflection.Metadata.EntityHandle;
-    use System.Reflection.Metadata.HandleKind;
-    use System.Reflection.Metadata.MemberReferenceHandle;
-    use System.Reflection.Metadata.MetadataReader;
-    use System.Reflection.Metadata.PEReaderExtensions;
-    use System.Reflection.Metadata.TypeReferenceHandle;
-    use System.Reflection.PortableExecutable.PEReader;
+    use System.Reflection.Metadata.EntityHandle
+    use System.Reflection.Metadata.HandleKind
+    use System.Reflection.Metadata.MemberReferenceHandle
+    use System.Reflection.Metadata.MetadataReader
+    use System.Reflection.Metadata.PEReaderExtensions
+    use System.Reflection.Metadata.TypeReferenceHandle
+    use System.Reflection.PortableExecutable.PEReader
 
-    use IO.File;
+    use IO.File
 
-    use Collections.LIST;
+    use Collections.LIST
 
     // One `@IL.output` region the compiler marked: the ildasm item
     // (`Namespace.Type::method`) its instruction offsets belong to, since IL
@@ -27,7 +27,7 @@ namespace Tester is
         start_offset: int,
         end_offset: int,
         sequence: int
-    );
+    )
 
     // Reads the synthetic `IL_OUTPUT_ATTRIBUTE` the compiler writes on each
     // method containing an `@IL.output` pragma, decoding the four parallel
@@ -38,36 +38,36 @@ namespace Tester is
     // The attribute is referenced by name only and never resolved, so this
     // reads the raw blob rather than going through the attribute type system.
     class IL_OUTPUT_ATTRIBUTE_READER is
-        ATTRIBUTE_TYPE_NAME: string static => "IL_OUTPUT_ATTRIBUTE";
+        ATTRIBUTE_TYPE_NAME: string static => "IL_OUTPUT_ATTRIBUTE"
 
         read(assembly_path: string) -> LIST[IL_OUTPUT_RANGE]? static is
-            let result = LIST[IL_OUTPUT_RANGE]();
+            let result = LIST[IL_OUTPUT_RANGE]()
 
-            let use stream = File.open_read(assembly_path);
-            let use pe = PEReader(stream);
-            let md = PEReaderExtensions.get_metadata_reader(pe);
+            let use stream = File.open_read(assembly_path)
+            let use pe = PEReader(stream)
+            let md = PEReaderExtensions.get_metadata_reader(pe)
 
             for type_handle in md.type_definitions do
-                let type = md.get_type_definition(type_handle);
-                let type_name = md.get_string(type.name);
-                let namespace_name = md.get_string(type.namespace);
+                let type = md.get_type_definition(type_handle)
+                let type_name = md.get_string(type.name)
+                let namespace_name = md.get_string(type.namespace)
 
-                let qualifier mut = type_name;
+                let qualifier mut = type_name
 
                 if !string.is_null_or_white_space(namespace_name) then
                     qualifier = "{namespace_name}.{type_name}";
                 fi
 
                 for method_handle in type.get_methods() do
-                    let method = md.get_method_definition(method_handle);
-                    let method_name = md.get_string(method.name);
+                    let method = md.get_method_definition(method_handle)
+                    let method_name = md.get_string(method.name)
 
                     for attribute_handle in method.get_custom_attributes() do
-                        let attribute = md.get_custom_attribute(attribute_handle);
+                        let attribute = md.get_custom_attribute(attribute_handle)
 
                         if _matches(md, attribute.constructor) then
-                            let bytes = md.get_blob_bytes(attribute.value);
-                            let item = "{qualifier}::{method_name}";
+                            let bytes = md.get_blob_bytes(attribute.value)
+                            let item = "{qualifier}::{method_name}"
 
                             _decode(bytes, item, result);
                         fi
@@ -86,11 +86,11 @@ namespace Tester is
         // `IL_OUTPUT_ATTRIBUTE` (in `Ghul.Internal`).
         _matches(md: MetadataReader, ctor: EntityHandle) -> bool static is
             if ctor.kind == HandleKind.MEMBER_REFERENCE then
-                let member = md.get_member_reference(cast MemberReferenceHandle(ctor));
-                let parent = member.parent;
+                let member = md.get_member_reference(cast MemberReferenceHandle(ctor))
+                let parent = member.parent
 
                 if parent.kind == HandleKind.TYPE_REFERENCE then
-                    let type = md.get_type_reference(cast TypeReferenceHandle(parent));
+                    let type = md.get_type_reference(cast TypeReferenceHandle(parent))
 
                     return md.get_string(type.name).contains(ATTRIBUTE_TYPE_NAME);
                 fi
@@ -110,29 +110,29 @@ namespace Tester is
             item: string,
             result: LIST[IL_OUTPUT_RANGE]
         ) static is
-            let i mut = 2;
+            let i mut = 2
 
-            let path_count = BitConverter.to_int32(bytes, i);
-            i = i + 4;
+            let path_count = BitConverter.to_int32(bytes, i)
+            i = i + 4
 
-            let paths = LIST[string]();
+            let paths = LIST[string]()
 
             for _ in 0..path_count do
-                let length = cast int(bytes[i]);
-                i = i + 1;
+                let length = cast int(bytes[i])
+                i = i + 1
 
-                paths.add(Encoding.utf8.get_string(bytes, i, length));
+                paths.add(Encoding.utf8.get_string(bytes, i, length))
 
                 i = i + length;
             od
 
-            let starts = _read_int32_array(bytes, i);
-            i = i + 4 + starts.count * 4;
+            let starts = _read_int32_array(bytes, i)
+            i = i + 4 + starts.count * 4
 
-            let ends = _read_int32_array(bytes, i);
-            i = i + 4 + ends.count * 4;
+            let ends = _read_int32_array(bytes, i)
+            i = i + 4 + ends.count * 4
 
-            let sequences = _read_int32_array(bytes, i);
+            let sequences = _read_int32_array(bytes, i)
 
             for k in 0..paths.count do
                 result.add(
@@ -141,8 +141,8 @@ namespace Tester is
         si
 
         _read_int32_array(bytes: ubyte[], start: int) -> LIST[int] static is
-            let count = BitConverter.to_int32(bytes, start);
-            let result = LIST[int]();
+            let count = BitConverter.to_int32(bytes, start)
+            let result = LIST[int]()
 
             for k in 0..count do
                 result.add(BitConverter.to_int32(bytes, start + 4 + k * 4));

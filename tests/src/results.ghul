@@ -1,38 +1,38 @@
 namespace Tests is
-    use Collections;
+    use Collections
 
-    use Microsoft.VisualStudio.TestTools.UnitTesting;
+    use Microsoft.VisualStudio.TestTools.UnitTesting
 
-    use Tester;
+    use Tester
 
-    use TestClass = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute;
-    use Test = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute;
+    use TestClass = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute
+    use Test = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute
 
     @TestClass()
     class Result_Should is
 
-        _n: object[];
+        _n: object[]
 
         init() is
-            _n = LIST[object](0).to_array();    
+            _n = LIST[object](0).to_array();
         si
 
         @Test()
         Result__set_progress__given_value_of_minus_50__sets_progress_to_0() is
 
-            let result = SKIP(get_stub_test());
-            
-            result.progress = -50;
+            let result = SKIP(get_stub_test())
+
+            result.progress = -50
 
             should(result.progress).be(0, "", []);
         si
-        
+
         @Test()
         Result__set_progress__given_value_of_minus_1__sets_progress_to_0() is
 
-            let result = SKIP(get_stub_test());
-            
-            result.progress = -1;
+            let result = SKIP(get_stub_test())
+
+            result.progress = -1
 
             should(result.progress).be(0, "", []);
         si
@@ -40,9 +40,9 @@ namespace Tests is
         @Test()
         Result__set_progress__given_value_of_0__sets_progress_to_0() is
 
-            let result = SKIP(get_stub_test());
-            
-            result.progress = 0;
+            let result = SKIP(get_stub_test())
+
+            result.progress = 0
 
             should(result.progress).be(0, "", []);
         si
@@ -50,9 +50,9 @@ namespace Tests is
         @Test()
         Result__set_progress__given_value_of_1__sets_progress_to_1() is
 
-            let result = SKIP(get_stub_test());
-            
-            result.progress = 1;
+            let result = SKIP(get_stub_test())
+
+            result.progress = 1
 
             should(result.progress).be(1, "", []);
         si
@@ -60,9 +60,9 @@ namespace Tests is
         @Test()
         Result__set_progress__given_value_of_33__sets_progress_to_33() is
 
-            let result = SKIP(get_stub_test());
-            
-            result.progress = 33;
+            let result = SKIP(get_stub_test())
+
+            result.progress = 33
 
             should(result.progress).be(33, "", []);
         si
@@ -70,9 +70,9 @@ namespace Tests is
         @Test()
         Result__set_progress__given_value_of_99__sets_progress_to_99() is
 
-            let result = SKIP(get_stub_test());
-            
-            result.progress = 99;
+            let result = SKIP(get_stub_test())
+
+            result.progress = 99
 
             should(result.progress).be(99, "", []);
         si
@@ -80,9 +80,9 @@ namespace Tests is
         @Test()
         Result__set_progress__given_value_of_100__sets_progress_to_100() is
 
-            let result = SKIP(get_stub_test());
-            
-            result.progress = 100;
+            let result = SKIP(get_stub_test())
+
+            result.progress = 100
 
             should(result.progress).be(100, "", []);
         si
@@ -90,9 +90,9 @@ namespace Tests is
         @Test()
         Result__set_progress__given_value_of_101__sets_progress_to_100() is
 
-            let result = SKIP(get_stub_test());
-            
-            result.progress = 101;
+            let result = SKIP(get_stub_test())
+
+            result.progress = 101
 
             should(result.progress).be(100, "", []);
         si
@@ -100,9 +100,9 @@ namespace Tests is
         @Test()
         Result__set_progress__given_value_of_1000__sets_progress_to_100() is
 
-            let result = SKIP(get_stub_test());
-            
-            result.progress = 1000;
+            let result = SKIP(get_stub_test())
+
+            result.progress = 1000
 
             should(result.progress).be(100, "", []);
         si
@@ -110,19 +110,19 @@ namespace Tests is
         @Test()
         Result__progress_string__given_progress_is_0__returns_space_padded_0_percent() is
 
-            let result = SKIP(get_stub_test());
-            
-            result.progress = 0;
+            let result = SKIP(get_stub_test())
+
+            result.progress = 0
 
             should(result.progress_string).be(" 0%", "", []);
         si
-        
+
         @Test()
         Result__progress_string__given_progress_is_5__returns_space_padded_5_percent() is
 
-            let result = SKIP(get_stub_test());
-            
-            result.progress = 5;
+            let result = SKIP(get_stub_test())
+
+            result.progress = 5
 
             should(result.progress_string).be(" 5%", "", []);
         si
@@ -130,9 +130,9 @@ namespace Tests is
         @Test()
         Result__progress_string__given_progress_is_12__returns_12_percent() is
 
-            let result = SKIP(get_stub_test());
-            
-            result.progress = 12;
+            let result = SKIP(get_stub_test())
+
+            result.progress = 12
 
             should(result.progress_string).be("12%", "", []);
         si
@@ -140,14 +140,14 @@ namespace Tests is
         @Test()
         Result__progress_string__given_progress_is_100__returns_100_percent() is
 
-            let result = SKIP(get_stub_test());
-            
-            result.progress = 100;
+            let result = SKIP(get_stub_test())
+
+            result.progress = 100
 
             should(result.progress_string).be("100%", "", []);
         si
     si
-    
+
     @TestClass()
     class SKIP_Should is
 
@@ -156,69 +156,69 @@ namespace Tests is
         @Test()
         SKIP__init__given_a_test__sets_test_property() is
 
-            let test = get_stub_test();
+            let test = get_stub_test()
 
-            let skip = SKIP(test);
+            let skip = SKIP(test)
 
             should(skip.test).be(test, "", []);
         si
-        
+
         @Test()
         SKIP__is_fail__is_false() is
-            
-            let skip = SKIP(get_stub_test());
+
+            let skip = SKIP(get_stub_test())
 
             should(skip.is_fail).be(false, "", []);
         si
 
         @Test()
         SKIP__is_pass__is_false() is
-            
-            let skip = SKIP(get_stub_test());
+
+            let skip = SKIP(get_stub_test())
 
             should(skip.is_pass).be(false, "", []);
         si
-        
+
         @Test()
         SKIP__is_executed__is_false() is
-            
-            let skip = SKIP(get_stub_test());
+
+            let skip = SKIP(get_stub_test())
 
             should(skip.is_executed).be(false, "", []);
         si
-        
+
         @Test()
         SKIP__head__is_skip() is
-            
-            let skip = SKIP(get_stub_test());
+
+            let skip = SKIP(get_stub_test())
 
             should(skip.head).be("   skip", "", []);
         si
-        
+
         @Test()
         SKIP__body__is_null() is
-            
-            let skip = SKIP(get_stub_test());
+
+            let skip = SKIP(get_stub_test())
 
             should(skip.body?).be_false("", []);
         si
 
         @Test()
         SKIP__format__given_test_name__returns_progress_plus_head_plus_test_name() is
-            
-            let skip = SKIP(get_stub_test());
+
+            let skip = SKIP(get_stub_test())
 
             should(skip.format("xx a test name xx")).be("{skip.progress_string} {skip.head}: xx a test name xx", "", []);
         si
 
         @Test()
         SKIP__to_string__given_test_path__to_string__returns_formatted_path() is
-           
-            let test = get_stub_test();
 
-            test.path = "path/to/test";
+            let test = get_stub_test()
 
-            let skip = SKIP(test);
+            test.path = "path/to/test"
+
+            let skip = SKIP(test)
 
             should(skip.to_string()).be(skip.format(test.path), "", []);
         si
@@ -232,73 +232,73 @@ namespace Tests is
         @Test()
         PASS__init__given_a_test__sets_test_property() is
 
-            let test = get_stub_test();
+            let test = get_stub_test()
 
-            let pass = PASS(test);
+            let pass = PASS(test)
 
             should(pass.test).be(test, "", []);
         si
-        
+
         @Test()
         PASS__is_fail__is_false() is
-            
-            let pass = PASS(get_stub_test());
+
+            let pass = PASS(get_stub_test())
 
             should(pass.is_fail).be(false, "", []);
         si
 
         @Test()
         PASS__is_pass__is_true() is
-            
-            let pass = PASS(get_stub_test());
+
+            let pass = PASS(get_stub_test())
 
             should(pass.is_pass).be(true, "", []);
         si
-        
+
         @Test()
         PASS__is_executed__is_true() is
-            
-            let pass = PASS(get_stub_test());
+
+            let pass = PASS(get_stub_test())
 
             should(pass.is_executed).be(true, "", []);
         si
-        
+
         @Test()
         PASS__head__is_pass() is
-            
-            let pass = PASS(get_stub_test());
+
+            let pass = PASS(get_stub_test())
 
             should(pass.head).be("✅ pass", "", []);
         si
-        
+
         @Test()
         PASS__body__is_null() is
-            
-            let pass = PASS(get_stub_test());
+
+            let pass = PASS(get_stub_test())
 
             should(pass.body?).be_false("", []);
         si
 
         @Test()
         PASS__format__given_test_name__returns_progress_plus_head_plus_test_name() is
-            
-            let pass = PASS(get_stub_test());
+
+            let pass = PASS(get_stub_test())
 
             should(pass.format("xx a test name xx")).be("{pass.progress_string} {pass.head}: xx a test name xx", "", []);
         si
 
         @Test()
         PASS__to_string__given_test_path__returns_formatted_path() is
-           
-            let test = get_stub_test();
 
-            test.path = "path/to/test";
+            let test = get_stub_test()
 
-            let pass = PASS(test);
+            test.path = "path/to/test"
+
+            let pass = PASS(test)
 
             should(pass.to_string()).be(pass.format(test.path), "", []);
         si
-    si    
+    si
 
     @TestClass()
     class FAILURE_Should is
@@ -308,107 +308,107 @@ namespace Tests is
         @Test()
         FAILURE__init__given_a_test__sets_test_property() is
 
-            let test = get_stub_test();
+            let test = get_stub_test()
 
-            let fail = FAILURE(test);
+            let fail = FAILURE(test)
 
             should(fail.test).be(test, "", []);
         si
-        
+
         @Test()
         FAILURE__is_pass__is_false() is
-            
-            let fail = FAILURE(get_stub_test());
+
+            let fail = FAILURE(get_stub_test())
 
             should(fail.is_pass).be(false, "", []);
         si
 
         @Test()
         FAILURE__is_fail__is_true() is
-            
-            let fail = FAILURE(get_stub_test());
+
+            let fail = FAILURE(get_stub_test())
 
             should(fail.is_fail).be(true, "", []);
         si
-        
+
         @Test()
         FAILURE__is_executed__is_true() is
-            
-            let fail = FAILURE(get_stub_test());
+
+            let fail = FAILURE(get_stub_test())
 
             should(fail.is_executed).be(true, "", []);
         si
-        
+
         @Test()
         FAILURE__head__is_fail() is
-            
-            let fail = FAILURE(get_stub_test());
+
+            let fail = FAILURE(get_stub_test())
 
             should(fail.head).be("❌ fail", "", []);
         si
-        
+
         @Test()
         FAILURE__body__given_no_details__is_null() is
-            
-            let fail = FAILURE(get_stub_test());
+
+            let fail = FAILURE(get_stub_test())
 
             should(fail.body?).be_false("", []);
         si
 
         @Test()
         FAILURE__body__given_one_detail__is_detail_to_string() is
-            
-            let fail = FAILURE(get_stub_test());
-            let details = DETAILS("something went wrong\nsomething bad");
 
-            fail.add(details);
+            let fail = FAILURE(get_stub_test())
+            let details = DETAILS("something went wrong\nsomething bad")
+
+            fail.add(details)
 
             should(fail.body!).be(details.to_string(), "", []);
         si
 
         @Test()
         FAILURE__body__given_multiple_details__is_details_joined_with_newlines() is
-            
-            let fail = FAILURE(get_stub_test());
-            let details = [1, 2, 3] | .map(i => DETAILS("something went wrong {i}"));
+
+            let fail = FAILURE(get_stub_test())
+            let details = [1, 2, 3] | .map(i => DETAILS("something went wrong {i}"))
 
             for d in details do
-                fail.add(d);                
+                fail.add(d);
             od
-            
+
             should(fail.body!).be(details | .to_string("\n"), "", []);
         si
 
         @Test()
         FAILURE__format__given_test_name__returns_progress_plus_head_plus_test_name() is
-            
-            let fail = FAILURE(get_stub_test());
+
+            let fail = FAILURE(get_stub_test())
 
             should(fail.format("xx a test name xx")).be("{fail.progress_string} {fail.head}: xx a test name xx", "", []);
         si
 
         @Test()
         FAILURE__to_string__given_test_path__returns_formatted_path() is
-           
-            let test = get_stub_test();
 
-            test.path = "path/to/test";
+            let test = get_stub_test()
 
-            let fail = FAILURE(test);
+            test.path = "path/to/test"
+
+            let fail = FAILURE(test)
 
             should(fail.to_string()).be(fail.format(test.path), "", []);
         si
     si
-    
+
     @TestClass()
     class DETAILS_Should is
 
         init() is si
-        
+
         @Test()
         DETAILS__init__given_a_message__sets_message_property() is
 
-            let details = DETAILS("this is a message");
+            let details = DETAILS("this is a message")
 
             should(details.message).be("this is a message", "", []);
         si
@@ -416,7 +416,7 @@ namespace Tests is
         @Test()
         DETAILS__init__given_a_message__given_message__sets_details_property_to_null() is
 
-            let details = DETAILS("this is a message");
+            let details = DETAILS("this is a message")
 
             should(details.details?).be_false("", []);
         si
@@ -424,7 +424,7 @@ namespace Tests is
         @Test()
         DETAILS__init__given_details__sets_details_property() is
 
-            let details = DETAILS("this is a message", "and this is additional detail");
+            let details = DETAILS("this is a message", "and this is additional detail")
 
             should(details.details!).be("and this is additional detail", "", []);
         si
@@ -432,23 +432,23 @@ namespace Tests is
         @Test()
         DETAILS__to_string__given_a_message_but_no_details__returns_message() is
 
-            let details = DETAILS("this is a message");
+            let details = DETAILS("this is a message")
 
             should(details.to_string()).be("this is a message", "", []);
         si
-        
+
         @Test()
         DETAILS__to_string__given_message_and_single_line_details__returns_message_plus_details_on_same_line() is
 
-            let details = DETAILS("this is a message", "and this is additional detail");
+            let details = DETAILS("this is a message", "and this is additional detail")
 
             should(details.to_string()).be("this is a message: and this is additional detail", "", []);
         si
-        
+
         @Test()
         DETAILS__to_string__given_message_and_single_line_details__returns_message_on_first_line_and_indented_details_on_subsequent_lines() is
 
-            let details = DETAILS("this is a message", "and this\nis multi-line\nadditional detail");
+            let details = DETAILS("this is a message", "and this\nis multi-line\nadditional detail")
 
             should(details.to_string()).be("this is a message:\n    and this\n    is multi-line\n    additional detail", "", []);
         si

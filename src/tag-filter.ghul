@@ -1,12 +1,12 @@
 namespace Tester is
-    use Collections.Iterable;
-    use Collections.List;
-    use Collections.LIST;
+    use Collections.Iterable
+    use Collections.List
+    use Collections.LIST
 
     class TAG_FILTER(requested_tags: Iterable[string] init) is
-        _requested: List[string];
+        _requested: List[string]
 
-        is_empty: bool => _requested.count == 0;
+        is_empty: bool => _requested.count == 0
 
         init(..) is
             _requested = LIST[string](requested_tags);

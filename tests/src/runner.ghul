@@ -1,59 +1,59 @@
 namespace Tests is
-    use Collections;
-    use IO;
+    use Collections
+    use IO
 
-    use Microsoft.VisualStudio.TestTools.UnitTesting.Assert;
-    use NSubstitute;
-    use NSubstitute.SubstituteExtensions.returns;
+    use Microsoft.VisualStudio.TestTools.UnitTesting.Assert
+    use NSubstitute
+    use NSubstitute.SubstituteExtensions.returns
 
-    use Tester;
+    use Tester
 
-    use TestClass = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute;
-    use Test = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute;
-    
+    use TestClass = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute
+    use Test = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute
+
     @TestClass()
     class RUNNER_Should is
 
         init() is si
 
         get_private_instance_field(from: object, name: string) -> object? is
-            let non_public = cast int(System.Reflection.BindingFlags.NON_PUBLIC);
-            let instance = cast int(System.Reflection.BindingFlags.INSTANCE);
-            let binding_flags = cast System.Reflection.BindingFlags(non_public + instance); 
+            let non_public = cast int(System.Reflection.BindingFlags.NON_PUBLIC)
+            let instance = cast int(System.Reflection.BindingFlags.INSTANCE)
+            let binding_flags = cast System.Reflection.BindingFlags(non_public + instance)
 
-            let `field = 
+            let `field =
                 from.get_type().get_field(
                     name,
                     binding_flags
-                );
+                )
 
             return `field.get_value(from);
         si
 
         set_private_instance_field(from: object, name: string, value: object) is
-            let non_public = cast int(System.Reflection.BindingFlags.NON_PUBLIC);
-            let instance = cast int(System.Reflection.BindingFlags.INSTANCE);
-            let binding_flags = cast System.Reflection.BindingFlags(non_public + instance); 
+            let non_public = cast int(System.Reflection.BindingFlags.NON_PUBLIC)
+            let instance = cast int(System.Reflection.BindingFlags.INSTANCE)
+            let binding_flags = cast System.Reflection.BindingFlags(non_public + instance)
 
-            let `field = 
+            let `field =
                 from.get_type().get_field(
                     name,
                     binding_flags
-                );
+                )
 
             `field.set_value(from, value);
         si
 
         get_private_static_field(from: object, name: string) -> object? is
-            let non_public = cast int(System.Reflection.BindingFlags.NON_PUBLIC);
-            let instance = cast int(System.Reflection.BindingFlags.STATIC);
-            let binding_flags = cast System.Reflection.BindingFlags(non_public + instance); 
+            let non_public = cast int(System.Reflection.BindingFlags.NON_PUBLIC)
+            let instance = cast int(System.Reflection.BindingFlags.STATIC)
+            let binding_flags = cast System.Reflection.BindingFlags(non_public + instance)
 
-            let `field = 
+            let `field =
                 from.get_type().get_field(
                     name,
                     binding_flags
-                );
+                )
 
             return `field.get_value(null);
         si
@@ -71,7 +71,7 @@ namespace Tests is
                 LIST[string]() // : Iterable[string]
             ]);
         si
-        
+
         get_mock_FAILURE() -> FAILURE is
             return NSubstitute.Substitute.`for`[FAILURE]([
                 get_mock_TEST(),
@@ -91,21 +91,21 @@ namespace Tests is
         @Test()
         RUNNER__init__given_no_collate_environment__creates_collate_environment_of_correct_map_type() is
 
-            let arguments = System.Array.empty`[object]();
+            let arguments = System.Array.empty`[object]()
 
-            let compiler_under_test = get_mock_COMPILER_UNDER_TEST(CompilerRunMode.CI);
-            let test = get_mock_TEST();
+            let compiler_under_test = get_mock_COMPILER_UNDER_TEST(CompilerRunMode.CI)
+            let test = get_mock_TEST()
 
-            let runner = RUNNER("dotnet", "dotnet", compiler_under_test, DISASSEMBLER(null), test);
+            let runner = RUNNER("dotnet", "dotnet", compiler_under_test, DISASSEMBLER(null), test)
 
             // get the private static field _collate_environment:
-            let field_value = 
+            let field_value =
                 get_private_static_field(
-                    runner, 
+                    runner,
                     "_collate_environment"
-                );
+                )
 
-            Std.error.write_line("field_value: {field_value}");
+            Std.error.write_line("field_value: {field_value}")
 
             if field_value? then
                 Std.error.write_line("field_value type: {field_value.get_type().to_string()}");
@@ -117,40 +117,40 @@ namespace Tests is
         @Test()
         RUNNER__init__given_no_collate_environment__adds_LC_COLLATE_key_with_value_C() is
 
-            let arguments = System.Array.empty`[object]();
+            let arguments = System.Array.empty`[object]()
 
-            let compiler_under_test = get_mock_COMPILER_UNDER_TEST(CompilerRunMode.DOTNET);
-            let test = get_mock_TEST();
+            let compiler_under_test = get_mock_COMPILER_UNDER_TEST(CompilerRunMode.DOTNET)
+            let test = get_mock_TEST()
 
-            let runner = RUNNER("dotnet", "dotnet", compiler_under_test, DISASSEMBLER(null), test);
+            let runner = RUNNER("dotnet", "dotnet", compiler_under_test, DISASSEMBLER(null), test)
 
             // get the private static field _collate_environment:
-            let field_value = 
+            let field_value =
                 get_private_static_field(
-                    runner, 
+                    runner,
                     "_collate_environment"
-                );
+                )
 
-            let collate_as_map = cast MutableMap[string,string](field_value);
+            let collate_as_map = cast MutableMap[string,string](field_value)
 
-            should(collate_as_map.contains_key("LC_COLLATE")).be_true("", []);
+            should(collate_as_map.contains_key("LC_COLLATE")).be_true("", [])
             should(collate_as_map["LC_COLLATE"]).be("C", "", []);
         si
 
         @Test()
         RUNNER__get_result__given_failure__returns_failure() is
 
-            let arguments = System.Array.empty`[object]();
+            let arguments = System.Array.empty`[object]()
 
-            let compiler_under_test = get_mock_COMPILER_UNDER_TEST(CompilerRunMode.LOCAL);
-            let test = get_mock_TEST();
-            let runner = RUNNER("dotnet", "dotnet", compiler_under_test, DISASSEMBLER(null), test);
+            let compiler_under_test = get_mock_COMPILER_UNDER_TEST(CompilerRunMode.LOCAL)
+            let test = get_mock_TEST()
+            let runner = RUNNER("dotnet", "dotnet", compiler_under_test, DISASSEMBLER(null), test)
 
-            let failure = get_real_FAILURE();
+            let failure = get_real_FAILURE()
 
-            set_private_instance_field(runner, "_failure", failure);
+            set_private_instance_field(runner, "_failure", failure)
 
-            let result = runner.get_result();
+            let result = runner.get_result()
 
             should(result).be(failure, "", []);
         si
@@ -158,13 +158,13 @@ namespace Tests is
         @Test()
         RUNNER__get_result__given_no_failure__returns_PASS() is
 
-            let arguments = System.Array.empty`[object]();
+            let arguments = System.Array.empty`[object]()
 
-            let compiler_under_test = get_mock_COMPILER_UNDER_TEST(CompilerRunMode.CI);
-            let test = get_mock_TEST();
-            let runner = RUNNER("dotnet", "dotnet", compiler_under_test, DISASSEMBLER(null), test);
+            let compiler_under_test = get_mock_COMPILER_UNDER_TEST(CompilerRunMode.CI)
+            let test = get_mock_TEST()
+            let runner = RUNNER("dotnet", "dotnet", compiler_under_test, DISASSEMBLER(null), test)
 
-            let result = runner.get_result();
+            let result = runner.get_result()
 
             should(isa PASS(result)).be_true("", []);
         si
