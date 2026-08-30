@@ -70,7 +70,7 @@ namespace Tester is
 
         report_suppressed(context: string, ex: Exception) is
             if _debug then
-                IO.Std.write_line("progress reporter disabled at {context}: {ex}");
+                IO.Std.write_line("progress reporter disabled at {context}: {ex}")
             fi
         si
 
@@ -102,7 +102,7 @@ namespace Tester is
                 let directory = get_state_directory()
 
                 if !directory? then
-                    return;
+                    return
                 fi
 
                 Directory.create_directory(directory)
@@ -111,13 +111,13 @@ namespace Tester is
                 _snapshot_temp_path = "{_snapshot_path}.tmp"
                 _events_path = Path.join(directory, "{_record.pid}.events")
 
-                _enabled = true;
+                _enabled = true
             catch ex: Exception
                 _enabled = false
-                report_suppressed("init", ex);
+                report_suppressed("init", ex)
             yrt
 
-            write_event("run", "");
+            write_event("run", "")
         si
 
         // $XDG_RUNTIME_DIR is a tmpfs the session owns, cleared on logout, so
@@ -125,16 +125,16 @@ namespace Tester is
         // fallbacks (/tmp, the home directory) would leave litter behind.
         get_state_directory() -> string? static is
             if System.Environment.get_environment_variable("GHUL_TEST_NO_PROGRESS")? then
-                return null;
+                return null
             fi
 
             let runtime_directory = System.Environment.get_environment_variable("XDG_RUNTIME_DIR")
 
             if string.is_null_or_white_space(runtime_directory) then
-                return null;
+                return null
             fi
 
-            return Path.join(runtime_directory, "ghul-test");
+            return Path.join(runtime_directory, "ghul-test")
         si
 
         now() -> long static =>
@@ -142,13 +142,13 @@ namespace Tester is
 
         on_discovered(total: int) is
             _record.total = total
-            flush();
+            flush()
         si
 
         on_start(path: string) is
             _running.add(path)
             write_event("start", path)
-            flush();
+            flush()
         si
 
         on_finish(result: Result) is
@@ -159,27 +159,27 @@ namespace Tester is
             _record.completed = _record.completed + 1
 
             if result.is_pass then
-                _record.passed = _record.passed + 1;
+                _record.passed = _record.passed + 1
             elif result.is_fail then
-                _record.failed = _record.failed + 1;
+                _record.failed = _record.failed + 1
             else
-                _record.skipped = _record.skipped + 1;
+                _record.skipped = _record.skipped + 1
             fi
 
             _record.last = path
 
             write_event(get_event_kind(result), path)
-            flush();
+            flush()
         si
 
         get_event_kind(result: Result) -> string static is
             if result.is_pass then
-                return "pass";
+                return "pass"
             elif result.is_fail then
-                return "fail";
+                return "fail"
             fi
 
-            return "skip";
+            return "skip"
         si
 
         // Final snapshot, left in place so a consumer sampling after the run
@@ -188,52 +188,52 @@ namespace Tester is
         close() is
             _record.state = "done"
             write_event("done", "")
-            flush();
+            flush()
         si
 
         flush() is
             if !_enabled then
-                return;
+                return
             fi
 
             _record.updated_at = now()
             _record.running = _running | .collect_array()
 
             if _record.total > 0 then
-                _record.percent = 100 * _record.completed / _record.total;
+                _record.percent = 100 * _record.completed / _record.total
             fi
 
             try
                 // Written aside and moved so a sampling consumer never reads a
                 // partial object.
                 File.write_all_text(_snapshot_temp_path, JsonSerializer.serialize[RUN_PROGRESS](_record, _options))
-                File.move(_snapshot_temp_path, _snapshot_path, true);
+                File.move(_snapshot_temp_path, _snapshot_path, true)
             catch ex: Exception
                 _enabled = false
-                report_suppressed("flush", ex);
+                report_suppressed("flush", ex)
             yrt
         si
 
         write_event(kind: string, path: string) is
             if !_enabled then
-                return;
+                return
             fi
 
             let suffix =
                 if string.is_null_or_empty(path) then
-                    "";
+                    ""
                 else
-                    " {path}";
+                    " {path}"
                 fi
 
             try
                 File.append_all_text(
                     _events_path,
                     "{now()} {kind} {_record.completed}/{_record.total}{suffix}\n"
-                );
+                )
             catch ex: Exception
                 _enabled = false
-                report_suppressed("write_event", ex);
+                report_suppressed("write_event", ex)
             yrt
         si
     si

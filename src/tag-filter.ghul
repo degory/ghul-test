@@ -9,20 +9,20 @@ namespace Tester is
         is_empty: bool => _requested.count == 0
 
         init(..) is
-            _requested = LIST[string](requested_tags);
+            _requested = LIST[string](requested_tags)
         si
 
         matches(tags: Iterable[string]) -> bool is
             if is_empty then
-                return true;
+                return true
             fi
 
-            return tags | .any(tag => _requested | .any(r => r =~ tag));
+            return tags | .any(tag => _requested | .any(r => r =~ tag))
         si
 
         parse_tags(content: string) -> Iterable[string] static =>
             content.split([' ', '\t', '\n', '\r']) |
                 .map(t => t.trim()) |
-                .filter(t => t.length > 0);
+                .filter(t => t.length > 0)
     si
 si

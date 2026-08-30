@@ -19,7 +19,7 @@ namespace Tester is
 
             if arguments.count == 0 then
                 Std.write_line("usage: ghul-test [--tag <name>]... <test-folder>...")
-                return 1;
+                return 1
             fi
 
             let host = get_cli_environment_variable("HOST")
@@ -55,48 +55,48 @@ namespace Tester is
                 let arg = arguments[i]
 
                 if arg =~ "--use-dotnet-build" then
-                    run_mode = CompilerRunMode.DOTNET;
+                    run_mode = CompilerRunMode.DOTNET
                 elif arg =~ "--runtime-dll" then
                     i = i + 1
 
                     if i >= arguments.count then
                         Std.write_line("--runtime-dll requires a path argument")
-                        return 1;
+                        return 1
                     fi
 
-                    runtime_dll_override = arguments[i];
+                    runtime_dll_override = arguments[i]
                 elif arg =~ "--compiler" then
                     i = i + 1
 
                     if i >= arguments.count then
                         Std.write_line("--compiler requires a command argument")
-                        return 1;
+                        return 1
                     fi
 
-                    compiler_override = arguments[i];
+                    compiler_override = arguments[i]
                 elif arg =~ "--ildasm" then
                     i = i + 1
 
                     if i >= arguments.count then
                         Std.write_line("--ildasm requires a path argument")
-                        return 1;
+                        return 1
                     fi
 
-                    ildasm_override = arguments[i];
+                    ildasm_override = arguments[i]
                 elif arg =~ "--tag" then
                     i = i + 1
 
                     if i >= arguments.count then
                         Std.write_line("--tag requires a tag name argument")
-                        return 1;
+                        return 1
                     fi
 
-                    requested_tags.add(arguments[i]);
+                    requested_tags.add(arguments[i])
                 else
-                    test_paths.add(arg);
+                    test_paths.add(arg)
                 fi
 
-                i = i + 1;
+                i = i + 1
             od
 
             let compiler_under_test = COMPILER_UNDER_TEST(run_mode)
@@ -107,20 +107,20 @@ namespace Tester is
                 compiler_under_test.set_runtime_path(runtime_dll_override)
                 compiler_under_test.set_compiler_command(compiler_override)
 
-                disassembler = DISASSEMBLER(ildasm_override);
+                disassembler = DISASSEMBLER(ildasm_override)
             catch ex: Exception
                 Std.write_line(ex.message)
-                return 1;
+                return 1
             yrt
 
             if run_mode == CompilerRunMode.DOTNET then
-                report_compiler_under_test(compiler_under_test);
+                report_compiler_under_test(compiler_under_test)
             fi
 
             let tag_filter = TAG_FILTER(requested_tags)
 
             if !tag_filter.is_empty then
-                Std.write_line("filtering to tests tagged: {string.join(", ", requested_tags)}");
+                Std.write_line("filtering to tests tagged: {string.join(", ", requested_tags)}")
             fi
 
             let queue =
@@ -135,10 +135,10 @@ namespace Tester is
             for path in test_paths do
                 if !Directory.exists(path) then
                     Std.write_line("not a directory: {path}")
-                    return 1;
+                    return 1
                 fi
 
-                queue.try_queue_tests(path);
+                queue.try_queue_tests(path)
             od
 
             queue.run_queued_tests()
@@ -149,12 +149,12 @@ namespace Tester is
 
             if queue.fail_count == 0 then
                 Std.write_line("{cast char(9989)} all tests passed {cast char(9989)}")
-                return 0;
+                return 0
             fi
 
             Std.write_line("{cast char(10060)} {queue.fail_count} tests failed {cast char(10060)}")
 
-            return 1;
+            return 1
         si
 
         // Which compiler a `dotnet build` run reaches for is otherwise invisible
@@ -163,28 +163,28 @@ namespace Tester is
         // tested, so say which it is.
         report_compiler_under_test(compiler_under_test: COMPILER_UNDER_TEST) static is
             if let compiler_command = compiler_under_test.compiler_command then
-                Std.write_line("compiler under test: {compiler_command}");
+                Std.write_line("compiler under test: {compiler_command}")
             else
-                Std.write_line("compiler under test: whatever each project resolves for itself");
+                Std.write_line("compiler under test: whatever each project resolves for itself")
             fi
         si
 
         report_host_and_target(host: string, target: string) static is
             Std.write_line("compiler hosted on: {get_cli_description(host)}")
-            Std.write_line("built tests executed on: {get_cli_description(target)}");
+            Std.write_line("built tests executed on: {get_cli_description(target)}")
         si
 
         get_cli_description(name: string) -> string static is
             if name =~ "mono" then
-                return "Mono";
+                return "Mono"
             elif name =~ "dotnet" then
-                return ".NET";
+                return ".NET"
             fi
 
-            throw Exception("unknown CLI environment: {name}");
+            throw Exception("unknown CLI environment: {name}")
         si
 
         get_cli_environment_variable(name: string) -> string static =>
-            System.Environment.get_environment_variable(name) ?? "dotnet";
+            System.Environment.get_environment_variable(name) ?? "dotnet"
     si
 si

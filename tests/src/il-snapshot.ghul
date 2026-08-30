@@ -46,7 +46,7 @@ namespace Tests is
             should(narrowed.count).be(4, "", [])
             should(narrowed[0]).be(
                 ".class public auto ansi beforefieldinit Test.MAIN", "", [])
-            should(narrowed[3]).be("}} // end of class Test.MAIN", "", []);
+            should(narrowed[3]).be("}} // end of class Test.MAIN", "", [])
         si
 
         @Test()
@@ -57,7 +57,7 @@ namespace Tests is
             should(narrowed | .any(line => line.contains(".ver "))).be_false("", [])
             should(
                 narrowed | .any(line => line.contains(".assembly extern"))
-            ).be_false("", []);
+            ).be_false("", [])
         si
 
         // The whole point of narrowing: a snapshot must not move when a
@@ -76,7 +76,7 @@ namespace Tests is
             should(after.count).be(before.count, "", [])
 
             for i in 0..before.count do
-                should(after[i]).be(before[i], "", []);
+                should(after[i]).be(before[i], "", [])
             od
         si
 
@@ -89,7 +89,7 @@ namespace Tests is
 
             should(narrowed.count).be(2, "", [])
             should(narrowed[0]).be("ldloc.0", "", [])
-            should(narrowed[1]).be("throw", "", []);
+            should(narrowed[1]).be("throw", "", [])
         si
 
         @Test()
@@ -106,7 +106,7 @@ namespace Tests is
             let narrowed = IL_SNAPSHOT.narrow(lines)
 
             should(narrowed.count).be(1, "", [])
-            should(narrowed[0]).be(".class public Test.MAIN", "", []);
+            should(narrowed[0]).be(".class public Test.MAIN", "", [])
         si
     si
 si

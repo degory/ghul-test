@@ -31,27 +31,27 @@ namespace Tester is
                 if !in_members then
                     in_members = DISASSEMBLER.is_members_section_start(line)
 
-                    continue;
+                    continue
                 fi
 
                 if
                     has_members_section /\
                     DISASSEMBLER.is_members_section_end(line)
                 then
-                    break;
+                    break
                 fi
 
                 if DISASSEMBLER.is_unstable_line(line) then
-                    continue;
+                    continue
                 fi
 
                 if !seen_content /\ string.is_null_or_white_space(line) then
-                    continue;
+                    continue
                 fi
 
                 seen_content = true
 
-                kept.add(line);
+                kept.add(line)
             od
 
             // A snapshot ending in whitespace invites an editor to strip
@@ -60,10 +60,10 @@ namespace Tester is
                 kept.count > 0 /\
                 string.is_null_or_white_space(kept[kept.count - 1])
             do
-                kept.remove_at(kept.count - 1);
+                kept.remove_at(kept.count - 1)
             od
 
-            return kept;
+            return kept
         si
     si
 si

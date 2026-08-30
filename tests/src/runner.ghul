@@ -27,7 +27,7 @@ namespace Tests is
                     binding_flags
                 )
 
-            return `field.get_value(from);
+            return `field.get_value(from)
         si
 
         set_private_instance_field(from: object, name: string, value: object) is
@@ -41,7 +41,7 @@ namespace Tests is
                     binding_flags
                 )
 
-            `field.set_value(from, value);
+            `field.set_value(from, value)
         si
 
         get_private_static_field(from: object, name: string) -> object? is
@@ -55,11 +55,11 @@ namespace Tests is
                     binding_flags
                 )
 
-            return `field.get_value(null);
+            return `field.get_value(null)
         si
 
         get_mock_COMPILER_UNDER_TEST(run_mode: CompilerRunMode) -> COMPILER_UNDER_TEST is
-            return NSubstitute.Substitute.`for`[COMPILER_UNDER_TEST]([run_mode]:object);
+            return NSubstitute.Substitute.`for`[COMPILER_UNDER_TEST]([run_mode]:object)
         si
 
         get_mock_TEST() -> TEST is
@@ -69,7 +69,7 @@ namespace Tests is
                 "--stuff", // : string,
                 false, // : bool
                 LIST[string]() // : Iterable[string]
-            ]);
+            ])
         si
 
         get_mock_FAILURE() -> FAILURE is
@@ -77,7 +77,7 @@ namespace Tests is
                 get_mock_TEST(),
                 "this is a message",
                 "and this is additional detail"
-            ]);
+            ])
         si
 
         get_real_FAILURE() -> FAILURE is
@@ -85,7 +85,7 @@ namespace Tests is
                 get_mock_TEST(),
                 "this is a message",
                 "and this is additional detail"
-            );
+            )
         si
 
         @Test()
@@ -108,10 +108,10 @@ namespace Tests is
             Std.error.write_line("field_value: {field_value}")
 
             if field_value? then
-                Std.error.write_line("field_value type: {field_value.get_type().to_string()}");
+                Std.error.write_line("field_value type: {field_value.get_type().to_string()}")
             fi
 
-            should(isa Map[string,string](field_value)).be_true("", []);
+            should(isa Map[string,string](field_value)).be_true("", [])
         si
 
         @Test()
@@ -134,7 +134,7 @@ namespace Tests is
             let collate_as_map = cast MutableMap[string,string](field_value)
 
             should(collate_as_map.contains_key("LC_COLLATE")).be_true("", [])
-            should(collate_as_map["LC_COLLATE"]).be("C", "", []);
+            should(collate_as_map["LC_COLLATE"]).be("C", "", [])
         si
 
         @Test()
@@ -152,7 +152,7 @@ namespace Tests is
 
             let result = runner.get_result()
 
-            should(result).be(failure, "", []);
+            should(result).be(failure, "", [])
         si
 
         @Test()
@@ -166,7 +166,7 @@ namespace Tests is
 
             let result = runner.get_result()
 
-            should(isa PASS(result)).be_true("", []);
+            should(isa PASS(result)).be_true("", [])
         si
     si
 si

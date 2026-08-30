@@ -8,7 +8,7 @@ namespace Tester is
         _running_tasks: LIST[Tasks.TASK[Result]]
 
         init(..) is
-            _running_tasks = LIST[Tasks.TASK[Result]](max_tasks);
+            _running_tasks = LIST[Tasks.TASK[Result]](max_tasks)
         si
 
         queue(task: () -> Result) -> Iterable[Result] is
@@ -20,15 +20,15 @@ namespace Tester is
 
             _running_tasks.add(new_task)
 
-            return result;
+            return result
         si
 
         drain() -> Iterable[Result]? is
             if _running_tasks.count == 0 then
-                return null;
+                return null
             fi
 
-            return wait_all();
+            return wait_all()
         si
 
         wait_any() -> Iterable[Result] => wait(false)
@@ -38,7 +38,7 @@ namespace Tester is
             let result = LIST[Result]()
 
             if !all /\ _running_tasks.count < _max_tasks then
-                return result;
+                return result
             fi
 
             Tasks.TASK.wait_any(_running_tasks| .map(t -> Tasks.TASK => t).collect_array())
@@ -47,15 +47,15 @@ namespace Tester is
 
             for task in _running_tasks do
                 if task.is_completed then
-                    result.add(task.result);
+                    result.add(task.result)
                 else
-                    new_tasks.add(task);
+                    new_tasks.add(task)
                 fi
             od
 
             _running_tasks = new_tasks
 
-            return result;
+            return result
         si
     si
 si

@@ -14,7 +14,7 @@ namespace Tests is
         _n: object[]
 
         init() is
-            _n = LIST[object](0).to_array();
+            _n = LIST[object](0).to_array()
         si
 
         @Test()
@@ -24,7 +24,7 @@ namespace Tests is
 
             result.progress = -50
 
-            should(result.progress).be(0, "", []);
+            should(result.progress).be(0, "", [])
         si
 
         @Test()
@@ -34,7 +34,7 @@ namespace Tests is
 
             result.progress = -1
 
-            should(result.progress).be(0, "", []);
+            should(result.progress).be(0, "", [])
         si
 
         @Test()
@@ -44,7 +44,7 @@ namespace Tests is
 
             result.progress = 0
 
-            should(result.progress).be(0, "", []);
+            should(result.progress).be(0, "", [])
         si
 
         @Test()
@@ -54,7 +54,7 @@ namespace Tests is
 
             result.progress = 1
 
-            should(result.progress).be(1, "", []);
+            should(result.progress).be(1, "", [])
         si
 
         @Test()
@@ -64,7 +64,7 @@ namespace Tests is
 
             result.progress = 33
 
-            should(result.progress).be(33, "", []);
+            should(result.progress).be(33, "", [])
         si
 
         @Test()
@@ -74,7 +74,7 @@ namespace Tests is
 
             result.progress = 99
 
-            should(result.progress).be(99, "", []);
+            should(result.progress).be(99, "", [])
         si
 
         @Test()
@@ -84,7 +84,7 @@ namespace Tests is
 
             result.progress = 100
 
-            should(result.progress).be(100, "", []);
+            should(result.progress).be(100, "", [])
         si
 
         @Test()
@@ -94,7 +94,7 @@ namespace Tests is
 
             result.progress = 101
 
-            should(result.progress).be(100, "", []);
+            should(result.progress).be(100, "", [])
         si
 
         @Test()
@@ -104,7 +104,7 @@ namespace Tests is
 
             result.progress = 1000
 
-            should(result.progress).be(100, "", []);
+            should(result.progress).be(100, "", [])
         si
 
         @Test()
@@ -114,7 +114,7 @@ namespace Tests is
 
             result.progress = 0
 
-            should(result.progress_string).be(" 0%", "", []);
+            should(result.progress_string).be(" 0%", "", [])
         si
 
         @Test()
@@ -124,7 +124,7 @@ namespace Tests is
 
             result.progress = 5
 
-            should(result.progress_string).be(" 5%", "", []);
+            should(result.progress_string).be(" 5%", "", [])
         si
 
         @Test()
@@ -134,7 +134,7 @@ namespace Tests is
 
             result.progress = 12
 
-            should(result.progress_string).be("12%", "", []);
+            should(result.progress_string).be("12%", "", [])
         si
 
         @Test()
@@ -144,7 +144,7 @@ namespace Tests is
 
             result.progress = 100
 
-            should(result.progress_string).be("100%", "", []);
+            should(result.progress_string).be("100%", "", [])
         si
     si
 
@@ -160,7 +160,7 @@ namespace Tests is
 
             let skip = SKIP(test)
 
-            should(skip.test).be(test, "", []);
+            should(skip.test).be(test, "", [])
         si
 
         @Test()
@@ -168,7 +168,7 @@ namespace Tests is
 
             let skip = SKIP(get_stub_test())
 
-            should(skip.is_fail).be(false, "", []);
+            should(skip.is_fail).be(false, "", [])
         si
 
         @Test()
@@ -176,7 +176,7 @@ namespace Tests is
 
             let skip = SKIP(get_stub_test())
 
-            should(skip.is_pass).be(false, "", []);
+            should(skip.is_pass).be(false, "", [])
         si
 
         @Test()
@@ -184,7 +184,7 @@ namespace Tests is
 
             let skip = SKIP(get_stub_test())
 
-            should(skip.is_executed).be(false, "", []);
+            should(skip.is_executed).be(false, "", [])
         si
 
         @Test()
@@ -192,7 +192,7 @@ namespace Tests is
 
             let skip = SKIP(get_stub_test())
 
-            should(skip.head).be("   skip", "", []);
+            should(skip.head).be("   skip", "", [])
         si
 
         @Test()
@@ -200,7 +200,7 @@ namespace Tests is
 
             let skip = SKIP(get_stub_test())
 
-            should(skip.body?).be_false("", []);
+            should(skip.body?).be_false("", [])
         si
 
         @Test()
@@ -208,7 +208,7 @@ namespace Tests is
 
             let skip = SKIP(get_stub_test())
 
-            should(skip.format("xx a test name xx")).be("{skip.progress_string} {skip.head}: xx a test name xx", "", []);
+            should(skip.format("xx a test name xx")).be("{skip.progress_string} {skip.head}: xx a test name xx", "", [])
         si
 
         @Test()
@@ -220,7 +220,7 @@ namespace Tests is
 
             let skip = SKIP(test)
 
-            should(skip.to_string()).be(skip.format(test.path), "", []);
+            should(skip.to_string()).be(skip.format(test.path), "", [])
         si
     si
 
@@ -236,7 +236,7 @@ namespace Tests is
 
             let pass = PASS(test)
 
-            should(pass.test).be(test, "", []);
+            should(pass.test).be(test, "", [])
         si
 
         @Test()
@@ -244,7 +244,7 @@ namespace Tests is
 
             let pass = PASS(get_stub_test())
 
-            should(pass.is_fail).be(false, "", []);
+            should(pass.is_fail).be(false, "", [])
         si
 
         @Test()
@@ -252,7 +252,7 @@ namespace Tests is
 
             let pass = PASS(get_stub_test())
 
-            should(pass.is_pass).be(true, "", []);
+            should(pass.is_pass).be(true, "", [])
         si
 
         @Test()
@@ -260,7 +260,7 @@ namespace Tests is
 
             let pass = PASS(get_stub_test())
 
-            should(pass.is_executed).be(true, "", []);
+            should(pass.is_executed).be(true, "", [])
         si
 
         @Test()
@@ -268,7 +268,7 @@ namespace Tests is
 
             let pass = PASS(get_stub_test())
 
-            should(pass.head).be("✅ pass", "", []);
+            should(pass.head).be("✅ pass", "", [])
         si
 
         @Test()
@@ -276,7 +276,7 @@ namespace Tests is
 
             let pass = PASS(get_stub_test())
 
-            should(pass.body?).be_false("", []);
+            should(pass.body?).be_false("", [])
         si
 
         @Test()
@@ -284,7 +284,7 @@ namespace Tests is
 
             let pass = PASS(get_stub_test())
 
-            should(pass.format("xx a test name xx")).be("{pass.progress_string} {pass.head}: xx a test name xx", "", []);
+            should(pass.format("xx a test name xx")).be("{pass.progress_string} {pass.head}: xx a test name xx", "", [])
         si
 
         @Test()
@@ -296,7 +296,7 @@ namespace Tests is
 
             let pass = PASS(test)
 
-            should(pass.to_string()).be(pass.format(test.path), "", []);
+            should(pass.to_string()).be(pass.format(test.path), "", [])
         si
     si
 
@@ -312,7 +312,7 @@ namespace Tests is
 
             let fail = FAILURE(test)
 
-            should(fail.test).be(test, "", []);
+            should(fail.test).be(test, "", [])
         si
 
         @Test()
@@ -320,7 +320,7 @@ namespace Tests is
 
             let fail = FAILURE(get_stub_test())
 
-            should(fail.is_pass).be(false, "", []);
+            should(fail.is_pass).be(false, "", [])
         si
 
         @Test()
@@ -328,7 +328,7 @@ namespace Tests is
 
             let fail = FAILURE(get_stub_test())
 
-            should(fail.is_fail).be(true, "", []);
+            should(fail.is_fail).be(true, "", [])
         si
 
         @Test()
@@ -336,7 +336,7 @@ namespace Tests is
 
             let fail = FAILURE(get_stub_test())
 
-            should(fail.is_executed).be(true, "", []);
+            should(fail.is_executed).be(true, "", [])
         si
 
         @Test()
@@ -344,7 +344,7 @@ namespace Tests is
 
             let fail = FAILURE(get_stub_test())
 
-            should(fail.head).be("❌ fail", "", []);
+            should(fail.head).be("❌ fail", "", [])
         si
 
         @Test()
@@ -352,7 +352,7 @@ namespace Tests is
 
             let fail = FAILURE(get_stub_test())
 
-            should(fail.body?).be_false("", []);
+            should(fail.body?).be_false("", [])
         si
 
         @Test()
@@ -363,7 +363,7 @@ namespace Tests is
 
             fail.add(details)
 
-            should(fail.body!).be(details.to_string(), "", []);
+            should(fail.body!).be(details.to_string(), "", [])
         si
 
         @Test()
@@ -373,10 +373,10 @@ namespace Tests is
             let details = [1, 2, 3] | .map(i => DETAILS("something went wrong {i}"))
 
             for d in details do
-                fail.add(d);
+                fail.add(d)
             od
 
-            should(fail.body!).be(details | .to_string("\n"), "", []);
+            should(fail.body!).be(details | .to_string("\n"), "", [])
         si
 
         @Test()
@@ -384,7 +384,7 @@ namespace Tests is
 
             let fail = FAILURE(get_stub_test())
 
-            should(fail.format("xx a test name xx")).be("{fail.progress_string} {fail.head}: xx a test name xx", "", []);
+            should(fail.format("xx a test name xx")).be("{fail.progress_string} {fail.head}: xx a test name xx", "", [])
         si
 
         @Test()
@@ -396,7 +396,7 @@ namespace Tests is
 
             let fail = FAILURE(test)
 
-            should(fail.to_string()).be(fail.format(test.path), "", []);
+            should(fail.to_string()).be(fail.format(test.path), "", [])
         si
     si
 
@@ -410,7 +410,7 @@ namespace Tests is
 
             let details = DETAILS("this is a message")
 
-            should(details.message).be("this is a message", "", []);
+            should(details.message).be("this is a message", "", [])
         si
 
         @Test()
@@ -418,7 +418,7 @@ namespace Tests is
 
             let details = DETAILS("this is a message")
 
-            should(details.details?).be_false("", []);
+            should(details.details?).be_false("", [])
         si
 
         @Test()
@@ -426,7 +426,7 @@ namespace Tests is
 
             let details = DETAILS("this is a message", "and this is additional detail")
 
-            should(details.details!).be("and this is additional detail", "", []);
+            should(details.details!).be("and this is additional detail", "", [])
         si
 
         @Test()
@@ -434,7 +434,7 @@ namespace Tests is
 
             let details = DETAILS("this is a message")
 
-            should(details.to_string()).be("this is a message", "", []);
+            should(details.to_string()).be("this is a message", "", [])
         si
 
         @Test()
@@ -442,7 +442,7 @@ namespace Tests is
 
             let details = DETAILS("this is a message", "and this is additional detail")
 
-            should(details.to_string()).be("this is a message: and this is additional detail", "", []);
+            should(details.to_string()).be("this is a message: and this is additional detail", "", [])
         si
 
         @Test()
@@ -450,7 +450,7 @@ namespace Tests is
 
             let details = DETAILS("this is a message", "and this\nis multi-line\nadditional detail")
 
-            should(details.to_string()).be("this is a message:\n    and this\n    is multi-line\n    additional detail", "", []);
+            should(details.to_string()).be("this is a message:\n    and this\n    is multi-line\n    additional detail", "", [])
         si
     si
 si
