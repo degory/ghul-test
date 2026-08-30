@@ -24,10 +24,10 @@ namespace Tester is
 
         to_string() -> string is
             if let self.result then
-                return result.format(path);
+                return result.format(path)
             fi
 
-            return "no result: {path}";
+            return "no result: {path}"
         si
     si
 si

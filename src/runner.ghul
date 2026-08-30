@@ -37,15 +37,15 @@ namespace Tester is
         init(..) is
             if !_collate_environment? then
                 _collate_environment = MAP[string,string]()
-                _collate_environment.add("LC_COLLATE", "C");
+                _collate_environment.add("LC_COLLATE", "C")
             fi
         si
 
         get_result() -> Result is
             if _failure? then
-                return _failure;
+                return _failure
             else
-                return PASS(_test);
+                return PASS(_test)
             fi
         si
 
@@ -54,14 +54,14 @@ namespace Tester is
                 return () -> Result is
                     let result = run_test()
 
-                    return result;
-                si;
+                    return result
+                si
             si
 
         run_test() -> Result is
             try
                 if Directory.get_files(_test.path, "disabled*")| .count() > 0 then
-                    return SKIP(_test);
+                    return SKIP(_test)
                 fi
 
                 _run_test()
@@ -70,16 +70,16 @@ namespace Tester is
 
                 mark_if_failed()
 
-                return get_result();
+                return get_result()
             catch ex: Exception
-                return FAILURE(_test, ex.message, ex.stack_trace);
+                return FAILURE(_test, ex.message, ex.stack_trace)
             yrt
         si
 
         _run_test() is
             if _test.source_files| .count() == 0 then
                 add_fail("no source files found")
-                return;
+                return
             fi
 
             // Left behind by a previous failing run, and a failing run
@@ -96,12 +96,12 @@ namespace Tester is
             if build_succeeded then
                 if _test.is_build_fail_expected then
                     add_fail("unexpected build success: {_test.path}")
-                    exit_after_grep_and_sort = true;
+                    exit_after_grep_and_sort = true
                 fi
             else
                 if !_test.is_build_fail_expected then
                     add_fail("unexpected build failure", "compiler.out")
-                    exit_after_grep_and_sort = true;
+                    exit_after_grep_and_sort = true
                 fi
             fi
 
@@ -141,7 +141,7 @@ namespace Tester is
             normalize_paths("warn.sort")
 
             if exit_after_grep_and_sort then
-                return;
+                return
             fi
 
             run_diff("errors", "err.expected", "err.sort", "err.diff", true)
@@ -151,19 +151,19 @@ namespace Tester is
             run_diff_il_out(build_succeeded)
 
             if !build_succeeded \/ _test.is_library then
-                return;
+                return
             fi
 
             _compiler_under_test.run_ln_runtime(self)
 
             if !run_binary() then
-                return;
+                return
             fi
 
             normalize_paths("run.out")
             strip_stack_trace_locations("run.out")
 
-            run_diff("test output", "run.expected", "run.out", "run.diff", true);
+            run_diff("test output", "run.expected", "run.out", "run.diff", true)
         si
 
         // A passing test's artifacts are deleted, so what a green run
@@ -174,7 +174,7 @@ namespace Tester is
         // GHUL_TEST_KEEP_ARTIFACTS leaves them in place.
         clean_up() is
             if System.Environment.get_environment_variable("GHUL_TEST_KEEP_ARTIFACTS")? then
-                return;
+                return
             fi
 
             if !_failure? then
@@ -200,7 +200,7 @@ namespace Tester is
                     "run.err",
                     "run.diff",
                     "ghul-runtime.dll"
-                ]);
+                ])
             fi
         si
 
@@ -211,7 +211,7 @@ namespace Tester is
 
             if !File.exists(binary_path) then
                 add_fail("no binary found: {binary_path}")
-                return false;
+                return false
             fi
 
             let exit_status =
@@ -229,10 +229,10 @@ namespace Tester is
                 exit_status != 0
             then
                 add_fail("binary exited with non-zero status ({exit_status})", "run.err")
-                return false;
+                return false
             fi
 
-            return true;
+            return true
         si
 
         run_diff_il_out(build_succeeded: bool) is
@@ -250,7 +250,7 @@ namespace Tester is
                 File.exists(get_path("il.expected")) /\
                 build_succeeded
             then
-                run_disassembler(il_out_path);
+                run_disassembler(il_out_path)
             fi
 
             // A test wanting IL that produced none compares an empty
@@ -259,21 +259,21 @@ namespace Tester is
             // the comparison instead would report a test that emitted
             // nothing as passing.
             if !File.exists(il_out_path) then
-                File.create(il_out_path).close();
+                File.create(il_out_path).close()
             fi
 
-            run_diff("IL output", "il.expected", "il.out", "il.diff", true);
+            run_diff("IL output", "il.expected", "il.out", "il.diff", true)
         si
 
         run_disassembler(il_out_path: string) is
             if !_disassembler.is_available then
-                return;
+                return
             fi
 
             let binary_path = _compiler_under_test.get_binary_path(self)
 
             if !File.exists(binary_path) then
-                return;
+                return
             fi
 
             // A test whose source marks statements with `@IL.output` carries
@@ -288,7 +288,7 @@ namespace Tester is
 
                 normalize_paths("il.out")
 
-                return;
+                return
             fi
 
             let raw_path = get_path("il.raw")
@@ -312,7 +312,7 @@ namespace Tester is
             if !File.exists(raw_path) then
                 add_fail("disassembler produced no output", "il.err")
 
-                return;
+                return
             fi
 
             // An item the assembly does not contain is not reported by
@@ -325,14 +325,14 @@ namespace Tester is
 
                 File.delete(raw_path)
 
-                return;
+                return
             fi
 
             _write_stable_il(raw_path, il_out_path)
 
             File.delete(raw_path)
 
-            normalize_paths("il.out");
+            normalize_paths("il.out")
         si
 
         // Disassembles each method that carries an `@IL.output` range and
@@ -369,7 +369,7 @@ namespace Tester is
                         "@IL.output: disassembler produced no output for {item}",
                         "il.err")
 
-                    return;
+                    return
                 fi
 
                 let il_lines = File.read_all_lines(tmp_path)
@@ -388,7 +388,7 @@ namespace Tester is
 
                     File.delete(tmp_path)
 
-                    return;
+                    return
                 fi
 
                 for range in ranges do
@@ -406,7 +406,7 @@ namespace Tester is
                                     range.start_offset <= offset /\
                                     offset < range.end_offset
                                 then
-                                    kept.add(match.groups[2].value.trim());
+                                    kept.add(match.groups[2].value.trim())
                                 fi
                             fi
                         od
@@ -422,26 +422,26 @@ namespace Tester is
 
                             File.delete(tmp_path)
 
-                            return;
+                            return
                         fi
 
                         if kept.count > 0 then
                             slices[range.sequence] = kept
 
                             if !seen_any \/ range.sequence < min_sequence then
-                                min_sequence = range.sequence;
+                                min_sequence = range.sequence
                             fi
 
                             if !seen_any \/ range.sequence > max_sequence then
-                                max_sequence = range.sequence;
+                                max_sequence = range.sequence
                             fi
 
-                            seen_any = true;
+                            seen_any = true
                         fi
                     fi
                 od
 
-                File.delete(tmp_path);
+                File.delete(tmp_path)
             od
 
             let lines = LIST[string]()
@@ -450,13 +450,13 @@ namespace Tester is
                 for sequence in min_sequence::max_sequence do
                     if slices.contains_key(sequence) then
                         for line in slices[sequence] do
-                            lines.add(line);
+                            lines.add(line)
                         od
                     fi
                 od
             fi
 
-            File.write_all_lines(il_out_path, lines);
+            File.write_all_lines(il_out_path, lines)
         si
 
         _distinct_items(ranges: LIST[IL_OUTPUT_RANGE]) -> LIST[string] is
@@ -464,11 +464,11 @@ namespace Tester is
 
             for range in ranges do
                 if !items.contains(range.item) then
-                    items.add(range.item);
+                    items.add(range.item)
                 fi
             od
 
-            return items;
+            return items
         si
 
         IL_LINE: Regex static =>
@@ -494,14 +494,14 @@ namespace Tester is
                         trimmed.starts_with(".property") \/
                         trimmed.starts_with(".event")
                     then
-                        return true;
+                        return true
                     fi
                 elif trimmed.starts_with(".class") then
-                    return true;
+                    return true
                 fi
             od
 
-            return false;
+            return false
         si
 
         // A test naming an item in `il.item` has its snapshot scoped to
@@ -511,10 +511,10 @@ namespace Tester is
             let path = get_path("il.item")
 
             if !File.exists(path) then
-                return null;
+                return null
             fi
 
-            return File.read_all_text(path).trim();
+            return File.read_all_text(path).trim()
         si
 
         // A file whose namespace is compiler-generated takes its name
@@ -526,7 +526,7 @@ namespace Tester is
         _write_stable_il(raw_path: string, il_out_path: string) static is
             File.write_all_lines(
                 il_out_path,
-                IL_SNAPSHOT.narrow(File.read_all_lines(raw_path)));
+                IL_SNAPSHOT.narrow(File.read_all_lines(raw_path)))
         si
 
         // The build log truncated at MSBuild's end-of-build banner. A
@@ -538,21 +538,21 @@ namespace Tester is
         // such banner and passes through unchanged.
         trim_build_log(in_file: string, out_file: string) is
             if !File.exists(get_path(in_file)) then
-                return;
+                return
             fi
 
             let builder = System.Text.StringBuilder()
 
             for line in read_all_text(in_file).split(['\n']) do
                 if line.starts_with("Build FAILED") \/ line.starts_with("Build succeeded") then
-                    break;
+                    break
                 fi
 
                 builder.append(line)
-                builder.append("\n");
+                builder.append("\n")
             od
 
-            write_all_text(out_file, builder.to_string());
+            write_all_text(out_file, builder.to_string())
         si
 
         run_grep(pattern: string, in_file: string, out_file: string) -> bool is
@@ -566,7 +566,7 @@ namespace Tester is
                     out_file,
                     null,
                     _collate_environment
-                ) != 0;
+                ) != 0
         si
 
         run_sort(in_file: string, out_file: string) -> bool is
@@ -578,39 +578,39 @@ namespace Tester is
                     out_file,
                     null,
                     _collate_environment
-                ) != 0;
+                ) != 0
         si
 
         normalize_paths(file_name: string) is
             let path = get_path(file_name)
 
             if !File.exists(path) then
-                return;
+                return
             fi
 
             let test_directory = IO.Path.get_full_path(_test.path)
 
             if string.is_null_or_empty(test_directory) then
-                return;
+                return
             fi
 
             let prefix =
                 if test_directory.ends_with('/') \/ test_directory.ends_with('\\') then
-                    test_directory;
+                    test_directory
                 else
-                    "{test_directory}/";
+                    "{test_directory}/"
                 fi
 
             let content = File.read_all_text(path)
 
-            File.write_all_text(path, content.replace(prefix, ""));
+            File.write_all_text(path, content.replace(prefix, ""))
         si
 
         strip_stack_trace_locations(file_name: string) is
             let path = get_path(file_name)
 
             if !File.exists(path) then
-                return;
+                return
             fi
 
             let content = File.read_all_text(path)
@@ -621,7 +621,7 @@ namespace Tester is
             // info) are left intact.
             let pattern = Regex("^( {3}at .+) in [^:]*:line [0-9]+\\s*$", RegexOptions.MULTILINE)
 
-            File.write_all_text(path, pattern.replace(content, "$1"));
+            File.write_all_text(path, pattern.replace(content, "$1"))
         si
 
         run_diff(
@@ -639,21 +639,21 @@ namespace Tester is
             if
                 !File.exists(expected_path)
             then
-                expected_file_name = "/dev/null";
+                expected_file_name = "/dev/null"
             fi
 
             if
                 !File.exists(actual_path)
             then
-                return false;
+                return false
             fi
 
             let args: string[] mut
 
             if ignore_space_changes then
-                args = ["-b", "--strip-trailing-cr", expected_file_name, actual_file_name];
+                args = ["-b", "--strip-trailing-cr", expected_file_name, actual_file_name]
             else
-                args = ["--strip-trailing-cr", expected_file_name, actual_file_name];
+                args = ["--strip-trailing-cr", expected_file_name, actual_file_name]
             fi
 
             let result = run(
@@ -665,10 +665,10 @@ namespace Tester is
             )
 
             if result != 0 then
-                add_fail(description, out_file_name);
+                add_fail(description, out_file_name)
             fi
 
-            return result == 0;
+            return result == 0
         si
 
         run(
@@ -691,7 +691,7 @@ namespace Tester is
         is
             let process = start(path, arguments, environment)
 
-            return wait(process, timeout, out_file, err_file);
+            return wait(process, timeout, out_file, err_file)
         si
 
         start(path: string, arguments: Iterable[string]) -> Process =>
@@ -706,7 +706,7 @@ namespace Tester is
 
             if environment? then
                 for element in environment do
-                    start_info.environment.add(element.key, element.value);
+                    start_info.environment.add(element.key, element.value)
                 od
             fi
 
@@ -728,59 +728,59 @@ namespace Tester is
             let result = Process.start(start_info)
 
             if !result? then
-                throw Exception("failed to start process: {path} {start_info.arguments}");
+                throw Exception("failed to start process: {path} {start_info.arguments}")
             fi
 
-            return result;
+            return result
         si
 
         wait(process: Process, timeout: int, out_file_name: string?, err_file_name: string?) -> int is
             if out_file_name? then
                 let stdout = process.standard_output.read_to_end()
-                write_all_text(out_file_name, stdout);
+                write_all_text(out_file_name, stdout)
             fi
 
             if err_file_name? then
                 let stderr = process.standard_error.read_to_end()
-                write_all_text(err_file_name, stderr);
+                write_all_text(err_file_name, stderr)
             fi
 
             process.wait_for_exit(5000)
 
-            return process.exit_code;
+            return process.exit_code
         si
 
         add_fail(message: string) is
-            add_fail(message, null);
+            add_fail(message, null)
         si
 
         add_fail(message: string, file_name: string?) is
             let details: DETAILS mut
 
             if file_name? then
-                details = DETAILS(message, read_all_text_quiet(file_name));
+                details = DETAILS(message, read_all_text_quiet(file_name))
             else
-                details = DETAILS(message);
+                details = DETAILS(message)
             fi
 
             if !_failure? then
-                _failure = FAILURE(_test, details);
+                _failure = FAILURE(_test, details)
             else
-                _failure.add(details);
+                _failure.add(details)
             fi
         si
 
         mark_if_failed() is
             if _failure? then
-                File.create(get_path("failed")).close();
+                File.create(get_path("failed")).close()
             else
-                delete_file("failed");
+                delete_file("failed")
             fi
         si
 
         delete_files(file_names: Iterable[string]) is
             for file_name in file_names do
-                delete_file(file_name);
+                delete_file(file_name)
             od
         si
 
@@ -788,7 +788,7 @@ namespace Tester is
             let file_path = get_path(file_name)
 
             if File.exists(file_path) then
-                File.delete(file_path);
+                File.delete(file_path)
             fi
         si
 
@@ -799,7 +799,7 @@ namespace Tester is
             _test.path
 
         write_all_text(file_name: string, text: string) is
-            File.write_all_text(get_path(file_name), text);
+            File.write_all_text(get_path(file_name), text)
         si
 
         read_all_text(file_name: string) -> string =>
@@ -809,10 +809,10 @@ namespace Tester is
             let file_path = get_path(file_name)
 
             if !File.exists(file_path) then
-                return "(could not read file: {file_path})";
+                return "(could not read file: {file_path})"
             fi
 
-            return File.read_all_text(get_path(file_name));
+            return File.read_all_text(get_path(file_name))
         si
     si
 si

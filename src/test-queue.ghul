@@ -35,14 +35,14 @@ namespace Tester is
             let actual_test_processes: int mut
 
             if requested_test_processes? then
-                actual_test_processes = System.Convert.to_int32(requested_test_processes);
+                actual_test_processes = System.Convert.to_int32(requested_test_processes)
             else
                 let cpu_count = System.Environment.processor_count
 
                 if cpu_count <= 6 then
-                    actual_test_processes = cpu_count * 2;
+                    actual_test_processes = cpu_count * 2
                 else
-                    actual_test_processes = cpu_count * 3 / 2;
+                    actual_test_processes = cpu_count * 3 / 2
                 fi
             fi
 
@@ -50,7 +50,7 @@ namespace Tester is
 
             Std.write_line("using {actual_test_processes} processes to run tests")
 
-            _tests = LIST[TEST]();
+            _tests = LIST[TEST]()
         si
 
         run_queued_tests() is
@@ -74,17 +74,17 @@ namespace Tester is
 
                 // `queue` returns once the task is running, so this reports a
                 // test that has actually started, not one waiting for a slot.
-                _progress_reporter.on_start(test.path);
+                _progress_reporter.on_start(test.path)
             od
 
             let results mut = _task_queue.drain()
 
             while results? do
                 report_progress(results)
-                results = _task_queue.drain();
+                results = _task_queue.drain()
             od
 
-            _progress_reporter.close();
+            _progress_reporter.close()
         si
 
         report_progress(results: Iterable[Result]) is
@@ -97,7 +97,7 @@ namespace Tester is
 
                 progress = progress + 1
 
-                _progress_reporter.on_finish(result);
+                _progress_reporter.on_finish(result)
             od
         si
 
@@ -112,14 +112,14 @@ namespace Tester is
                 for entry in entries do
                     // FIXME: appears not to be needed:
                     if entry =~ "." \/ entry =~ ".." \/ entry =~ "template" then
-                        continue;
+                        continue
                     fi
 
-                    try_queue_tests(entry);
+                    try_queue_tests(entry)
                 od
             catch ex: Exception
                 Std.write_line("probably not a directory: {path}")
-                Std.write_line("caught: {ex}");
+                Std.write_line("caught: {ex}")
             yrt
         si
 
@@ -127,13 +127,13 @@ namespace Tester is
             let flags_path = "{path}/ghulflags"
 
             if !File.exists(flags_path) then
-                return;
+                return
             fi
 
             let tags = get_tags(path)
 
             if !_tag_filter.matches(tags) then
-                return;
+                return
             fi
 
             let flags = File.read_all_text(flags_path)
@@ -148,7 +148,7 @@ namespace Tester is
                     is_build_failure_expected,
                     tags
                 )
-            );
+            )
         si
 
         // Asked once for the whole run rather than per test: whether a
@@ -157,23 +157,23 @@ namespace Tester is
         // from tasks running at the same time.
         report_missing_disassembler() is
             if _disassembler.is_available then
-                return;
+                return
             fi
 
             let wanted =
                 _tests | .filter(test => File.exists("{test.path}/il.expected")) | .count()
 
             if wanted == 0 then
-                return;
+                return
             fi
 
             Std.write_line(
                 "{wanted} test(s) expect IL but no disassembler was found: "
-                "set GHUL_TEST_ILDASM, or pass --ildasm <path>");
+                "set GHUL_TEST_ILDASM, or pass --ildasm <path>")
         si
 
         queue_test(test: TEST) is
-            _tests.add(test);
+            _tests.add(test)
         si
 
         get_source_files(path: string) -> Iterable[string] =>
@@ -184,10 +184,10 @@ namespace Tester is
             let tags_path = "{path}/tags"
 
             if !File.exists(tags_path) then
-                return LIST[string]();
+                return LIST[string]()
             fi
 
-            return TAG_FILTER.parse_tags(File.read_all_text(tags_path)) | .collect_list();
+            return TAG_FILTER.parse_tags(File.read_all_text(tags_path)) | .collect_list()
         si
     si
 si

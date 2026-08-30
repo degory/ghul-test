@@ -55,7 +55,7 @@ namespace Tester is
                 let qualifier mut = type_name
 
                 if !string.is_null_or_white_space(namespace_name) then
-                    qualifier = "{namespace_name}.{type_name}";
+                    qualifier = "{namespace_name}.{type_name}"
                 fi
 
                 for method_handle in type.get_methods() do
@@ -69,17 +69,17 @@ namespace Tester is
                             let bytes = md.get_blob_bytes(attribute.value)
                             let item = "{qualifier}::{method_name}"
 
-                            _decode(bytes, item, result);
+                            _decode(bytes, item, result)
                         fi
                     od
                 od
             od
 
             if result.count == 0 then
-                return null;
+                return null
             fi
 
-            return result;
+            return result
         si
 
         // The attribute is a MemberRef whose parent TypeRef is named
@@ -92,11 +92,11 @@ namespace Tester is
                 if parent.kind == HandleKind.TYPE_REFERENCE then
                     let type = md.get_type_reference(cast TypeReferenceHandle(parent))
 
-                    return md.get_string(type.name).contains(ATTRIBUTE_TYPE_NAME);
+                    return md.get_string(type.name).contains(ATTRIBUTE_TYPE_NAME)
                 fi
             fi
 
-            return false;
+            return false
         si
 
         // ECMA-335 II.23.3 value blob: a two-byte prologue, then the four
@@ -123,7 +123,7 @@ namespace Tester is
 
                 paths.add(Encoding.utf8.get_string(bytes, i, length))
 
-                i = i + length;
+                i = i + length
             od
 
             let starts = _read_int32_array(bytes, i)
@@ -136,7 +136,7 @@ namespace Tester is
 
             for k in 0..paths.count do
                 result.add(
-                    IL_OUTPUT_RANGE(item, paths[k], starts[k], ends[k], sequences[k]));
+                    IL_OUTPUT_RANGE(item, paths[k], starts[k], ends[k], sequences[k]))
             od
         si
 
@@ -145,10 +145,10 @@ namespace Tester is
             let result = LIST[int]()
 
             for k in 0..count do
-                result.add(BitConverter.to_int32(bytes, start + 4 + k * 4));
+                result.add(BitConverter.to_int32(bytes, start + 4 + k * 4))
             od
 
-            return result;
+            return result
         si
     si
 si

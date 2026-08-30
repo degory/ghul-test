@@ -28,7 +28,7 @@ namespace Tester is
                 let trimmed = command.trim()
 
                 if !File.exists(trimmed) then
-                    throw System.Exception("disassembler not found: {trimmed}");
+                    throw System.Exception("disassembler not found: {trimmed}")
                 fi
 
                 // Resolved here, because it is checked against this
@@ -36,9 +36,9 @@ namespace Tester is
                 // launched with its own folder as the working directory,
                 // so a relative path would name a different file there,
                 // or nothing at all.
-                _executable = Path.get_full_path(trimmed);
+                _executable = Path.get_full_path(trimmed)
             else
-                _executable = _discover();
+                _executable = _discover()
             fi
 
         si
@@ -56,10 +56,10 @@ namespace Tester is
             if beside_tool? /\ File.exists(beside_tool) then
                 _make_executable(beside_tool)
 
-                return beside_tool;
+                return beside_tool
             fi
 
-            return null;
+            return null
         si
 
         // A NuGet package carries no Unix permissions, so the native
@@ -71,7 +71,7 @@ namespace Tester is
             if System.Runtime.InteropServices.RuntimeInformation.is_o_s_platform(
                 System.Runtime.InteropServices.OSPlatform.windows)
             then
-                return;
+                return
             fi
 
             try
@@ -84,7 +84,7 @@ namespace Tester is
                     cast int(IO.UnixFileMode.OTHER_EXECUTE)
 
                 if mode != wanted then
-                    File.set_unix_file_mode(path, cast IO.UnixFileMode(wanted));
+                    File.set_unix_file_mode(path, cast IO.UnixFileMode(wanted))
                 fi
             catch ex: System.Exception
                 // An install directory that cannot be written to leaves
@@ -98,34 +98,34 @@ namespace Tester is
             let location = assembly.location
 
             if string.is_null_or_white_space(location) then
-                return null;
+                return null
             fi
 
             let folder = Path.get_directory_name(Path.get_full_path(location))
 
             if !folder? then
-                return null;
+                return null
             fi
 
-            return Path.join([folder, "runtimes", _runtime_identifier(), "native", _file_name()]);
+            return Path.join([folder, "runtimes", _runtime_identifier(), "native", _file_name()])
         si
 
         _runtime_identifier() -> string static =>
             if System.Runtime.InteropServices.RuntimeInformation.is_o_s_platform(
                 System.Runtime.InteropServices.OSPlatform.windows)
             then
-                "win-x64";
+                "win-x64"
             else
-                "linux-x64";
+                "linux-x64"
             fi
 
         _file_name() -> string static =>
             if System.Runtime.InteropServices.RuntimeInformation.is_o_s_platform(
                 System.Runtime.InteropServices.OSPlatform.windows)
             then
-                "ildasm.exe";
+                "ildasm.exe"
             else
-                "ildasm";
+                "ildasm"
             fi
 
         // Options are given with a leading `-`. The `/` spelling the
@@ -146,12 +146,12 @@ namespace Tester is
             result.add("-out={output_path}")
 
             if item? /\ !string.is_null_or_white_space(item) then
-                result.add("-item={item.trim()}");
+                result.add("-item={item.trim()}")
             fi
 
             result.add(assembly_path)
 
-            return result;
+            return result
         si
 
         // Everything ildasm writes that is not a property of the
@@ -182,7 +182,7 @@ namespace Tester is
         // banner where the disassembly carries no rule.
         is_members_section_end(line: string) -> bool static =>
             line.starts_with("// =====") \/
-            line.contains("DISASSEMBLY COMPLETE");
+            line.contains("DISASSEMBLY COMPLETE")
 
     si
 si
