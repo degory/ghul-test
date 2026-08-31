@@ -46,6 +46,14 @@
     <GhulSources Include="src/**/*.ghul" />
 
 
+    <!-- A pipe combinator's function parameter is declared pure, and the
+         predicates passed here call into imported .NET members that cannot
+         be proven store-free. The warning is advisory, and the build output
+         is captured by the integration tests' snapshots, so a warning here
+         fails tests that are about the runner's report rather than its
+         source. -->
+    <GhulOptions Include="--suppress impure-function-argument" />
+
     <!-- Terminator-free sources; error on CI so stray `;` cannot creep
          back in, warning locally. -->
     <GhulOptions Include="--warn redundant-semicolon" />

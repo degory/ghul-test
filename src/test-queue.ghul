@@ -26,9 +26,9 @@ namespace Tester is
         progress: int
         count: int => _tests.count
 
-        executed_count: int => _tests |> filter(t => t.has_executed) |> count()
-        pass_count: int => _tests |> filter(t => t.has_passed) |> count()
-        fail_count: int => _tests |> filter(t => t.has_failed) |> count()
+        executed_count: int => _tests |> filter(t => t.has_executed) |> Ghul.Pipes.count()
+        pass_count: int => _tests |> filter(t => t.has_passed) |> Ghul.Pipes.count()
+        fail_count: int => _tests |> filter(t => t.has_failed) |> Ghul.Pipes.count()
 
         init(..) is
             let requested_test_processes = System.Environment.get_environment_variable("TEST_PROCESSES")
@@ -162,7 +162,7 @@ namespace Tester is
             fi
 
             let wanted =
-                _tests |> filter(test => File.exists("{test.path}/il.expected")) |> count()
+                _tests |> filter(test => File.exists("{test.path}/il.expected")) |> Ghul.Pipes.count()
 
             if wanted == 0 then
                 return
