@@ -4,6 +4,7 @@ namespace Tester is
     use System.Text.StringBuilder
 
     use Collections.Iterable
+    use Ghul.Pipes
     use Collections.List
     use Collections.MutableList
     use Collections.Map
@@ -60,7 +61,7 @@ namespace Tester is
 
         run_test() -> Result is
             try
-                if Directory.get_files(_test.path, "disabled*")| .count() > 0 then
+                if Directory.get_files(_test.path, "disabled*") |> count() > 0 then
                     return SKIP(_test)
                 fi
 
@@ -77,7 +78,7 @@ namespace Tester is
         si
 
         _run_test() is
-            if _test.source_files| .count() == 0 then
+            if _test.source_files |> count() == 0 then
                 add_fail("no source files found")
                 return
             fi
@@ -381,7 +382,7 @@ namespace Tester is
                 // all means the item named nothing - which would
                 // otherwise drop this method's marked statements from the
                 // snapshot without saying so.
-                if !(il_lines | .any(l => IL_LINE.match(l).success)) then
+                if !(il_lines |> any(l => IL_LINE.match(l).success)) then
                     add_fail(
                         "@IL.output: '{item}' names a method the emitted assembly "
                         "does not contain")
@@ -711,13 +712,13 @@ namespace Tester is
             fi
 
             start_info.arguments =
-                arguments |
-                    .map(arg =>
+                arguments
+                    |> map(arg =>
                         arg
                             // FIXME: not convinced either of these are necessary
                             .replace("\\", "\\\\")
                             .replace("\"", "\"\""))
-                    .to_string(" ")
+                    |> join(" ")
 
             start_info.working_directory = _test.path
 
