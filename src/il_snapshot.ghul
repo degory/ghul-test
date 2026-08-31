@@ -1,5 +1,6 @@
 namespace Tester is
     use Collections.LIST
+    use Ghul.Pipes
     use Collections.List
 
     // Reduces a disassembly to the part a snapshot is about.
@@ -19,7 +20,7 @@ namespace Tester is
             // more than it needs than every snapshot silently emptied by
             // a banner ildasm stopped writing.
             let has_members_section =
-                lines | .any(line => DISASSEMBLER.is_members_section_start(line))
+                lines |> any(line => DISASSEMBLER.is_members_section_start(line))
 
             let in_members mut = !has_members_section
 

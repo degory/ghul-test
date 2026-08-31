@@ -2,6 +2,7 @@ namespace Tester is
     use IO.Std
 
     use Collections.Iterable
+    use Ghul.Pipes
     use Collections.LIST
 
     class TASK_QUEUE(max_tasks: int private) is
@@ -41,7 +42,7 @@ namespace Tester is
                 return result
             fi
 
-            Tasks.TASK.wait_any(_running_tasks| .map(t -> Tasks.TASK => t).collect_array())
+            Tasks.TASK.wait_any(_running_tasks |> map(t -> Tasks.TASK => t) |> collect_array())
 
             let new_tasks = LIST[Tasks.TASK[Result]]()
 

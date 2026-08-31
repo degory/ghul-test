@@ -4,6 +4,7 @@ namespace Tester is
     use IO.Std
 
     use Collections.Iterable
+    use Ghul.Pipes
     use Collections.MutableList
     use Collections.LIST
 
@@ -86,7 +87,7 @@ namespace Tester is
             elif _details.count == 1 then
                 return _details[0].to_string()
             else
-                return _details | .to_string("\n")
+                return _details |> join("\n")
             fi
         si
 
