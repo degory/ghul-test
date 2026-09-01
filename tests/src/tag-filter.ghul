@@ -1,6 +1,7 @@
 namespace Tests is
     use Collections.LIST
 
+    use Ghul.Pipes
     use Tester
 
     use TestClass = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute
@@ -48,7 +49,7 @@ namespace Tests is
         @Test()
         TAG_FILTER__parse_tags__splits_on_whitespace_and_trims_and_drops_empties() is
 
-            let tags = TAG_FILTER.parse_tags(" smoke  narrowing\nunions \t ") | .collect_list()
+            let tags = TAG_FILTER.parse_tags(" smoke  narrowing\nunions \t ") |> collect_list()
 
             should(tags.count).be(3, "", [])
             should(tags.contains("smoke")).be_true("", [])
@@ -59,7 +60,7 @@ namespace Tests is
         @Test()
         TAG_FILTER__parse_tags__given_empty_content__returns_no_tags() is
 
-            let tags = TAG_FILTER.parse_tags("") | .collect_list()
+            let tags = TAG_FILTER.parse_tags("") |> collect_list()
 
             should(tags.count).be(0, "", [])
         si

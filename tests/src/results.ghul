@@ -3,6 +3,7 @@ namespace Tests is
 
     use Microsoft.VisualStudio.TestTools.UnitTesting
 
+    use Ghul.Pipes
     use Tester
 
     use TestClass = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute
@@ -370,13 +371,13 @@ namespace Tests is
         FAILURE__body__given_multiple_details__is_details_joined_with_newlines() is
 
             let fail = FAILURE(get_stub_test())
-            let details = [1, 2, 3] | .map(i => DETAILS("something went wrong {i}"))
+            let details = [1, 2, 3] |> map(i => DETAILS("something went wrong {i}"))
 
             for d in details do
                 fail.add(d)
             od
 
-            should(fail.body!).be(details | .to_string("\n"), "", [])
+            should(fail.body!).be(details |> join("\n"), "", [])
         si
 
         @Test()
