@@ -1,0 +1,6 @@
+entry() is
+  let xs = Collections.LIST[int]()
+  xs.add( 3 )
+  xs.add( 4 )
+  IO.Std.write_line("{xs.count}")
+si

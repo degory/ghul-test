@@ -1,0 +1,12 @@
+using 1 processes to run tests
+ 0% ❌ fail: integration-tests/format-fail/stale-snapshot: formatted source:
+    2c2,3
+    <     let greeting = "not what the formatter writes"
+    ---
+    >     let greeting = "hello, world";
+    >     IO.Std.write_line(greeting)
+    
+1 tests discovered
+1 tests enabled
+0/1 tests passed
+❌ 1 tests failed ❌

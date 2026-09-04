@@ -49,6 +49,10 @@ namespace Tester is
             fi
         si
 
+        // A dotnet-build test's sources come from its project rather than
+        // from the runner, so the formatter phase has nothing to format.
+        is_dotnet_build: bool => _run_mode == CompilerRunMode.DOTNET
+
         runtime_path: string => _runtime_path
 
         set_runtime_path(path: string?) is
@@ -168,6 +172,60 @@ namespace Tester is
             // FIXME: this is a bit convoluted:
             return File.exists(get_binary_path(runner))
         si
+
+        // Format the test's sources, in place, over the copies the runner
+        // made in the test's `formatted` directory. The formatter reads
+        // and writes source and emits nothing, so this is a separate
+        // invocation from the build rather than a flag on it.
+        run_formatter(runner: RUNNER, test: TEST, sources: Iterable[string]) -> bool is
+            let arguments = LIST[string]()
+
+            arguments.add_range(_arguments)
+
+            // The same flags the two builds get: a flag that changes how the
+            // compiler reads a file - `--global-namespace`, say - changes
+            // what the formatter reads too, and a test that needs one in its
+            // `ghulflags` means it for all three invocations.
+            if test.flags.length > 0 then
+                arguments.add_range(
+                    test.flags.split([' ']) |> map((flag) -> string => flag.trim())
+                )
+            fi
+
+            arguments.add_range(["--sdk-ref-path", _sdk_reference_path])
+            arguments.add("--format-in-place")
+            arguments.add_range(sources)
+
+            let result =
+                runner.run(_executable, arguments, 5000, null, "format.err")
+
+            return result == 0
+        si
+
+        // Build the formatted sources into their own binary, so the
+        // original one is still there to compare against.
+        build_formatted(runner: RUNNER, test: TEST, sources: Iterable[string]) -> bool is
+            let arguments = LIST[string]()
+
+            arguments.add_range(_arguments)
+
+            if test.flags.length > 0 then
+                arguments.add_range(
+                    test.flags.split([' ']) |> map((flag) -> string => flag.trim())
+                )
+            fi
+
+            arguments.add_range(["--sdk-ref-path", _sdk_reference_path])
+            arguments.add_range(sources)
+            arguments.add_range(["-o", FORMATTED_BINARY])
+
+            let result =
+                runner.run(_executable, arguments, 5000, null, "formatted-compiler.out")
+
+            return result == 0 /\ File.exists(runner.get_path(FORMATTED_BINARY))
+        si
+
+        FORMATTED_BINARY: string static => "formatted.exe"
 
         get_binary_path_relative_to_test_folder(runner: RUNNER) -> string is
             if _run_mode == CompilerRunMode.DOTNET then

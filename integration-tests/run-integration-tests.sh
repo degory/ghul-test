@@ -327,6 +327,44 @@ fi
 
 echo integration-tests/ildasm-env-missing: PASS
 
+echo integration-tests/format-pass...
+
+TEST_PROCESSES=1 CI=1 dotnet run integration-tests/format-pass | tee actual-output
+
+if [ "${PIPESTATUS[0]}" != "0" ]; then
+    echo integration-tests/format-pass unexpectedly failed
+
+    exit 1
+fi
+
+if ! diff integration-tests/format-pass/expected-output actual-output ; then
+    echo integration-tests/format-pass output did not match expected output
+
+    exit 1
+fi
+
+echo integration-tests/format-pass: PASS
+
+
+echo integration-tests/format-fail...
+
+TEST_PROCESSES=1 CI=1 dotnet run integration-tests/format-fail | tee actual-output
+
+if [ "${PIPESTATUS[0]}" != "1" ]; then
+    echo integration-tests/format-fail unexpectedly succeeded
+
+    exit 1
+fi
+
+if ! diff integration-tests/format-fail/expected-output actual-output ; then
+    echo integration-tests/format-fail output did not match expected output
+
+    exit 1
+fi
+
+echo integration-tests/format-fail: PASS
+
+
 echo integration-tests/ildasm-not-executable...
 
 # A NuGet package carries no Unix permissions, so the disassembler shipped

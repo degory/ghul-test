@@ -1,0 +1,7 @@
+using 1 processes to run tests
+ 0% ✅ pass: integration-tests/format-pass/formatted-round-trip
+50% ✅ pass: integration-tests/format-pass/library-round-trip
+2 tests discovered
+2 tests enabled
+2/2 tests passed
+✅ all tests passed ✅
