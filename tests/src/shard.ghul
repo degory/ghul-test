@@ -1,0 +1,101 @@
+namespace Tests is
+    use System.Exception
+
+    use Collections.LIST
+
+    use Ghul.Pipes
+    use Tester
+
+    use TestClass = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute
+    use Test = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute
+
+    @TestClass()
+    class SHARD_Should is
+
+        init() is si
+
+        @Test()
+        SHARD__whole__matches_every_ordinal() is
+
+            let shard = SHARD.whole()
+
+            should(shard.is_whole).be_true("", [])
+
+            for ordinal in 0..20 do
+                should(shard.matches(ordinal)).be_true("", [])
+            od
+        si
+
+        @Test()
+        SHARD__matches__assigns_each_ordinal_to_exactly_one_shard() is
+
+            let count = 6
+
+            for ordinal in 0..1000 do
+                let matched mut = 0
+
+                for index in 1::count do
+                    if SHARD(index, count).matches(ordinal) then
+                        matched = matched + 1
+                    fi
+                od
+
+                should(matched).be(1, "", [])
+            od
+        si
+
+        @Test()
+        SHARD__matches__divides_the_ordinals_evenly() is
+
+            let count = 4
+            let total = 1000
+
+            for index in 1::count do
+                let shard = SHARD(index, count)
+                let taken mut = 0
+
+                for ordinal in 0..total do
+                    if shard.matches(ordinal) then
+                        taken = taken + 1
+                    fi
+                od
+
+                should(taken).be(total / count, "", [])
+            od
+        si
+
+        @Test()
+        SHARD__parse__reads_an_index_and_a_count() is
+
+            let shard = SHARD.parse("2/6")
+
+            should(shard.is_whole).be_false("", [])
+            should(shard.description).be("shard 2 of 6", "", [])
+            should(shard.matches(1)).be_true("", [])
+            should(shard.matches(7)).be_true("", [])
+            should(shard.matches(0)).be_false("", [])
+        si
+
+        @Test()
+        SHARD__parse__a_single_shard_is_the_whole_run() is
+
+            should(SHARD.parse("1/1").is_whole).be_true("", [])
+        si
+
+        @Test()
+        SHARD__parse__given_a_malformed_spec__throws() is
+
+            for spec in ["", "2", "2/", "/6", "2/6/8", "x/6", "2/y", "0/6", "-1/6", "2/0", "7/6"] do
+                let threw mut = false
+
+                try
+                    let _ = SHARD.parse(spec)
+                catch ex: Exception
+                    threw = true
+                yrt
+
+                should(threw).be(true, "", [])
+            od
+        si
+    si
+si
