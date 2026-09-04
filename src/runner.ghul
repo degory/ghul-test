@@ -152,6 +152,13 @@ namespace Tester is
 
             run_diff_il_out(build_succeeded)
 
+            // Before the library return below: a library has no entry point
+            // to run, but what the formatter wrote for it still has to
+            // build, which is most of what the phase asserts.
+            if build_succeeded then
+                run_formatter_round_trip()
+            fi
+
             if !build_succeeded \/ _test.is_library then
                 return
             fi
@@ -166,8 +173,6 @@ namespace Tester is
             strip_stack_trace_locations("run.out")
 
             run_diff("test output", "run.expected", "run.out", "run.diff", true)
-
-            run_formatter_round_trip()
         si
 
         // A test carrying a `format.expected` asserts what the formatter
@@ -205,7 +210,7 @@ namespace Tester is
                 copies.add(copy)
             od
 
-            if !_compiler_under_test.run_formatter(self, copies) then
+            if !_compiler_under_test.run_formatter(self, _test, copies) then
                 add_fail("formatter failed", "format.err")
                 return
             fi
