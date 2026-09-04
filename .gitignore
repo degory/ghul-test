@@ -26,3 +26,6 @@ integration-tests/**/*.diff
 integration-tests/**/*.sort
 integration-tests/**/*.err
 integration-tests/**/*.trim
+integration-tests/**/formatted/
+integration-tests/**/formatted.exe
+integration-tests/**/formatted.runtimeconfig.json

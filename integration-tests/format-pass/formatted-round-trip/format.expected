@@ -1,0 +1,4 @@
+entry() is
+    let greeting = "hello, world";
+    IO.Std.write_line(greeting)
+si
