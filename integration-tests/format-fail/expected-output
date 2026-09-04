@@ -3,7 +3,7 @@ using 1 processes to run tests
     2c2,3
     <     let greeting = "not what the formatter writes"
     ---
-    >     let greeting = "hello, world";
+    >     let greeting = "hello, world"
     >     IO.Std.write_line(greeting)
     
 1 tests discovered
