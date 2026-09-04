@@ -17,14 +17,23 @@ namespace Tester is
         compiler_under_test: COMPILER_UNDER_TEST private,
         disassembler: DISASSEMBLER private,
         progress_reporter: PROGRESS_REPORTER private,
-        tag_filter: TAG_FILTER private
+        tag_filter: TAG_FILTER private,
+        shard: SHARD private
     ) is
         _task_queue: TASK_QUEUE
 
         _tests: MutableList[TEST]
 
+        // Counts every test that survives the tag filter, so a shard
+        // selects the same tests however the run is divided.
+        _candidate_ordinal: int
+
         progress: int
         count: int => _tests.count
+
+        // How many tests the run would hold were it not sharded. Summing this
+        // across the shards of a run shows none was dropped.
+        candidate_count: int => _candidate_ordinal
 
         executed_count: int => _tests |> filter(t => t.has_executed) |> Ghul.Pipes.count()
         pass_count: int => _tests |> filter(t => t.has_passed) |> Ghul.Pipes.count()
@@ -134,6 +143,14 @@ namespace Tester is
             let tags = get_tags(path)
 
             if !_tag_filter.matches(tags) then
+                return
+            fi
+
+            let ordinal = _candidate_ordinal
+
+            _candidate_ordinal = _candidate_ordinal + 1
+
+            if !_shard.matches(ordinal) then
                 return
             fi
 

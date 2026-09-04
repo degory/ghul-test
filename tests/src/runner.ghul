@@ -27,7 +27,7 @@ namespace Tests is
                     binding_flags
                 )
 
-            return `field.get_value(from)
+            return `field!.get_value(from)
         si
 
         set_private_instance_field(from: object, name: string, value: object) is
@@ -41,7 +41,7 @@ namespace Tests is
                     binding_flags
                 )
 
-            `field.set_value(from, value)
+            `field!.set_value(from, value)
         si
 
         get_private_static_field(from: object, name: string) -> object? is
@@ -55,7 +55,7 @@ namespace Tests is
                     binding_flags
                 )
 
-            return `field.get_value(null)
+            return `field!.get_value(null)
         si
 
         get_mock_COMPILER_UNDER_TEST(run_mode: CompilerRunMode) -> COMPILER_UNDER_TEST is

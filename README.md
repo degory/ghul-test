@@ -60,7 +60,7 @@ rather than passing quietly.
 ## Command Line Usage
 
 ```text
-ghul-test [--use-dotnet-build] [--compiler <command>] [--runtime-dll <path>] [--ildasm <path>] [--tag <name>]... <test-folder> [...]
+ghul-test [--use-dotnet-build] [--compiler <command>] [--runtime-dll <path>] [--ildasm <path>] [--tag <name>]... [--shard <index>/<count>] <test-folder> [...]
 ```
 
 - `--use-dotnet-build` – expects each test folder to be an MSBuild project. For ghūl projects the file should end with `.ghulproj`. The runner builds the project with `dotnet build` instead of invoking the compiler directly.
@@ -68,6 +68,7 @@ ghul-test [--use-dotnet-build] [--compiler <command>] [--runtime-dll <path>] [--
 - `--runtime-dll <path>` – use the supplied `ghul-runtime.dll` for compiled test binaries instead of the version that ships with `ghul-test`. The path must point to an existing file. Takes precedence over the `GHUL_RUNTIME_DLL` environment variable. Has no effect under `--use-dotnet-build`, which resolves the runtime via the test project's own `PackageReference`.
 - `--ildasm <path>` – the disassembler used to produce `il.out` for tests carrying an `il.expected`. The path must point to an existing file. Takes precedence over the `GHUL_TEST_ILDASM` environment variable and over the copy that ships beside `ghul-test`.
 - `--tag <name>` – restrict discovery to tests whose `tags` file contains at least one of the given names. Repeatable; the requested tags are matched as a union (a test runs if it carries *any* of them), not an intersection. A test with no `tags` file is excluded whenever any `--tag` is given. Omit entirely to run every discovered test regardless of tags, which is unchanged from before this flag existed.
+- `--shard <index>/<count>` - run only one part of the suite, so several processes can divide it between them. `--shard 2/6` runs the second of six parts. Tests are striped by discovery order rather than cut into contiguous blocks, since discovery walks the tree in sorted order and a block would put a whole directory into one shard. Every discovered test belongs to exactly one shard, so running all `<count>` of them runs the suite exactly once. The run reports how many of the discovered tests it took, and summing that across the shards shows none was dropped. Applies after `--tag`, so the two compose.
 - `<test-folder>` – one or more directories containing tests. Each is recursively searched for subdirectories with a `ghulflags` file if not using `--use-dotnet-build`.
 
 Environment variables influence behaviour:

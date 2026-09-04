@@ -18,7 +18,7 @@ namespace Tester is
             Std.output_encoding = UTF8Encoding()
 
             if arguments.count == 0 then
-                Std.write_line("usage: ghul-test [--tag <name>]... <test-folder>...")
+                Std.write_line("usage: ghul-test [--tag <name>]... [--shard <index>/<count>] <test-folder>...")
                 return 1
             fi
 
@@ -48,6 +48,8 @@ namespace Tester is
 
             let test_paths = LIST[string]()
             let requested_tags = LIST[string]()
+
+            let shard_spec: string? mut
 
             let i mut = 0
 
@@ -83,6 +85,15 @@ namespace Tester is
                     fi
 
                     ildasm_override = arguments[i]
+                elif arg =~ "--shard" then
+                    i = i + 1
+
+                    if i >= arguments.count then
+                        Std.write_line("--shard requires an <index>/<count> argument")
+                        return 1
+                    fi
+
+                    shard_spec = arguments[i]
                 elif arg =~ "--tag" then
                     i = i + 1
 
@@ -123,6 +134,21 @@ namespace Tester is
                 Std.write_line("filtering to tests tagged: {string.join(", ", requested_tags)}")
             fi
 
+            let shard: SHARD mut
+
+            try
+                if shard_spec? then
+                    shard = SHARD.parse(shard_spec)
+
+                    Std.write_line("running {shard.description}")
+                else
+                    shard = SHARD.whole()
+                fi
+            catch ex: Exception
+                Std.write_line(ex.message)
+                return 1
+            yrt
+
             let queue =
                 TEST_QUEUE(
                     host,
@@ -130,7 +156,8 @@ namespace Tester is
                     compiler_under_test,
                     disassembler,
                     PROGRESS_REPORTER(test_paths),
-                    tag_filter)
+                    tag_filter,
+                    shard)
 
             for path in test_paths do
                 if !Directory.exists(path) then
@@ -143,7 +170,13 @@ namespace Tester is
 
             queue.run_queued_tests()
 
-            Std.write_line("{queue.count} tests discovered")
+            if shard.is_whole then
+                Std.write_line("{queue.count} tests discovered")
+            else
+                Std.write_line(
+                    "{queue.count} of {queue.candidate_count} tests discovered "
+                    "for {shard.description}")
+            fi
             Std.write_line("{queue.executed_count} tests enabled")
             Std.write_line("{queue.pass_count}/{queue.executed_count} tests passed")
 
