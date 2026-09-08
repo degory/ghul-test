@@ -1,0 +1,15 @@
+use IO.Std;
+
+// Reads to end of input, so a run whose stdin is never closed hangs rather
+// than reporting a difference: the test asserts the close as much as the write.
+entry() is
+    let count mut = 0;
+
+    while let line = Std.read_line() do
+        count = count + 1;
+
+        Std.write_line("{count}: {line}");
+    od
+
+    Std.write_line("read {count} lines");
+si

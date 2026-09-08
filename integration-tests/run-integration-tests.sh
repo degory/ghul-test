@@ -327,6 +327,50 @@ fi
 
 echo integration-tests/ildasm-env-missing: PASS
 
+echo integration-tests/run-in...
+
+# A test carrying run.in has that file written to the program's standard input.
+# The program reads to end of input, so this covers the close as well as the
+# write: without it the read never returns and the run times out.
+TEST_PROCESSES=1 CI=1 dotnet run integration-tests/run-in | tee actual-output
+
+if [ "${PIPESTATUS[0]}" != "0" ]; then
+    echo integration-tests/run-in unexpectedly failed
+
+    exit 1
+fi
+
+if ! diff integration-tests/run-in/expected-output actual-output ; then
+    echo integration-tests/run-in output did not match expected output
+
+    exit 1
+fi
+
+echo integration-tests/run-in: PASS
+
+
+echo integration-tests/back-pressure...
+
+# The program fills its error pipe before it has finished reading its input,
+# which deadlocks a runner that writes the whole input before reading any
+# output. Both pipes have to be drained while the program is still running.
+TEST_PROCESSES=1 CI=1 dotnet run integration-tests/back-pressure | tee actual-output
+
+if [ "${PIPESTATUS[0]}" != "0" ]; then
+    echo integration-tests/back-pressure unexpectedly failed
+
+    exit 1
+fi
+
+if ! diff integration-tests/back-pressure/expected-output actual-output ; then
+    echo integration-tests/back-pressure output did not match expected output
+
+    exit 1
+fi
+
+echo integration-tests/back-pressure: PASS
+
+
 echo integration-tests/format-pass...
 
 TEST_PROCESSES=1 CI=1 dotnet run integration-tests/format-pass | tee actual-output
