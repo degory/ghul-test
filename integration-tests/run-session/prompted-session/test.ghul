@@ -1,0 +1,32 @@
+use IO.Std
+
+// Prompts on an unfinished line, which is where a person at a terminal
+// answers and where the runner sends the next line of the session.
+entry() is
+    let secret = 30
+
+    let guesses mut = 0
+
+    while guesses < 4 do
+        Std.write("guess 1-100: ")
+
+        let typed = Std.read_line()
+
+        if !typed? then
+            break
+        fi
+
+        guesses = guesses + 1
+
+        let value = int.parse(typed)
+
+        if value == secret then
+            Std.write_line("right, in {guesses}")
+            break
+        elif value > secret then
+            Std.write_line("too high")
+        else
+            Std.write_line("too low")
+        fi
+    od
+si

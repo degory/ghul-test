@@ -371,6 +371,29 @@ fi
 echo integration-tests/back-pressure: PASS
 
 
+echo integration-tests/run-session...
+
+# A test carrying run.session is driven the way a person at a terminal drives
+# it: each line is sent when the program is sitting at a prompt, and echoed
+# into the transcript there. The same input as a run.in produces the prompts
+# with the answers missing, which is what this asserts is no longer captured.
+TEST_PROCESSES=1 CI=1 dotnet run integration-tests/run-session | tee actual-output
+
+if [ "${PIPESTATUS[0]}" != "0" ]; then
+    echo integration-tests/run-session unexpectedly failed
+
+    exit 1
+fi
+
+if ! diff integration-tests/run-session/expected-output actual-output ; then
+    echo integration-tests/run-session output did not match expected output
+
+    exit 1
+fi
+
+echo integration-tests/run-session: PASS
+
+
 echo integration-tests/format-pass...
 
 TEST_PROCESSES=1 CI=1 dotnet run integration-tests/format-pass | tee actual-output
