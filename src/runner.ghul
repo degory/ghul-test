@@ -152,6 +152,13 @@ namespace Tester is
 
             run_diff_il_out(build_succeeded)
 
+            // Before the formatter round trip as well as the run below: both
+            // give the program its input, so a test that says two different
+            // things about how to send it is settled before either starts.
+            if !check_input_files() then
+                return
+            fi
+
             // Before the library return below: a library has no entry point
             // to run, but what the formatter wrote for it still has to
             // build, which is most of what the phase asserts.
@@ -245,7 +252,8 @@ namespace Tester is
                     "formatted-run.out",
                     "formatted-run.err",
                     null,
-                    if File.exists(get_path(RUN_IN)) then RUN_IN else null fi
+                    input_file(),
+                    session_file()
                 )
 
             if exit_status != 0 then
@@ -271,6 +279,27 @@ namespace Tester is
         FORMATTED_DIRECTORY: string static => "formatted"
 
         RUN_IN: string static => "run.in"
+
+        RUN_SESSION: string static => "run.session"
+
+        input_file() -> string? =>
+            if File.exists(get_path(RUN_IN)) then RUN_IN else null fi
+
+        session_file() -> string? =>
+            if File.exists(get_path(RUN_SESSION)) then RUN_SESSION else null fi
+
+        check_input_files() -> bool is
+            if !(input_file()? /\ session_file()?) then
+                return true
+            fi
+
+            add_fail(
+                "a test carries both {RUN_IN} and {RUN_SESSION}, which say "
+                "different things about how its input is sent"
+            )
+
+            return false
+        si
 
         // Long enough that no working test reaches it, short enough that one
         // which stops making progress fails rather than holding up the suite.
@@ -360,8 +389,6 @@ namespace Tester is
                 return false
             fi
 
-            let in_file = if File.exists(get_path(RUN_IN)) then RUN_IN else null fi
-
             let exit_status =
                 run(
                     _target_cli,
@@ -372,7 +399,8 @@ namespace Tester is
                     "run.out",
                     "run.err",
                     null,
-                    in_file
+                    input_file(),
+                    session_file()
                 )
 
             if
@@ -838,7 +866,7 @@ namespace Tester is
             err_file: string?,
             environment: Iterable[Pair[string,string]]?
         ) -> int =>
-            run(path, arguments, timeout, out_file, err_file, environment, null)
+            run(path, arguments, timeout, out_file, err_file, environment, null, null)
 
         run(
             path: string,
@@ -847,25 +875,29 @@ namespace Tester is
             out_file: string?,
             err_file: string?,
             environment: Iterable[Pair[string,string]]?,
-            in_file: string?
+            in_file: string?,
+            session_file: string?
         ) -> int
         is
-            let process = start(path, arguments, environment, in_file)
+            let process =
+                start(path, arguments, environment, in_file? \/ session_file?)
 
-            return wait(process, timeout, out_file, err_file, in_file)
+            return wait(
+                process, timeout, out_file, err_file, in_file, session_file
+            )
         si
 
         start(path: string, arguments: Iterable[string]) -> Process =>
-            start(path, arguments, null, null)
+            start(path, arguments, null, false)
 
         start(path: string, arguments: Iterable[string], environment: Iterable[Pair[string,string]]?) -> Process =>
-            start(path, arguments, environment, null)
+            start(path, arguments, environment, false)
 
         start(
             path: string,
             arguments: Iterable[string],
             environment: Iterable[Pair[string,string]]?,
-            in_file: string?
+            redirect_input: bool
         ) -> Process is
             let start_info = System.Diagnostics.ProcessStartInfo()
 
@@ -892,7 +924,7 @@ namespace Tester is
 
             start_info.redirect_standard_output = true
             start_info.redirect_standard_error = true
-            start_info.redirect_standard_input = in_file?
+            start_info.redirect_standard_input = redirect_input
             start_info.use_shell_execute = false
 
             let result = Process.start(start_info)
@@ -905,7 +937,7 @@ namespace Tester is
         si
 
         wait(process: Process, timeout: int, out_file_name: string?, err_file_name: string?) -> int =>
-            wait(process, timeout, out_file_name, err_file_name, null)
+            wait(process, timeout, out_file_name, err_file_name, null, null)
 
         // Both pipes are drained, and the input written, while the program is
         // still running: each of the three can block, and a blocked one stops
@@ -917,9 +949,16 @@ namespace Tester is
             timeout: int,
             out_file_name: string?,
             err_file_name: string?,
-            in_file_name: string?
+            in_file_name: string?,
+            session_file_name: string?
         ) -> int is
-            let reading_out = process.standard_output.read_to_end_async()
+            let reading_out =
+                if let session = session_file_name then
+                    Tasks.TASK.run(() -> string => drive_session(process, session))
+                else
+                    process.standard_output.read_to_end_async()
+                fi
+
             let reading_err = process.standard_error.read_to_end_async()
 
             write_input(process, in_file_name)
@@ -942,6 +981,58 @@ namespace Tester is
             fi
 
             return process.exit_code
+        si
+
+        // Drives a program that prompts, the way a person at a terminal does.
+        // Output is read as it arrives, and a line is sent whenever what has
+        // arrived ends part way through a line: that is the program sitting at
+        // a prompt with nothing more to say until it is answered. The line goes
+        // into the transcript at the same point, which is where the terminal
+        // would have echoed it, so what is captured is the session as it would
+        // have been seen rather than the program's output with the answers
+        // missing.
+        //
+        // A program that reads without prompting first is not driven this way -
+        // nothing marks the point to answer at, so it waits until the timeout.
+        // `run.in` is for those, and sends the whole input at once.
+        drive_session(process: Process, session_file_name: string) -> string is
+            let pending = File.read_all_lines(get_path(session_file_name))
+            let transcript = StringBuilder()
+            let buffer = (0..4096) |> map(_ => ' ') |> collect_array()
+
+            let sent mut = 0
+
+            do
+                let count =
+                    process.standard_output.read(buffer, 0, buffer.count)
+
+                if count <= 0 then
+                    break
+                fi
+
+                let arrived = string(buffer, 0, count)
+
+                transcript.append(arrived)
+
+                if arrived.ends_with("\n") \/ sent >= pending.count then
+                    continue
+                fi
+
+                let answer = pending[sent]
+
+                sent = sent + 1
+
+                process.standard_input.write("{answer}\n")
+                process.standard_input.flush()
+
+                transcript.append("{answer}\n")
+
+                if sent >= pending.count then
+                    process.standard_input.close()
+                fi
+            od
+
+            return transcript.to_string()
         si
 
         // Written from a task of its own so that input the program never reads

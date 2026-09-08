@@ -1,0 +1,7 @@
+use IO.Std
+
+entry() is
+    while let typed = Std.read_line() do
+        Std.write_line("read {typed}")
+    od
+si
