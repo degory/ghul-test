@@ -243,7 +243,9 @@ namespace Tester is
                     [COMPILER_UNDER_TEST.FORMATTED_BINARY],
                     5000,
                     "formatted-run.out",
-                    "formatted-run.err"
+                    "formatted-run.err",
+                    null,
+                    if File.exists(get_path(RUN_IN)) then RUN_IN else null fi
                 )
 
             if exit_status != 0 then
@@ -267,6 +269,8 @@ namespace Tester is
         si
 
         FORMATTED_DIRECTORY: string static => "formatted"
+
+        RUN_IN: string static => "run.in"
 
         // One file's formatted text is the snapshot on its own; several are
         // joined under a header naming each, so the snapshot says which
@@ -352,6 +356,8 @@ namespace Tester is
                 return false
             fi
 
+            let in_file = if File.exists(get_path(RUN_IN)) then RUN_IN else null fi
+
             let exit_status =
                 run(
                     _target_cli,
@@ -360,7 +366,9 @@ namespace Tester is
                     [_compiler_under_test.get_binary_path_relative_to_test_folder(self)],
                     5000,
                     "run.out",
-                    "run.err"
+                    "run.err",
+                    null,
+                    in_file
                 )
 
             if
@@ -825,17 +833,36 @@ namespace Tester is
             out_file: string?,
             err_file: string?,
             environment: Iterable[Pair[string,string]]?
+        ) -> int =>
+            run(path, arguments, timeout, out_file, err_file, environment, null)
+
+        run(
+            path: string,
+            arguments: Iterable[string],
+            timeout: int,
+            out_file: string?,
+            err_file: string?,
+            environment: Iterable[Pair[string,string]]?,
+            in_file: string?
         ) -> int
         is
-            let process = start(path, arguments, environment)
+            let process = start(path, arguments, environment, in_file)
 
-            return wait(process, timeout, out_file, err_file)
+            return wait(process, timeout, out_file, err_file, in_file)
         si
 
         start(path: string, arguments: Iterable[string]) -> Process =>
-            start(path, arguments, null)
+            start(path, arguments, null, null)
 
-        start(path: string, arguments: Iterable[string], environment: Iterable[Pair[string,string]]?) -> Process is
+        start(path: string, arguments: Iterable[string], environment: Iterable[Pair[string,string]]?) -> Process =>
+            start(path, arguments, environment, null)
+
+        start(
+            path: string,
+            arguments: Iterable[string],
+            environment: Iterable[Pair[string,string]]?,
+            in_file: string?
+        ) -> Process is
             let start_info = System.Diagnostics.ProcessStartInfo()
 
             start_info.file_name = path
@@ -861,6 +888,7 @@ namespace Tester is
 
             start_info.redirect_standard_output = true
             start_info.redirect_standard_error = true
+            start_info.redirect_standard_input = in_file?
             start_info.use_shell_execute = false
 
             let result = Process.start(start_info)
@@ -872,7 +900,24 @@ namespace Tester is
             return result
         si
 
-        wait(process: Process, timeout: int, out_file_name: string?, err_file_name: string?) -> int is
+        wait(process: Process, timeout: int, out_file_name: string?, err_file_name: string?) -> int =>
+            wait(process, timeout, out_file_name, err_file_name, null)
+
+        // The input is written and the stream closed before a byte of output is
+        // read, because a program that consumes all of its input before writing
+        // anything would otherwise never see end of input and never write.
+        wait(
+            process: Process,
+            timeout: int,
+            out_file_name: string?,
+            err_file_name: string?,
+            in_file_name: string?
+        ) -> int is
+            if in_file_name? then
+                process.standard_input.write(read_all_text(in_file_name))
+                process.standard_input.close()
+            fi
+
             if out_file_name? then
                 let stdout = process.standard_output.read_to_end()
                 write_all_text(out_file_name, stdout)
