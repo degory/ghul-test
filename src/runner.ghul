@@ -152,6 +152,13 @@ namespace Tester is
 
             run_diff_il_out(build_succeeded)
 
+            // Before the formatter round trip as well as the run below: both
+            // give the program its input, so a test that says two different
+            // things about how to send it is settled before either starts.
+            if !check_input_files() then
+                return
+            fi
+
             // Before the library return below: a library has no entry point
             // to run, but what the formatter wrote for it still has to
             // build, which is most of what the phase asserts.
@@ -245,8 +252,8 @@ namespace Tester is
                     "formatted-run.out",
                     "formatted-run.err",
                     null,
-                    if File.exists(get_path(RUN_IN)) then RUN_IN else null fi,
-                    if File.exists(get_path(RUN_SESSION)) then RUN_SESSION else null fi
+                    input_file(),
+                    session_file()
                 )
 
             if exit_status != 0 then
@@ -274,6 +281,25 @@ namespace Tester is
         RUN_IN: string static => "run.in"
 
         RUN_SESSION: string static => "run.session"
+
+        input_file() -> string? =>
+            if File.exists(get_path(RUN_IN)) then RUN_IN else null fi
+
+        session_file() -> string? =>
+            if File.exists(get_path(RUN_SESSION)) then RUN_SESSION else null fi
+
+        check_input_files() -> bool is
+            if !(input_file()? /\ session_file()?) then
+                return true
+            fi
+
+            add_fail(
+                "a test carries both {RUN_IN} and {RUN_SESSION}, which say "
+                "different things about how its input is sent"
+            )
+
+            return false
+        si
 
         // Long enough that no working test reaches it, short enough that one
         // which stops making progress fails rather than holding up the suite.
@@ -363,17 +389,6 @@ namespace Tester is
                 return false
             fi
 
-            let in_file = if File.exists(get_path(RUN_IN)) then RUN_IN else null fi
-
-            let session_file =
-                if File.exists(get_path(RUN_SESSION)) then RUN_SESSION else null fi
-
-            if in_file? /\ session_file? then
-                add_fail("a test carries both {RUN_IN} and {RUN_SESSION}, which say different things about how its input is sent")
-
-                return false
-            fi
-
             let exit_status =
                 run(
                     _target_cli,
@@ -384,8 +399,8 @@ namespace Tester is
                     "run.out",
                     "run.err",
                     null,
-                    in_file,
-                    session_file
+                    input_file(),
+                    session_file()
                 )
 
             if

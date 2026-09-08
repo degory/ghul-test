@@ -394,6 +394,30 @@ fi
 echo integration-tests/run-session: PASS
 
 
+echo integration-tests/input-conflict...
+
+# run.in and run.session say different things about how input is sent, so a
+# test carrying both is refused rather than having both written to the same
+# stream. The test also carries a format.expected, because the formatted
+# binary is given the input too and is run first: the refusal has to come
+# before either of them, not from the run alone.
+TEST_PROCESSES=1 CI=1 dotnet run integration-tests/input-conflict | tee actual-output
+
+if [ "${PIPESTATUS[0]}" != "1" ]; then
+    echo integration-tests/input-conflict did not exit 1
+
+    exit 1
+fi
+
+if ! grep -q "carries both run.in and run.session" actual-output ; then
+    echo integration-tests/input-conflict did not report the conflict
+
+    exit 1
+fi
+
+echo integration-tests/input-conflict: PASS
+
+
 echo integration-tests/format-pass...
 
 TEST_PROCESSES=1 CI=1 dotnet run integration-tests/format-pass | tee actual-output
