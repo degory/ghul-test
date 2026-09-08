@@ -241,7 +241,7 @@ namespace Tester is
                 run(
                     _target_cli,
                     [COMPILER_UNDER_TEST.FORMATTED_BINARY],
-                    5000,
+                    PROGRAM_TIMEOUT_MS,
                     "formatted-run.out",
                     "formatted-run.err",
                     null,
@@ -271,6 +271,10 @@ namespace Tester is
         FORMATTED_DIRECTORY: string static => "formatted"
 
         RUN_IN: string static => "run.in"
+
+        // Long enough that no working test reaches it, short enough that one
+        // which stops making progress fails rather than holding up the suite.
+        PROGRAM_TIMEOUT_MS: int static => 60000
 
         // One file's formatted text is the snapshot on its own; several are
         // joined under a header naming each, so the snapshot says which
@@ -364,7 +368,7 @@ namespace Tester is
                     // but this needs to be a path relative to the directory
                     // that the test is in
                     [_compiler_under_test.get_binary_path_relative_to_test_folder(self)],
-                    5000,
+                    PROGRAM_TIMEOUT_MS,
                     "run.out",
                     "run.err",
                     null,
@@ -903,9 +907,11 @@ namespace Tester is
         wait(process: Process, timeout: int, out_file_name: string?, err_file_name: string?) -> int =>
             wait(process, timeout, out_file_name, err_file_name, null)
 
-        // The input is written and the stream closed before a byte of output is
-        // read, because a program that consumes all of its input before writing
-        // anything would otherwise never see end of input and never write.
+        // Both pipes are drained, and the input written, while the program is
+        // still running: each of the three can block, and a blocked one stops
+        // the program reaching the end of the other two. Draining only the
+        // stream a caller asked for is not enough - what fills a pipe the
+        // runner is ignoring still stops the program that filled it.
         wait(
             process: Process,
             timeout: int,
@@ -913,24 +919,53 @@ namespace Tester is
             err_file_name: string?,
             in_file_name: string?
         ) -> int is
-            if in_file_name? then
-                process.standard_input.write(read_all_text(in_file_name))
-                process.standard_input.close()
+            let reading_out = process.standard_output.read_to_end_async()
+            let reading_err = process.standard_error.read_to_end_async()
+
+            write_input(process, in_file_name)
+
+            if !process.wait_for_exit(timeout) then
+                // Killing it closes the pipes, which is what lets the reads
+                // above finish; without that there is nothing to report with.
+                process.kill(true)
+                process.wait_for_exit()
+
+                add_fail("timed out after {timeout}ms", err_file_name)
             fi
 
             if out_file_name? then
-                let stdout = process.standard_output.read_to_end()
-                write_all_text(out_file_name, stdout)
+                write_all_text(out_file_name, reading_out.result)
             fi
 
             if err_file_name? then
-                let stderr = process.standard_error.read_to_end()
-                write_all_text(err_file_name, stderr)
+                write_all_text(err_file_name, reading_err.result)
             fi
 
-            process.wait_for_exit(5000)
-
             return process.exit_code
+        si
+
+        // Written from a task of its own so that input the program never reads
+        // bounds nothing: a payload past the pipe buffer would otherwise block
+        // here for as long as the program declined to read it. A program that
+        // exits first breaks the pipe, which is an ordinary end to a run rather
+        // than a failure, so the write is allowed to fail quietly.
+        write_input(process: Process, in_file_name: string?) is
+            // Standard input is only redirected when there is something to
+            // send, so with no input file there is no stream to write or close.
+            if !in_file_name? then
+                return
+            fi
+
+            let text = read_all_text(in_file_name)
+
+            let _ =
+                Tasks.TASK.run(() is
+                    try
+                        process.standard_input.write(text)
+                        process.standard_input.close()
+                    catch e: Exception
+                    yrt
+                si)
         si
 
         add_fail(message: string) is

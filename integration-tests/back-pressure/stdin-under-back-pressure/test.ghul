@@ -1,0 +1,20 @@
+use IO.Std;
+
+// Fills the error pipe before it has finished reading its input, which is the
+// shape that deadlocks a runner writing the whole input before reading any
+// output: neither side can move until the other does.
+entry() is
+    let first = Std.read_line();
+
+    let noise = string('x', 70000);
+
+    Std.error.write_line(noise);
+
+    let count mut = if first? then 1 else 0 fi;
+
+    while let line = Std.read_line() do
+        count = count + 1;
+    od
+
+    Std.write_line("read {count} lines");
+si
