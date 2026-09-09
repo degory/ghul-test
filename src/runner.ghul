@@ -180,6 +180,8 @@ namespace Tester is
             strip_stack_trace_locations("run.out")
 
             run_diff("test output", "run.expected", "run.out", "run.diff", true)
+
+            run_image_diffs()
         si
 
         // A test carrying a `format.expected` asserts what the formatter
@@ -422,6 +424,56 @@ namespace Tester is
             fi
 
             return true
+        si
+
+        // A `<name>.expected` sitting beside an image the test wrote asserts
+        // what that image holds. The bytes are compared first, because two
+        // runs of the same encoder produce the same file and that answers
+        // most of the time. Only when they differ is either file decoded:
+        // what a PNG compresses to is not fixed by anything, so a test whose
+        // image is right must not fail because the compressor changed.
+        run_image_diffs() is
+            let expectations =
+                Directory.get_files(get_path(), "*.png.expected")
+
+            System.Array.sort(expectations)
+
+            for expectation in expectations do
+                if let name = Path.get_file_name(expectation) then
+                    run_image_diff(name)
+                fi
+            od
+        si
+
+        run_image_diff(expectation: string) is
+            let produced =
+                expectation.substring(0, expectation.length - ".expected".length)
+
+            if !File.exists(get_path(produced)) then
+                add_fail("{produced} was expected but the test wrote no such file")
+
+                return
+            fi
+
+            let wanted = File.read_all_bytes(get_path(expectation))
+            let written = File.read_all_bytes(get_path(produced))
+
+            if wanted.count == written.count then
+                let same =
+                    (0..wanted.count) |> all(at => wanted[at] == written[at])
+
+                if same then
+                    return
+                fi
+            fi
+
+            try
+                if let told = IMAGE.decode(wanted).difference(IMAGE.decode(written)) then
+                    add_fail("{produced} does not match {expectation}: {told}")
+                fi
+            catch e: Exception
+                add_fail("{produced} could not be compared to {expectation}: {e.message}")
+            yrt
         si
 
         run_diff_il_out(build_succeeded: bool) is
