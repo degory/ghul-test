@@ -129,7 +129,7 @@ namespace Tester is
                     result = runner.run(
                         _executable,
                         arguments,
-                        5000,
+                        RUNNER.BUILD_TIMEOUT_MS,
                         "compiler.out", // MSBuild coerces stderr output to stdout
                         null,
                         [Pair[string, string]("GhulCompiler", _compiler_command)]
@@ -138,7 +138,7 @@ namespace Tester is
                     result = runner.run(
                         _executable,
                         arguments,
-                        5000,
+                        RUNNER.BUILD_TIMEOUT_MS,
                         "compiler.out", // MSBuild coerces stderr output to stdout
                         null
                     )
@@ -151,7 +151,7 @@ namespace Tester is
                 result = runner.run(
                     _executable,
                     arguments,
-                    5000,
+                    RUNNER.BUILD_TIMEOUT_MS,
                     null,
                     "compiler.out"
                 )
@@ -197,7 +197,13 @@ namespace Tester is
             arguments.add_range(sources)
 
             let result =
-                runner.run(_executable, arguments, 5000, null, "format.err")
+                runner.run(
+                    _executable,
+                    arguments,
+                    RUNNER.BUILD_TIMEOUT_MS,
+                    null,
+                    "format.err"
+                )
 
             return result == 0
         si
@@ -220,7 +226,13 @@ namespace Tester is
             arguments.add_range(["-o", FORMATTED_BINARY])
 
             let result =
-                runner.run(_executable, arguments, 5000, null, "formatted-compiler.out")
+                runner.run(
+                    _executable,
+                    arguments,
+                    RUNNER.BUILD_TIMEOUT_MS,
+                    null,
+                    "formatted-compiler.out"
+                )
 
             return result == 0 /\ File.exists(runner.get_path(FORMATTED_BINARY))
         si
@@ -251,7 +263,7 @@ namespace Tester is
             return runner.run(
                 "ln",
                 ["-s", _runtime_path, "."],
-                1000,
+                RUNNER.TOOL_TIMEOUT_MS,
                 null,
                 null
             ) != 0
@@ -461,7 +473,7 @@ namespace Tester is
 
             let output = process.standard_output.read_to_end()
 
-            process.wait_for_exit(5000)
+            process.wait_for_exit(RUNNER.TOOL_TIMEOUT_MS)
 
             return output
         si
