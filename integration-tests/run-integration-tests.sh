@@ -418,6 +418,49 @@ fi
 echo integration-tests/input-conflict: PASS
 
 
+echo integration-tests/png-expected...
+
+# The image the test writes is compared against its .expected. That
+# expectation was recompressed by another tool, so the two files hold the
+# same picture in different bytes: a comparison of the bytes alone would
+# reject it, which is the whole reason the images are decoded.
+TEST_PROCESSES=1 CI=1 dotnet run integration-tests/png-expected | tee actual-output
+
+if [ "${PIPESTATUS[0]}" != "0" ]; then
+    echo integration-tests/png-expected unexpectedly failed
+
+    exit 1
+fi
+
+if ! diff integration-tests/png-expected/expected-output actual-output ; then
+    echo integration-tests/png-expected output did not match expected output
+
+    exit 1
+fi
+
+echo integration-tests/png-expected: PASS
+
+echo integration-tests/png-missing...
+
+# An expectation naming an image the test never wrote is a failure, not a
+# comparison quietly skipped.
+TEST_PROCESSES=1 CI=1 dotnet run integration-tests/png-missing | tee actual-output
+
+if [ "${PIPESTATUS[0]}" != "1" ]; then
+    echo integration-tests/png-missing did not exit 1
+
+    exit 1
+fi
+
+if ! grep -q "the test wrote no such file" actual-output ; then
+    echo integration-tests/png-missing did not report the missing image
+
+    exit 1
+fi
+
+echo integration-tests/png-missing: PASS
+
+
 echo integration-tests/format-pass...
 
 TEST_PROCESSES=1 CI=1 dotnet run integration-tests/format-pass | tee actual-output

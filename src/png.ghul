@@ -1,0 +1,271 @@
+namespace Tester is
+    use System.Exception
+    use Collections.LIST
+    use Ghul.Pipes
+    use IO.File
+
+    // Enough of PNG to compare two images: the chunk framing, the zlib
+    // stream, and the five scanline filters. Written because comparing the
+    // bytes alone would pin whatever the compressor happened to emit, and
+    // two files can hold the same image without holding the same bytes.
+    class IMAGE is
+        width: int
+        height: int
+        depth: int
+        channels: int
+
+        pixels: ubyte[]
+
+        init(
+            width: int,
+            height: int,
+            depth: int,
+            channels: int,
+            pixels: ubyte[]
+        ) is
+            self.width = width
+            self.height = height
+            self.depth = depth
+            self.channels = channels
+            self.pixels = pixels
+        si
+
+        SIGNATURE: ubyte[] static =>
+            [137ub, 80ub, 78ub, 71ub, 13ub, 10ub, 26ub, 10ub]
+
+        // The colour types, by the number of bytes each pixel takes at a
+        // depth of eight: grey, truecolour, indexed, grey with alpha, and
+        // truecolour with alpha. Indexed needs the palette to compare, so it
+        // is not read here.
+        _channels_for(colour_type: int) -> int static =>
+            case colour_type
+            when 0 then 1
+            when 2 then 3
+            when 4 then 2
+            when 6 then 4
+            else 0
+            esac
+
+        _be32(bytes: ubyte[], at: int) -> int static =>
+            (cast int(bytes[at]) << 24) |
+            (cast int(bytes[at + 1]) << 16) |
+            (cast int(bytes[at + 2]) << 8) |
+            cast int(bytes[at + 3])
+
+        // Reads what the file says it holds, or throws saying why it could
+        // not. A caller comparing two images wants the reason, not a null.
+        decode(bytes: ubyte[]) -> IMAGE static is
+            if bytes.count < 8 then
+                throw Exception("too short to be a PNG")
+            fi
+
+            for at in 0..8 do
+                if bytes[at] != SIGNATURE[at] then
+                    throw Exception("does not start with the PNG signature")
+                fi
+            od
+
+            let compressed = LIST[ubyte]()
+
+            let width mut = 0
+            let height mut = 0
+            let depth mut = 0
+            let channels mut = 0
+            let seen_header mut = false
+
+            let at mut = 8
+
+            while at + 8 <= bytes.count do
+                let length = _be32(bytes, at)
+                let kind =
+                    string(
+                        (at + 4 .. at + 8)
+                            |> map(index => cast char(bytes[index]))
+                            |> collect_array()
+                    )
+
+                if at + 12 + length > bytes.count then
+                    throw Exception("chunk {kind} runs past the end")
+                fi
+
+                if kind =~ "IHDR" then
+                    width = _be32(bytes, at + 8)
+                    height = _be32(bytes, at + 12)
+                    depth = cast int(bytes[at + 16])
+                    channels = _channels_for(cast int(bytes[at + 17]))
+                    seen_header = true
+
+                    if depth != 8 then
+                        throw Exception(
+                            "bit depth {depth} is not read here, only 8"
+                        )
+                    fi
+
+                    if channels == 0 then
+                        throw Exception(
+                            "colour type {bytes[at + 17]} is not read here"
+                        )
+                    fi
+
+                    if cast int(bytes[at + 20]) != 0 then
+                        throw Exception("interlaced images are not read here")
+                    fi
+                elif kind =~ "IDAT" then
+                    for index in at + 8 .. at + 8 + length do
+                        compressed.add(bytes[index])
+                    od
+                fi
+
+                at = at + 12 + length
+            od
+
+            if !seen_header then
+                throw Exception("no IHDR chunk")
+            fi
+
+            return IMAGE(
+                width,
+                height,
+                depth,
+                channels,
+                _unfilter(
+                    _inflate(compressed |> collect_array()),
+                    width,
+                    height,
+                    channels
+                )
+            )
+        si
+
+        // The zlib wrapper is two bytes of header and four of checksum
+        // around a raw deflate stream, which is what DeflateStream reads.
+        _inflate(zlib: ubyte[]) -> ubyte[] static is
+            if zlib.count < 6 then
+                throw Exception("the image data is too short to be a zlib stream")
+            fi
+
+            let source =
+                IO.MemoryStream(zlib, 2, zlib.count - 6)
+
+            let stream =
+                System.IO.Compression.DeflateStream(
+                    source,
+                    System.IO.Compression.CompressionMode.DECOMPRESS
+                )
+
+            let out = IO.MemoryStream()
+
+            stream.copy_to(out)
+
+            return out.to_array()
+        si
+
+        _paeth(left: int, above: int, corner: int) -> int static =>
+            (let estimate = left + above - corner
+
+             let from_left = System.Math.abs(estimate - left)
+             let from_above = System.Math.abs(estimate - above)
+             let from_corner = System.Math.abs(estimate - corner)
+
+             if from_left <= from_above /\ from_left <= from_corner then
+                 left
+             elif from_above <= from_corner then
+                 above
+             else
+                 corner
+             fi)
+
+        // Each scanline carries a filter byte saying how it was written in
+        // terms of the bytes to its left and the line above.
+        _unfilter(
+            raw: ubyte[],
+            width: int,
+            height: int,
+            channels: int
+        ) -> ubyte[] static is
+            let stride = width * channels
+
+            if raw.count != height * (stride + 1) then
+                throw Exception(
+                    "the image data holds {raw.count} bytes, not the "
+                    "{height * (stride + 1)} its header describes"
+                )
+            fi
+
+            let out = LIST[ubyte]()
+
+            for y in 0..height do
+                let filter = cast int(raw[y * (stride + 1)])
+
+                for x in 0..stride do
+                    let value = cast int(raw[y * (stride + 1) + 1 + x])
+
+                    let left =
+                        if x >= channels then
+                            cast int(out[y * stride + x - channels])
+                        else
+                            0
+                        fi
+
+                    let above =
+                        if y > 0 then
+                            cast int(out[(y - 1) * stride + x])
+                        else
+                            0
+                        fi
+
+                    let corner =
+                        if x >= channels /\ y > 0 then
+                            cast int(out[(y - 1) * stride + x - channels])
+                        else
+                            0
+                        fi
+
+                    let restored =
+                        case filter
+                        when 0 then value
+                        when 1 then value + left
+                        when 2 then value + above
+                        when 3 then value + (left + above) / 2
+                        when 4 then value + _paeth(left, above, corner)
+                        else throw Exception("filter {filter} is not a filter")
+                        esac
+
+                    out.add(cast ubyte(restored & 0xFF))
+                od
+            od
+
+            return out |> collect_array()
+        si
+
+        // What to say about two images that are not the same one, or null
+        // when they are.
+        difference(other: IMAGE) -> string? is
+            if width != other.width \/ height != other.height then
+                return
+                    "{width} by {height} against {other.width} by "
+                    "{other.height}"
+            fi
+
+            if channels != other.channels then
+                return
+                    "{channels} bytes a pixel against {other.channels}"
+            fi
+
+            let differing =
+                (0..pixels.count)
+                    |> filter(at => pixels[at] != other.pixels[at])
+                    |> collect_list()
+
+            if differing.count == 0 then
+                return null
+            fi
+
+            let first = differing[0] / channels
+
+            return
+                "{differing.count} of {pixels.count} bytes differ, from "
+                "the pixel at {first % width}, {first / width}"
+        si
+    si
+si

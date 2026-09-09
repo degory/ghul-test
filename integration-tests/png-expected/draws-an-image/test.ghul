@@ -1,0 +1,121 @@
+use IO.Std
+use Collections.LIST
+use Ghul.Pipes
+
+// A four by three image written by hand, one stored deflate block, so the
+// test asserts the comparison rather than a compressor.
+entry() is
+    let width = 4
+    let height = 3
+
+    let raw = LIST[ubyte]()
+
+    for y in 0..height do
+        raw.add(0ub)
+
+        for x in 0..width do
+            raw.add(cast ubyte(x * 60))
+            raw.add(cast ubyte(y * 80))
+            raw.add(128ub)
+        od
+    od
+
+    IO.File.write_all_bytes("drawn.png", png(width, height, raw))
+
+    Std.write_line("wrote drawn.png")
+si
+
+png(width: int, height: int, raw: LIST[ubyte]) -> ubyte[] =>
+    (let out = LIST[ubyte]()
+
+     for value in [137ub, 80ub, 78ub, 71ub, 13ub, 10ub, 26ub, 10ub] do
+         out.add(value)
+     od
+
+     let header = LIST[ubyte]()
+
+     be32(header, width)
+     be32(header, height)
+
+     for value in [8ub, 2ub, 0ub, 0ub, 0ub] do
+         header.add(value)
+     od
+
+     chunk(out, "IHDR", header)
+     chunk(out, "IDAT", zlib(raw))
+     chunk(out, "IEND", LIST[ubyte]())
+
+     out |> collect_array())
+
+be32(out: LIST[ubyte], value: int) is
+    out.add(cast ubyte((value >> 24) & 0xFF))
+    out.add(cast ubyte((value >> 16) & 0xFF))
+    out.add(cast ubyte((value >> 8) & 0xFF))
+    out.add(cast ubyte(value & 0xFF))
+si
+
+// One stored block: the deflate encoding that needs no compressor.
+zlib(raw: LIST[ubyte]) -> LIST[ubyte] =>
+    (let out = LIST[ubyte]()
+
+     out.add(0x78ub)
+     out.add(0x01ub)
+     out.add(1ub)
+     out.add(cast ubyte(raw.count & 0xFF))
+     out.add(cast ubyte((raw.count >> 8) & 0xFF))
+     out.add(cast ubyte((raw.count & 0xFF) ^ 0xFF))
+     out.add(cast ubyte(((raw.count >> 8) & 0xFF) ^ 0xFF))
+
+     for value in raw do
+         out.add(value)
+     od
+
+     let low mut = 1
+     let high mut = 0
+
+     for value in raw do
+         low = (low + cast int(value)) % 65521
+         high = (high + low) % 65521
+     od
+
+     be32(out, (high << 16) | low)
+
+     out)
+
+chunk(out: LIST[ubyte], kind: string, data: LIST[ubyte]) is
+    be32(out, data.count)
+
+    let body = LIST[ubyte]()
+
+    for letter in kind do
+        body.add(cast ubyte(letter))
+    od
+
+    for value in data do
+        body.add(value)
+    od
+
+    for value in body do
+        out.add(value)
+    od
+
+    be32(out, crc32(body))
+si
+
+crc32(data: LIST[ubyte]) -> int =>
+    (let remainder mut = 0xFFFFFFFFu
+
+     for value in data do
+         remainder = remainder ^ cast uint(value)
+
+         for _ in 0..8 do
+             remainder =
+                 if (remainder & 1u) != 0u then
+                     0xEDB88320u ^ (remainder >>> 1)
+                 else
+                     remainder >>> 1
+                 fi
+         od
+     od
+
+     cast int(remainder ^ 0xFFFFFFFFu))
