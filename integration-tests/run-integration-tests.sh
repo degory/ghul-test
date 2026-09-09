@@ -461,6 +461,30 @@ fi
 echo integration-tests/png-missing: PASS
 
 
+echo integration-tests/png-filters...
+
+# One image, written six times, against expectations that encode it with
+# each of the five scanline filters in turn. The filters are how a PNG
+# describes a line in terms of the bytes left of it and the line above, so
+# an expectation from any other tool will use them even though the images
+# written here do not.
+TEST_PROCESSES=1 CI=1 dotnet run integration-tests/png-filters | tee actual-output
+
+if [ "${PIPESTATUS[0]}" != "0" ]; then
+    echo integration-tests/png-filters unexpectedly failed
+
+    exit 1
+fi
+
+if ! diff integration-tests/png-filters/expected-output actual-output ; then
+    echo integration-tests/png-filters output did not match expected output
+
+    exit 1
+fi
+
+echo integration-tests/png-filters: PASS
+
+
 echo integration-tests/format-pass...
 
 TEST_PROCESSES=1 CI=1 dotnet run integration-tests/format-pass | tee actual-output
