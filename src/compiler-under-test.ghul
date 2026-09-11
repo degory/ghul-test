@@ -94,6 +94,30 @@ namespace Tester is
             _compiler_command = trimmed
         si
 
+        // With no `-a` the compiler defaults to the SDK reference pack plus
+        // the runtime bundled beside the compiler being tested - whatever was
+        // current when that compiler was published, not the runtime a test
+        // runs against. Any `-a` opts out of that default entirely, so naming
+        // the pinned runtime as a reference means naming the whole pack as
+        // well.
+        reference_arguments() -> Iterable[string] is
+            let arguments = LIST[string]()
+
+            let pack_dlls = Directory.get_files(_sdk_reference_path, "*.dll") |>
+                sort() |>
+                collect_list()
+
+            for dll in pack_dlls do
+                arguments.add("-a")
+                arguments.add(dll)
+            od
+
+            arguments.add("-a")
+            arguments.add(_runtime_path)
+
+            return arguments
+        si
+
         // A `publish` directory at or above the working directory is where the
         // compiler being tested is published to, so prefer it over whatever the
         // local tool manifest happens to pin.
@@ -144,7 +168,7 @@ namespace Tester is
                     )
                 fi
             else
-                arguments.add_range(["--sdk-ref-path", _sdk_reference_path])
+                arguments.add_range(reference_arguments())
                 arguments.add_range(test.source_files)
                 arguments.add_range(["-o", "binary.exe"])
 
@@ -192,7 +216,7 @@ namespace Tester is
                 )
             fi
 
-            arguments.add_range(["--sdk-ref-path", _sdk_reference_path])
+            arguments.add_range(reference_arguments())
             arguments.add("--format-in-place")
             arguments.add_range(sources)
 
@@ -221,7 +245,7 @@ namespace Tester is
                 )
             fi
 
-            arguments.add_range(["--sdk-ref-path", _sdk_reference_path])
+            arguments.add_range(reference_arguments())
             arguments.add_range(sources)
             arguments.add_range(["-o", FORMATTED_BINARY])
 
