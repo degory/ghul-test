@@ -60,7 +60,7 @@ jobs:
     runs-on: ubuntu-latest
 
     container:
-      image: mcr.microsoft.com/dotnet/sdk:10.0
+      image: mcr.microsoft.com/dotnet/sdk:11.0
 
     timeout-minutes: 10
     needs: [version]
