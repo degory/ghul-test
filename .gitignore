@@ -19,6 +19,7 @@ output.txt
 tests/TestResults/
 
 actual-output
+build-output
 integration-tests/**/failed
 integration-tests/**/*.out
 integration-tests/**/*.grep
