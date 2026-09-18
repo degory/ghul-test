@@ -550,5 +550,48 @@ fi
 
 echo integration-tests/ildasm-not-executable: PASS
 
+echo integration-tests/run-check...
+
+# A program whose output varies is judged by a run.check rather than by a
+# snapshot. The test also carries a run.expected that disagrees, which asserts
+# the snapshot is ignored where a recognizer is present rather than both being
+# applied.
+TEST_PROCESSES=1 CI=1 dotnet run integration-tests/run-check | tee actual-output
+
+if [ "${PIPESTATUS[0]}" != "0" ]; then
+    echo integration-tests/run-check unexpectedly failed
+
+    exit 1
+fi
+
+if ! diff integration-tests/run-check/expected-output actual-output ; then
+    echo integration-tests/run-check output did not match expected output
+
+    exit 1
+fi
+
+echo integration-tests/run-check: PASS
+
+
+echo integration-tests/run-check-fail...
+
+# What the recognizer writes is what the failure report carries, because an
+# exit status alone does not say which part of the output was wrong.
+TEST_PROCESSES=1 CI=1 dotnet run integration-tests/run-check-fail | tee actual-output
+
+if [ "${PIPESTATUS[0]}" != "1" ]; then
+    echo integration-tests/run-check-fail unexpectedly succeeded
+
+    exit 1
+fi
+
+if ! diff integration-tests/run-check-fail/expected-output actual-output ; then
+    echo integration-tests/run-check-fail output did not match expected output
+
+    exit 1
+fi
+
+echo integration-tests/run-check-fail: PASS
+
 
 exit 0
