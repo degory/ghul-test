@@ -1,0 +1,8 @@
+#!/bin/bash
+
+# Asserts something the program does not do, so that the report carries what
+# the recognizer wrote rather than a bare exit status.
+
+echo "expected a total line, and there is none"
+
+exit 1

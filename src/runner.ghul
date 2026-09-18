@@ -179,7 +179,11 @@ namespace Tester is
             normalize_paths("run.out")
             strip_stack_trace_locations("run.out")
 
-            run_diff("test output", "run.expected", "run.out", "run.diff", true)
+            if check_file()? then
+                run_check("test output", "run.out", "run.check.out")
+            else
+                run_diff("test output", "run.expected", "run.out", "run.diff", true)
+            fi
 
             run_image_diffs()
         si
@@ -269,13 +273,21 @@ namespace Tester is
             normalize_paths("formatted-run.out")
             strip_stack_trace_locations("formatted-run.out")
 
-            run_diff(
-                "formatted test output",
-                "run.expected",
-                "formatted-run.out",
-                "formatted-run.diff",
-                true
-            )
+            if check_file()? then
+                run_check(
+                    "formatted test output",
+                    "formatted-run.out",
+                    "formatted-run.check.out"
+                )
+            else
+                run_diff(
+                    "formatted test output",
+                    "run.expected",
+                    "formatted-run.out",
+                    "formatted-run.diff",
+                    true
+                )
+            fi
         si
 
         FORMATTED_DIRECTORY: string static => "formatted"
@@ -284,11 +296,59 @@ namespace Tester is
 
         RUN_SESSION: string static => "run.session"
 
+        RUN_CHECK: string static => "run.check"
+
         input_file() -> string? =>
             if File.exists(get_path(RUN_IN)) then RUN_IN else null fi
 
         session_file() -> string? =>
             if File.exists(get_path(RUN_SESSION)) then RUN_SESSION else null fi
+
+        check_file() -> string? =>
+            if File.exists(get_path(RUN_CHECK)) then RUN_CHECK else null fi
+
+        // A program whose output is not the same twice cannot be held to a
+        // snapshot, so a test may carry a `run.check` instead: an executable
+        // run from the test directory with the captured output as its only
+        // argument, which passes the test by exiting zero. What it writes is
+        // what the failure report shows, because an exit status on its own
+        // says nothing about which part of the output was wrong.
+        run_check(
+            description: string,
+            actual_file_name: string,
+            out_file_name: string
+        ) is
+            let error_file_name = "{out_file_name}.err"
+
+            let exit_status mut = 0
+
+            try
+                exit_status =
+                    run(
+                        get_path(RUN_CHECK),
+                        [actual_file_name],
+                        TOOL_TIMEOUT_MS,
+                        out_file_name,
+                        error_file_name
+                    )
+            catch e: System.ComponentModel.Win32Exception
+                // Almost always a `run.check` without its executable bit,
+                // which is worth saying rather than reporting as a trace
+                // through the process the runner failed to start.
+                add_fail("could not run {RUN_CHECK}: {e.message}")
+                return
+            yrt
+
+            let complaint = read_all_text_quiet(error_file_name)
+
+            if complaint.length > 0 then
+                File.append_all_text(get_path(out_file_name), complaint)
+            fi
+
+            if exit_status != 0 then
+                add_fail(description, out_file_name)
+            fi
+        si
 
         check_input_files() -> bool is
             if !(input_file()? /\ session_file()?) then
