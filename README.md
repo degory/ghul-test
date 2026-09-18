@@ -17,7 +17,7 @@ A test directory must contain at least two things:
 - **One or more `.ghul` source files** – the sources to compile.
 - A `ghulflags` file – flags passed directly to the compiler when building the test.
 
-Any directory containing a `ghulflags` file is treated as a test. Subdirectories without this file are ignored by the queue logic.
+Any directory containing a `ghulflags` file is treated as a test. A directory without one is not run, so one that looks like a test anyway - it holds a `test.ghul`, or an `*.expected` snapshot - is named at the end of the run and fails it, rather than passing unnoticed. Other directories without a `ghulflags` file, such as a library a test builds against, are ignored.
 
 Optional expectation and configuration files may also be present:
 

@@ -191,6 +191,39 @@ fi
 
 echo integration-tests/compiler-override-wrong-mode: PASS
 
+echo integration-tests/undiscovered...
+
+# A directory holding a test.ghul or an expected snapshot but no ghulflags
+# is never run, so it is named and fails the run; a directory holding other
+# source, such as a library a test builds against, is not a test at all.
+TEST_PROCESSES=1 CI=1 $RUNNER integration-tests/undiscovered | tee actual-output
+
+if [ "${PIPESTATUS[0]}" != "1" ]; then
+    echo integration-tests/undiscovered did not exit 1
+
+    exit 1
+fi
+
+if ! grep -q "not run: integration-tests/undiscovered/no-flags looks like a test but has no ghulflags" actual-output ; then
+    echo integration-tests/undiscovered did not report the directory with no ghulflags
+
+    exit 1
+fi
+
+if grep -q "not run: .*support" actual-output ; then
+    echo integration-tests/undiscovered reported a directory that is not a test
+
+    exit 1
+fi
+
+if ! grep -q "1/1 tests passed" actual-output ; then
+    echo integration-tests/undiscovered did not still run the discovered test
+
+    exit 1
+fi
+
+echo integration-tests/undiscovered: PASS
+
 echo integration-tests/il-expected...
 
 # A test carrying il.expected has the emitted assembly disassembled and
