@@ -180,9 +180,19 @@ namespace Tester is
             Std.write_line("{queue.executed_count} tests enabled")
             Std.write_line("{queue.pass_count}/{queue.executed_count} tests passed")
 
-            if queue.fail_count == 0 then
+            for path in queue.undiscovered do
+                Std.write_line("not run: {path} looks like a test but has no ghulflags")
+            od
+
+            if queue.fail_count == 0 /\ queue.undiscovered_count == 0 then
                 Std.write_line("{cast char(9989)} all tests passed {cast char(9989)}")
                 return 0
+            fi
+
+            if queue.fail_count == 0 then
+                Std.write_line("{cast char(10060)} {queue.undiscovered_count} test directories not run {cast char(10060)}")
+
+                return 1
             fi
 
             Std.write_line("{cast char(10060)} {queue.fail_count} tests failed {cast char(10060)}")

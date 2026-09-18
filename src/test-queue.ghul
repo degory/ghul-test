@@ -24,6 +24,15 @@ namespace Tester is
 
         _tests: MutableList[TEST]
 
+        // Directories that look like a test - a `test.ghul`, or an expected
+        // snapshot - but have no `ghulflags`, which is what makes a directory
+        // a test. Nothing would run them, so they are reported rather than
+        // passed over.
+        _undiscovered: MutableList[string]
+
+        undiscovered: Iterable[string] => _undiscovered
+        undiscovered_count: int => _undiscovered.count
+
         // Counts every test that survives the tag filter, so a shard
         // selects the same tests however the run is divided.
         _candidate_ordinal: int
@@ -61,6 +70,7 @@ namespace Tester is
             Std.write_line("using {actual_test_processes} processes to run tests")
 
             _tests = LIST[TEST]()
+            _undiscovered = LIST[string]()
         si
 
         run_queued_tests() is
@@ -137,6 +147,10 @@ namespace Tester is
             let flags_path = "{path}/ghulflags"
 
             if !File.exists(flags_path) then
+                if looks_like_test(path) then
+                    _undiscovered.add(path)
+                fi
+
                 return
             fi
 
@@ -168,6 +182,10 @@ namespace Tester is
                 )
             )
         si
+
+        looks_like_test(path: string) -> bool =>
+            File.exists("{path}/test.ghul") \/
+            Directory.get_files(path, "*.expected").count > 0
 
         // Asked once for the whole run rather than per test: whether a
         // disassembler was found cannot change while tests are running,
