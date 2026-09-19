@@ -15,7 +15,7 @@ namespace Tests is
         @Test()
         TAG_FILTER__matches__given_no_requested_tags__matches_anything() is
 
-            let filter = TAG_FILTER(LIST[string]())
+            let filter = TAG_FILTER(LIST[string](), LIST[string]())
 
             should(filter.is_empty).be_true("", [])
             should(filter.matches(LIST[string]())).be_true("", [])
@@ -25,7 +25,7 @@ namespace Tests is
         @Test()
         TAG_FILTER__matches__given_requested_tags__matches_test_with_shared_tag() is
 
-            let filter = TAG_FILTER(["smoke", "narrowing"])
+            let filter = TAG_FILTER(["smoke", "narrowing"], LIST[string]())
 
             should(filter.matches(["narrowing", "unions"])).be_true("", [])
         si
@@ -33,7 +33,7 @@ namespace Tests is
         @Test()
         TAG_FILTER__matches__given_requested_tags__does_not_match_test_with_no_shared_tag() is
 
-            let filter = TAG_FILTER(["smoke"])
+            let filter = TAG_FILTER(["smoke"], LIST[string]())
 
             should(filter.matches(["narrowing", "unions"])).be_false("", [])
         si
@@ -41,9 +41,37 @@ namespace Tests is
         @Test()
         TAG_FILTER__matches__given_requested_tags__does_not_match_untagged_test() is
 
-            let filter = TAG_FILTER(["smoke"])
+            let filter = TAG_FILTER(["smoke"], LIST[string]())
 
             should(filter.matches(LIST[string]())).be_false("", [])
+        si
+
+        @Test()
+        TAG_FILTER__matches__given_excluded_tags__does_not_match_test_with_excluded_tag() is
+
+            let filter = TAG_FILTER(LIST[string](), ["async"])
+
+            should(filter.is_empty).be_false("", [])
+            should(filter.matches(["generics", "async"])).be_false("", [])
+            should(filter.matches(["generics"])).be_true("", [])
+        si
+
+        @Test()
+        TAG_FILTER__matches__given_excluded_tags__matches_untagged_test() is
+
+            let filter = TAG_FILTER(LIST[string](), ["async"])
+
+            should(filter.matches(LIST[string]())).be_true("", [])
+        si
+
+        @Test()
+        TAG_FILTER__matches__given_requested_and_excluded_tags__exclusion_wins() is
+
+            let filter = TAG_FILTER(["generics"], ["async"])
+
+            should(filter.matches(["generics", "async"])).be_false("", [])
+            should(filter.matches(["generics"])).be_true("", [])
+            should(filter.matches(["async"])).be_false("", [])
         si
 
         @Test()
