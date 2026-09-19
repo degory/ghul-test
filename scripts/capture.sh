@@ -30,6 +30,12 @@ if [ -d $CASE ] ; then
         mv $CASE/il.out $CASE/il.expected
     fi
     
+    for image in $CASE/*.png ; do
+        if [ -f "$image" ] ; then
+            cp "$image" "$image.expected"
+        fi
+    done
+
     if [ -f $CASE/run.out ] ; then
         mv $CASE/run.out $CASE/run.expected
         rm $CASE/fail.expected

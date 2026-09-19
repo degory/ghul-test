@@ -1,0 +1,46 @@
+namespace Tester is
+    use System.Exception
+
+    // One part of a run split across several processes.
+    //
+    // Tests are striped by discovery ordinal rather than cut into contiguous
+    // blocks. Discovery walks the tree in sorted order, so a block would put a
+    // whole directory into one shard, and a directory is where tests of a like
+    // cost collect.
+    class SHARD(index: int private, count: int private) is
+        is_whole: bool => _count <= 1
+
+        description: string => "shard {_index} of {_count}"
+
+        matches(ordinal: int) -> bool => is_whole \/ ordinal % _count == _index - 1
+
+        whole() -> SHARD static => SHARD(1, 1)
+
+        parse(spec: string) -> SHARD static is
+            let parts = spec.split(['/'])
+
+            if parts.count != 2 then
+                throw Exception("--shard wants <index>/<count>, for example 2/6: got '{spec}'")
+            fi
+
+            let index = parse_part(parts[0], spec)
+            let count = parse_part(parts[1], spec)
+
+            if index > count then
+                throw Exception("--shard {spec} asks for shard {index} of only {count}")
+            fi
+
+            return SHARD(index, count)
+        si
+
+        parse_part(text: string, spec: string) -> int static is
+            let value: int mut
+
+            if !int.try_parse(text, value ref) \/ value < 1 then
+                throw Exception("--shard wants two positive whole numbers, for example 2/6: got '{spec}'")
+            fi
+
+            return value
+        si
+    si
+si

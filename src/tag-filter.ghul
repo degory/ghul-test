@@ -1,40 +1,38 @@
 namespace Tester is
-    use Collections.Iterable;
-    use Collections.List;
-    use Collections.LIST;
+    use Collections.Iterable
+    use Ghul.Pipes
+    use Collections.List
+    use Collections.LIST
 
     // Selects tests by tag. A test runs when it carries at least one requested
-    // tag - or when none were requested - and carries none of the excluded
-    // ones. Exclusion wins, so a test matching both is skipped.
-    class TAG_FILTER is
-        _requested: List[string];
-        _excluded: List[string];
+    // tag - or when none were requested - and none of the excluded ones.
+    // Exclusion wins, so a test carrying both is skipped.
+    class TAG_FILTER(requested_tags: Iterable[string] init, excluded_tags: Iterable[string] init) is
+        _requested: List[string]
+        _excluded: List[string]
 
-        is_empty: bool => _requested.count == 0 /\ _excluded.count == 0;
+        is_empty: bool => _requested.count == 0 /\ _excluded.count == 0
 
-        init(requested: Iterable[string], excluded: Iterable[string]) is
-            _requested = LIST[string](requested);
-            _excluded = LIST[string](excluded);
+        init(..) is
+            _requested = LIST[string](requested_tags)
+            _excluded = LIST[string](excluded_tags)
         si
 
         matches(tags: Iterable[string]) -> bool is
-            if _excluded.count > 0 /\ _has_any(tags, _excluded) then
-                return false;
+            if tags |> any(tag => _excluded |> any(e => e =~ tag)) then
+                return false
             fi
 
             if _requested.count == 0 then
-                return true;
+                return true
             fi
 
-            return _has_any(tags, _requested);
+            return tags |> any(tag => _requested |> any(r => r =~ tag))
         si
 
-        _has_any(tags: Iterable[string], wanted: List[string]) -> bool =>
-            tags | .any(tag => wanted | .any(w => w =~ tag));
-
         parse_tags(content: string) -> Iterable[string] static =>
-            content.split([' ', '\t', '\n', '\r']) |
-                .map(t => t.trim()) |
-                .filter(t => t.length > 0);
+            content.split([' ', '\t', '\n', '\r'])
+                |> map(t => t.trim())
+                |> filter(t => t.length > 0)
     si
 si

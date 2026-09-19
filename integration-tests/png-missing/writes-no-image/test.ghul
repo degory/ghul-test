@@ -1,0 +1,3 @@
+use IO.Std
+
+entry() => Std.write_line("nothing drawn")

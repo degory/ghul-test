@@ -19,9 +19,14 @@ output.txt
 tests/TestResults/
 
 actual-output
+build-output
 integration-tests/**/failed
 integration-tests/**/*.out
 integration-tests/**/*.grep
 integration-tests/**/*.diff
 integration-tests/**/*.sort
 integration-tests/**/*.err
+integration-tests/**/*.trim
+integration-tests/**/formatted/
+integration-tests/**/formatted.exe
+integration-tests/**/formatted.runtimeconfig.json

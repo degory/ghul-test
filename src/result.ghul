@@ -1,154 +1,148 @@
 namespace Tester is
-    use System.Text.StringBuilder;
+    use System.Text.StringBuilder
 
-    use IO.Std;
+    use IO.Std
 
-    use Collections.Iterable;
-    use Collections.MutableList;
-    use Collections.LIST;
+    use Collections.Iterable
+    use Ghul.Pipes
+    use Collections.MutableList
+    use Collections.LIST
 
-    class Result is
-        test: TEST;
+    class Result abstract is
+        test: TEST
 
-        _progress: int;
+        _progress: int
         progress: int public => _progress, = value is
             if value < 0 then
-                _progress = 0;
+                _progress = 0
             elif value > 100 then
-                _progress = 100;
+                _progress = 100
             else
-                _progress = value;
-            fi            
+                _progress = value
+            fi
         si
 
-        progress_string: string => "{progress.to_string().pad_left(2)}%";
+        progress_string: string => "{progress.to_string().pad_left(2)}%"
 
         is_pass: bool is
-            throw new System.NotImplementedException();            
+            throw System.NotImplementedException()
         si
 
         is_fail: bool is
-            throw new System.NotImplementedException();            
+            throw System.NotImplementedException()
         si
 
-        is_executed: bool => is_pass \/ is_fail;
+        is_executed: bool => is_pass \/ is_fail
 
         head: string is
-            throw new System.NotImplementedException();
+            throw System.NotImplementedException()
         si
-        
-        body: string => null;
+
+        body: string? => null
 
         init(test: TEST) is
-            self.test = test;
-            test.result = self;
+            self.test = test
+            test.result = self
         si
-        
+
         format(test_name: string) -> string is
-            let result mut = "{progress_string} {head}: {test_name}";
+            let result mut = "{progress_string} {head}: {test_name}"
 
             if body? /\ body !~ "" then
-                result = "{result}: {body}";
+                result = "{result}: {body}"
             fi
 
-            return result;
+            return result
         si
 
-        to_string() -> string => format(test.path);            
+        to_string() -> string => format(test.path)
     si
 
     class SKIP: Result is
-        is_pass: bool => false;
-        is_fail: bool => false;
-        head: string => "   skip";
+        is_pass: bool => false
+        is_fail: bool => false
+        head: string => "   skip"
 
         init(test: TEST) is super.init(test); si
     si
 
     class PASS: Result is
-        is_pass: bool => true;
-        is_fail: bool => false;
-        head: string => "✅ pass";
+        is_pass: bool => true
+        is_fail: bool => false
+        head: string => "✅ pass"
 
-        init(test: TEST) is super.init(test); si        
+        init(test: TEST) is super.init(test); si
     si
 
     class FAILURE: Result is
-        _details: MutableList[DETAILS];
+        _details: MutableList[DETAILS]
 
-        is_pass: bool => false;
-        is_fail: bool => true;
-        head: string => "❌ fail";
+        is_pass: bool => false
+        is_fail: bool => true
+        head: string => "❌ fail"
 
-        body: string is
+        body: string? is
             if _details.count == 0 then
-                return null;
+                return null
             elif _details.count == 1 then
-                return _details[0].to_string();
+                return _details[0].to_string()
             else
-                return _details | .to_string("\n");
-            fi            
+                return _details |> join("\n")
+            fi
         si
 
         init(test: TEST) is
-            super.init(test);
-            _details = new LIST[DETAILS]();
+            super.init(test)
+            _details = LIST[DETAILS]()
         si
 
         init(test: TEST, details: DETAILS) is
-            init(test);
-            add(details);
+            init(test)
+            add(details)
         si
 
         init(test: TEST, message: string) is
-            init(test, new DETAILS(message));
+            init(test, DETAILS(message))
         si
 
-        init(test: TEST, message: string, details: string) is
-            init(test, new DETAILS(message, details));
+        init(test: TEST, message: string, details: string?) is
+            init(test, DETAILS(message, details))
         si
-                        
+
         add(details: DETAILS) is
-            _details.add(details);
-        si        
+            _details.add(details)
+        si
     si
-    
-    class DETAILS is
-        message: string;
-        details: string;
 
+    class DETAILS(message: string, details: string?) is
         init(message: string) is
-            self.message = message;
+            init(message, null)
         si
-        
-        init(message: string, details: string) is
-            self.message = message;
-            self.details = details;
-        si
-        
-        to_string() -> string is
-            let result = new StringBuilder();
 
-            result.append(message);
-            
-            if details? then
+
+        to_string() -> string is
+            let result = StringBuilder()
+
+            result.append(message)
+
+            if let self.details then
                 result
-                    .append(":");
+                    .append(":")
 
                 if !details.contains('\n') then
                     result
                         .append(" ")
-                        .append(details);
+                        .append(details)
                 else
                     for line in details.split(['\n']) do
                         result
                             .append("\n    ")
-                            .append(line);
+                            .append(line)
                     od
                 fi
             fi
 
-            return result.to_string();
-        si        
+            return result.to_string()
+        si
     si
 si

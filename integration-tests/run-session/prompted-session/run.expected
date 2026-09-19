@@ -1,0 +1,6 @@
+guess 1-100: 50
+too high
+guess 1-100: 10
+too low
+guess 1-100: 30
+right, in 3

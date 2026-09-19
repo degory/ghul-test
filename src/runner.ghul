@@ -1,154 +1,421 @@
 namespace Tester is
-    use System.Exception;
-    use System.Text.StringBuilder;
+    use System.Exception
+    use System.Convert
+    use System.Text.StringBuilder
 
-    use Collections.Iterable;
-    use Collections.List;
-    use Collections.MutableList;
-    use Collections.Map;
-    use Collections.MutableMap;
-    use Collections.LIST;
-    use Collections.MAP;
+    use Collections.Iterable
+    use Ghul.Pipes
+    use Collections.List
+    use Collections.MutableList
+    use Collections.Map
+    use Collections.MutableMap
+    use Collections.LIST
+    use Collections.MAP
 
-    use Pair = Collections.KeyValuePair;
+    use Pair = Collections.KeyValuePair
 
-    use IO.Std;
-    use IO.File;
-    use IO.Directory;
+    use IO.Std
+    use IO.File
+    use IO.Path
+    use IO.Directory
 
-    use System.Diagnostics.Process;
-    use System.Diagnostics.ProcessStartInfo;
+    use System.Diagnostics.Process
+    use System.Diagnostics.ProcessStartInfo
 
-    use System.Text.RegularExpressions.Regex;
-    use System.Text.RegularExpressions.RegexOptions;
+    use System.Text.RegularExpressions.Regex
+    use System.Text.RegularExpressions.RegexOptions
 
-    class RUNNER is
-        _collate_environment: MutableMap[string,string] static;
+    class RUNNER(
+        host_cli: string private,
+        target_cli: string private,
+        compiler_under_test: COMPILER_UNDER_TEST private,
+        disassembler: DISASSEMBLER private,
+        test: TEST private
+    ) is
+        _collate_environment: MutableMap[string,string]? static
 
-        _host_cli: string;
-        _target_cli: string;
+        _failure: FAILURE?
 
-        _failure: FAILURE;
-        _compiler_under_test: COMPILER_UNDER_TEST;
-
-        _test: TEST;
-
-        init(
-            host_cli: string,
-            target_cli: string,
-            compiler_under_test: COMPILER_UNDER_TEST,
-            test: TEST
-        ) is
-            _host_cli = host_cli;
-            _target_cli = target_cli;
-            _compiler_under_test = compiler_under_test;
-            _test = test;
-
+        init(..) is
             if !_collate_environment? then
-                _collate_environment = new MAP[string,string]();
-                _collate_environment.add("LC_COLLATE", "C");                    
+                _collate_environment = MAP[string,string]()
+                _collate_environment.add("LC_COLLATE", "C")
             fi
         si
 
         get_result() -> Result is
             if _failure? then
-                return _failure;
+                return _failure
             else
-                return new PASS(_test);
+                return PASS(_test)
             fi
         si
 
         get_run() -> () -> Result
-            is               
+            is
                 return () -> Result is
-                    let result = run_test();
-                    
-                    return result;
-                si;
+                    let result = run_test()
+
+                    return result
+                si
             si
-        
+
         run_test() -> Result is
             try
-                if Directory.get_files(_test.path, "disabled*")| .count() > 0 then
-                    return new SKIP(_test);
+                if Directory.get_files(_test.path, "disabled*") |> count() > 0 then
+                    return SKIP(_test)
                 fi
 
-                _run_test();
+                _run_test()
 
-                clean_up();
+                clean_up()
 
-                mark_if_failed();
+                mark_if_failed()
 
-                return get_result();
+                return get_result()
             catch ex: Exception
-                return new FAILURE(_test, ex.message, ex.stack_trace);
+                return FAILURE(_test, ex.message, ex.stack_trace)
             yrt
         si
 
         _run_test() is
-            if _test.source_files| .count() == 0 then
-                add_fail("no source files found");
-                return;
+            if _test.source_files |> count() == 0 then
+                add_fail("no source files found")
+                return
             fi
 
-            let build_succeeded = _compiler_under_test.run_compiler(self, _test);
+            // Left behind by a previous failing run, and a failing run
+            // is exactly what gets repeated. Whether the compiler wrote
+            // the IL itself is read from this file existing once it has
+            // run, so one surviving from last time would be taken for
+            // this run's answer and suppress the disassembly.
+            delete_files(["il.out", "il.raw", "il.err"])
 
-            let exit_after_grep_and_sort mut = false;
+            let build_succeeded = _compiler_under_test.run_compiler(self, _test)
+
+            let exit_after_grep_and_sort mut = false
 
             if build_succeeded then
                 if _test.is_build_fail_expected then
-                    add_fail("unexpected build success: {_test.path}");
-                    exit_after_grep_and_sort = true;
+                    add_fail("unexpected build success: {_test.path}")
+                    exit_after_grep_and_sort = true
                 fi
             else
                 if !_test.is_build_fail_expected then
-                    add_fail("unexpected build failure", "compiler.out");
-                    exit_after_grep_and_sort = true;
+                    add_fail("unexpected build failure", "compiler.out")
+                    exit_after_grep_and_sort = true
                 fi
             fi
 
-            run_grep("error:", "compiler.out", "err.grep");
-            run_grep("warn:", "compiler.out", "warn.grep");
+            // A dotnet-build capture holds each diagnostic twice: MSBuild's
+            // console logger renders every error and warning as it occurs,
+            // then re-lists them all after the "Build FAILED." / "Build
+            // succeeded." banner. Cut the log at that banner so the snapshot
+            // sees one rendering per diagnostic and still counts genuine
+            // repeats; a plain run's capture has no such banner and passes
+            // through unchanged.
+            trim_build_log("compiler.out", "compiler.trim")
 
-            run_sort("err.grep", "err.sort");
-            run_sort("warn.grep", "warn.sort");
+            // Matches both diagnostic formats the compiler emits: the
+            // default `file: l,c..l,c: error: text` and MSBuild's canonical
+            // `file(l,c,l,c): error code: text`, which a test selects with
+            // --msbuild-diagnostics. Matching on severity followed by a
+            // colon or a code, rather than the bare word, keeps a message
+            // that happens to contain "error" out of the error list.
+            //
+            // The optional code between severity and colon has to be a
+            // ghūl slug - lowercase kebab-case - so that a
+            // --use-dotnet-build test's snapshot keeps to the ghūl
+            // diagnostics it asserts rather than absorbing the build
+            // engine's own lines, whose codes are uppercase-prefixed
+            // (MSB3073, CS0012).
+            //
+            // Written with character classes because a pattern holding a
+            // literal space would not survive being joined into the
+            // command line unquoted.
+            run_grep(":[[:space:]]*error(:|[[:space:]]+[a-z0-9-]*:)", "compiler.trim", "err.grep")
+            run_grep(":[[:space:]]*warn(ing)?(:|[[:space:]]+[a-z0-9-]*:)", "compiler.trim", "warn.grep")
 
-            normalize_paths("err.sort");
-            normalize_paths("warn.sort");
+            run_sort("err.grep", "err.sort")
+            run_sort("warn.grep", "warn.sort")
+
+            normalize_paths("err.sort")
+            normalize_paths("warn.sort")
 
             if exit_after_grep_and_sort then
-                return;
+                return
             fi
 
-            run_diff("errors", "err.expected", "err.sort", "err.diff", true);
+            run_diff("errors", "err.expected", "err.sort", "err.diff", true)
 
-            run_diff("warnings", "warn.expected", "warn.sort", "warn.diff", true);
+            run_diff("warnings", "warn.expected", "warn.sort", "warn.diff", true)
 
-            run_diff_il_out();
+            run_diff_il_out(build_succeeded)
 
-            if !build_succeeded then
-                return;
+            // Before the formatter round trip as well as the run below: both
+            // give the program its input, so a test that says two different
+            // things about how to send it is settled before either starts.
+            if !check_input_files() then
+                return
             fi
 
-            _compiler_under_test.run_ln_runtime(self);
+            // Before the library return below: a library has no entry point
+            // to run, but what the formatter wrote for it still has to
+            // build, which is most of what the phase asserts.
+            if build_succeeded then
+                run_formatter_round_trip()
+            fi
+
+            if !build_succeeded \/ _test.is_library then
+                return
+            fi
+
+            _compiler_under_test.run_ln_runtime(self)
 
             if !run_binary() then
-                return;
+                return
             fi
 
-            normalize_paths("run.out");
-            strip_stack_trace_locations("run.out");
+            normalize_paths("run.out")
+            strip_stack_trace_locations("run.out")
 
-            run_diff("test output", "run.expected", "run.out", "run.diff", true);
+            if check_file()? then
+                run_check("test output", "run.out", "run.check.out")
+            else
+                run_diff("test output", "run.expected", "run.out", "run.diff", true)
+            fi
+
+            run_image_diffs()
         si
 
+        // A test carrying a `format.expected` asserts what the formatter
+        // writes for its sources, and that what it wrote still builds and
+        // still does the same thing. The formatter is the source
+        // serializer, so a snapshot of its output alone would say only
+        // that the output is what it was last time - not that it is still
+        // a program.
+        run_formatter_round_trip() is
+            if !File.exists(get_path("format.expected")) then
+                return
+            fi
+
+            if _compiler_under_test.is_dotnet_build then
+                add_fail("format.expected is not supported under --use-dotnet-build")
+                return
+            fi
+
+            let formatted = Path.join([get_path(), FORMATTED_DIRECTORY])
+
+            if Directory.exists(formatted) then
+                Directory.delete(formatted, true)
+            fi
+
+            Directory.create_directory(formatted)
+
+            let copies = Collections.LIST[string]()
+
+            for source in _test.source_files do
+                let name = Path.get_file_name(source)
+                let copy = Path.join([FORMATTED_DIRECTORY, name])
+
+                File.copy(get_path(source), Path.join([formatted, name]), true)
+
+                copies.add(copy)
+            od
+
+            if !_compiler_under_test.run_formatter(self, _test, copies) then
+                add_fail("formatter failed", "format.err")
+                return
+            fi
+
+            write_formatted_snapshot(copies)
+
+            // Whitespace is what the snapshot is about, so this diff does
+            // not ignore it as the diagnostic ones do.
+            if !run_diff("formatted source", "format.expected", "format.out", "format.diff", false) then
+                return
+            fi
+
+            if !_compiler_under_test.build_formatted(self, _test, copies) then
+                add_fail("formatted source did not build", "formatted-compiler.out")
+                return
+            fi
+
+            if _test.is_library then
+                return
+            fi
+
+            // The formatted binary needs `ghul-runtime.dll` beside it just
+            // as the original does, and this phase runs before the point
+            // where the original's is linked.
+            _compiler_under_test.run_ln_runtime(self)
+
+            let exit_status =
+                run(
+                    _target_cli,
+                    [COMPILER_UNDER_TEST.FORMATTED_BINARY],
+                    PROGRAM_TIMEOUT_MS,
+                    "formatted-run.out",
+                    "formatted-run.err",
+                    null,
+                    input_file(),
+                    session_file()
+                )
+
+            if exit_status != 0 then
+                add_fail(
+                    "formatted binary exited with non-zero status ({exit_status})",
+                    "formatted-run.err"
+                )
+                return
+            fi
+
+            normalize_paths("formatted-run.out")
+            strip_stack_trace_locations("formatted-run.out")
+
+            if check_file()? then
+                run_check(
+                    "formatted test output",
+                    "formatted-run.out",
+                    "formatted-run.check.out"
+                )
+            else
+                run_diff(
+                    "formatted test output",
+                    "run.expected",
+                    "formatted-run.out",
+                    "formatted-run.diff",
+                    true
+                )
+            fi
+        si
+
+        FORMATTED_DIRECTORY: string static => "formatted"
+
+        RUN_IN: string static => "run.in"
+
+        RUN_SESSION: string static => "run.session"
+
+        RUN_CHECK: string static => "run.check"
+
+        input_file() -> string? =>
+            if File.exists(get_path(RUN_IN)) then RUN_IN else null fi
+
+        session_file() -> string? =>
+            if File.exists(get_path(RUN_SESSION)) then RUN_SESSION else null fi
+
+        check_file() -> string? =>
+            if File.exists(get_path(RUN_CHECK)) then RUN_CHECK else null fi
+
+        // A program whose output is not the same twice cannot be held to a
+        // snapshot, so a test may carry a `run.check` instead: an executable
+        // run from the test directory with the captured output as its only
+        // argument, which passes the test by exiting zero. What it writes is
+        // what the failure report shows, because an exit status on its own
+        // says nothing about which part of the output was wrong.
+        run_check(
+            description: string,
+            actual_file_name: string,
+            out_file_name: string
+        ) is
+            let error_file_name = "{out_file_name}.err"
+
+            let exit_status mut = 0
+
+            try
+                exit_status =
+                    run(
+                        get_path(RUN_CHECK),
+                        [actual_file_name],
+                        TOOL_TIMEOUT_MS,
+                        out_file_name,
+                        error_file_name
+                    )
+            catch e: System.ComponentModel.Win32Exception
+                // Almost always a `run.check` without its executable bit,
+                // which is worth saying rather than reporting as a trace
+                // through the process the runner failed to start.
+                add_fail("could not run {RUN_CHECK}: {e.message}")
+                return
+            yrt
+
+            let complaint = read_all_text_quiet(error_file_name)
+
+            if complaint.length > 0 then
+                File.append_all_text(get_path(out_file_name), complaint)
+            fi
+
+            if exit_status != 0 then
+                add_fail(description, out_file_name)
+            fi
+        si
+
+        check_input_files() -> bool is
+            if !(input_file()? /\ session_file()?) then
+                return true
+            fi
+
+            add_fail(
+                "a test carries both {RUN_IN} and {RUN_SESSION}, which say "
+                "different things about how its input is sent"
+            )
+
+            return false
+        si
+
+        // Long enough that no working test reaches it, short enough that one
+        // which stops making progress fails rather than holding up the suite.
+        // Long enough that a working test never reaches it however loaded
+        // the machine is, short enough that one waiting for input nobody
+        // will send fails rather than holding up the suite.
+        PROGRAM_TIMEOUT_MS: int static => 300000
+
+        // A build restores packages and runs MSBuild, and the first one in
+        // a working tree does it cold.
+        BUILD_TIMEOUT_MS: int static => 300000
+
+        // diff, grep, sort, ln, the disassembler: none of them has any work
+        // to do that takes a fraction of this.
+        TOOL_TIMEOUT_MS: int static => 60000
+
+        // One file's formatted text is the snapshot on its own; several are
+        // joined under a header naming each, so the snapshot says which
+        // file it is looking at.
+        write_formatted_snapshot(copies: Collections.List[string]) is
+            let result = System.Text.StringBuilder()
+            let several = copies.count > 1
+
+            for copy in copies do
+                if several then
+                    result.append("// === ")
+                    result.append(Path.get_file_name(copy))
+                    result.append(" ===\n")
+                fi
+
+                result.append(File.read_all_text(get_path(copy)))
+            od
+
+            File.write_all_text(get_path("format.out"), result.to_string())
+        si
+
+        // A passing test's artifacts are deleted, so what a green run
+        // leaves behind is only the failures. That is the wrong way
+        // round for anything that wants to inspect what was built —
+        // auditing every emitted assembly, or looking at a test that
+        // passes but is suspected of passing for the wrong reason.
+        // GHUL_TEST_KEEP_ARTIFACTS leaves them in place.
         clean_up() is
+            if System.Environment.get_environment_variable("GHUL_TEST_KEEP_ARTIFACTS")? then
+                return
+            fi
+
             if !_failure? then
                 delete_files([
                     "binary.exe",
                     "binary.exe.mdb",
-                    "binary.runtimeconfig.json",                 
+                    "binary.runtimeconfig.json",
                     "compiler.out",
+                    "compiler.trim",
                     "sed.out",
                     "warn.grep",
                     "warn.diff",
@@ -158,23 +425,41 @@ namespace Tester is
                     "err.diff",
                     "out.il",
                     "il.out",
+                    "il.raw",
+                    "il.err",
                     "il.diff",
                     "run.out",
                     "run.err",
                     "run.diff",
+                    "format.out",
+                    "format.err",
+                    "format.diff",
+                    "formatted.exe",
+                    "formatted.exe.mdb",
+                    "formatted.runtimeconfig.json",
+                    "formatted-compiler.out",
+                    "formatted-run.out",
+                    "formatted-run.err",
+                    "formatted-run.diff",
                     "ghul-runtime.dll"
-                ]);
-            fi            
+                ])
+
+                let formatted = Path.join([get_path(), FORMATTED_DIRECTORY])
+
+                if Directory.exists(formatted) then
+                    Directory.delete(formatted, true)
+                fi
+            fi
         si
-        
+
         run_binary() -> bool is
             // this needs to be a path relative to the directory
             // that ghul-test was run from
-            let binary_path = _compiler_under_test.get_binary_path(self);
+            let binary_path = _compiler_under_test.get_binary_path(self)
 
             if !File.exists(binary_path) then
-                add_fail("no binary found: {binary_path}");
-                return false;
+                add_fail("no binary found: {binary_path}")
+                return false
             fi
 
             let exit_status =
@@ -183,46 +468,406 @@ namespace Tester is
                     // but this needs to be a path relative to the directory
                     // that the test is in
                     [_compiler_under_test.get_binary_path_relative_to_test_folder(self)],
-                    5000,
+                    PROGRAM_TIMEOUT_MS,
                     "run.out",
-                    "run.err"
-                );
-            
-            if 
+                    "run.err",
+                    null,
+                    input_file(),
+                    session_file()
+                )
+
+            if
                 exit_status != 0
             then
-                add_fail("binary exited with non-zero status ({exit_status})", "run.err");
-                return false;
+                add_fail("binary exited with non-zero status ({exit_status})", "run.err")
+                return false
             fi
 
-            return true;
+            return true
         si
-        
-        run_diff_il_out() is
-            let want_delete_il_out = false;
-            let il_out_path = get_path("il.out"); 
 
+        // A `<name>.expected` sitting beside an image the test wrote asserts
+        // what that image holds. The bytes are compared first, because two
+        // runs of the same encoder produce the same file and that answers
+        // most of the time. Only when they differ is either file decoded:
+        // what a PNG compresses to is not fixed by anything, so a test whose
+        // image is right must not fail because the compressor changed.
+        run_image_diffs() is
+            let expectations =
+                Directory.get_files(get_path(), "*.png.expected")
+
+            System.Array.sort(expectations)
+
+            for expectation in expectations do
+                if let name = Path.get_file_name(expectation) then
+                    run_image_diff(name)
+                fi
+            od
+        si
+
+        run_image_diff(expectation: string) is
+            let produced =
+                expectation.substring(0, expectation.length - ".expected".length)
+
+            if !File.exists(get_path(produced)) then
+                add_fail("{produced} was expected but the test wrote no such file")
+
+                return
+            fi
+
+            let wanted = File.read_all_bytes(get_path(expectation))
+            let written = File.read_all_bytes(get_path(produced))
+
+            if wanted.count == written.count then
+                let same =
+                    (0..wanted.count) |> all(at => wanted[at] == written[at])
+
+                if same then
+                    return
+                fi
+            fi
+
+            try
+                if let told = IMAGE.decode(wanted).difference(IMAGE.decode(written)) then
+                    add_fail("{produced} does not match {expectation}: {told}")
+                fi
+            catch e: Exception
+                add_fail("{produced} could not be compared to {expectation}: {e.message}")
+            yrt
+        si
+
+        run_diff_il_out(build_succeeded: bool) is
+            let il_out_path = get_path("il.out")
+
+            // A compiler that wrote the IL itself has already answered,
+            // and that answer is what its test's snapshot was captured
+            // from. Disassembling is for the case where nothing was
+            // written: a back end emitting binary directly produces no
+            // such file, and there would otherwise be nothing to
+            // compare. So a test moves from one to the other by dropping
+            // whatever made its compiler write the file.
+            if
+                !File.exists(il_out_path) /\
+                File.exists(get_path("il.expected")) /\
+                build_succeeded
+            then
+                run_disassembler(il_out_path)
+            fi
+
+            // A test wanting IL that produced none compares an empty
+            // file against its snapshot, so the whole snapshot lands on
+            // the expected side of the diff and the test fails. Skipping
+            // the comparison instead would report a test that emitted
+            // nothing as passing.
             if !File.exists(il_out_path) then
-                File.create(il_out_path).close();
+                File.create(il_out_path).close()
             fi
-            
-            run_diff("IL output", "il.expected", "il.out", "il.diff", true);
 
-            if want_delete_il_out then
-                File.delete(il_out_path);
-            fi            
+            run_diff("IL output", "il.expected", "il.out", "il.diff", true)
         si
-       
+
+        run_disassembler(il_out_path: string) is
+            if !_disassembler.is_available then
+                return
+            fi
+
+            let binary_path = _compiler_under_test.get_binary_path(self)
+
+            if !File.exists(binary_path) then
+                return
+            fi
+
+            // A test whose source marks statements with `@IL.output` carries
+            // the marked ranges out of the assembly as a method attribute.
+            // Each range's offsets are scoped to its own method, so the
+            // disassembly is sliced per method rather than over the whole
+            // assembly (where offsets are not unique).
+            let ranges = IL_OUTPUT_ATTRIBUTE_READER.read(binary_path)
+
+            if ranges? then
+                _slice_il_output(ranges, il_out_path)
+
+                normalize_paths("il.out")
+
+                return
+            fi
+
+            let raw_path = get_path("il.raw")
+            let item = _requested_il_item()
+
+            // The disassembler runs with the test folder as its working
+            // directory, so both paths it is given are relative to that,
+            // while everything checked here is relative to where
+            // ghul-test itself was started.
+            run(
+                _disassembler.executable!,
+                DISASSEMBLER.arguments(
+                    _compiler_under_test.get_binary_path_relative_to_test_folder(self),
+                    "il.raw",
+                    item),
+                TOOL_TIMEOUT_MS,
+                null,
+                "il.err"
+            )
+
+            if !File.exists(raw_path) then
+                add_fail("disassembler produced no output", "il.err")
+
+                return
+            fi
+
+            // An item the assembly does not contain is not reported by
+            // the disassembler: it writes the assembly-level preamble,
+            // says nothing about what it could not find, and exits zero.
+            // Captured as a snapshot that is a test asserting nothing
+            // about the construct it names, and passing for good.
+            if item? /\ !_contains_item(raw_path, item) then
+                add_fail("il.item names '{item}', which the emitted assembly does not contain")
+
+                File.delete(raw_path)
+
+                return
+            fi
+
+            _write_stable_il(raw_path, il_out_path)
+
+            File.delete(raw_path)
+
+            normalize_paths("il.out")
+        si
+
+        // Disassembles each method that carries an `@IL.output` range and
+        // keeps the instructions whose IL offset falls in that range,
+        // emitting them in source (sequence) order. One `ildasm` call per
+        // method, since offsets are unique only within a method.
+        _slice_il_output(ranges: LIST[IL_OUTPUT_RANGE], il_out_path: string) is
+            let slices = MAP[int, LIST[string]]()
+
+            // The span the compiler actually used, rather than one this
+            // end assumes: which number it starts from is its business,
+            // and a region numbered outside a range guessed here would
+            // drop out of the snapshot without saying so.
+            let min_sequence mut = 0
+            let max_sequence mut = 0
+            let seen_any mut = false
+
+            let binary_rel =
+                _compiler_under_test.get_binary_path_relative_to_test_folder(self)
+
+            for item in _distinct_items(ranges) do
+                run(
+                    _disassembler.executable!,
+                    DISASSEMBLER.arguments(binary_rel, "il.tmp", item),
+                    TOOL_TIMEOUT_MS,
+                    null,
+                    "il.err"
+                )
+
+                let tmp_path = get_path("il.tmp")
+
+                if !File.exists(tmp_path) then
+                    add_fail(
+                        "@IL.output: disassembler produced no output for {item}",
+                        "il.err")
+
+                    return
+                fi
+
+                let il_lines = File.read_all_lines(tmp_path)
+
+                // Scoping to something the assembly does not contain is
+                // answered with a preamble and a zero exit, exactly as it
+                // is for `il.item`. Every method has a body of at least
+                // one instruction, so a dump carrying no instruction at
+                // all means the item named nothing - which would
+                // otherwise drop this method's marked statements from the
+                // snapshot without saying so.
+                if !(il_lines |> any(l => IL_LINE.match(l).success)) then
+                    add_fail(
+                        "@IL.output: '{item}' names a method the emitted assembly "
+                        "does not contain")
+
+                    File.delete(tmp_path)
+
+                    return
+                fi
+
+                for range in ranges do
+                    if range.item =~ item then
+                        let kept = LIST[string]()
+
+                        for line in il_lines do
+                            let match = IL_LINE.match(line)
+
+                            if match.success then
+                                let offset =
+                                    Convert.to_int32(match.groups[1].value, 16)
+
+                                if
+                                    range.start_offset <= offset /\
+                                    offset < range.end_offset
+                                then
+                                    kept.add(match.groups[2].value.trim())
+                                fi
+                            fi
+                        od
+
+                        // A region that emitted instructions but matched
+                        // none of them means the offsets and the
+                        // disassembly disagree, which would otherwise
+                        // leave the statement silently absent.
+                        if kept.count == 0 /\ range.start_offset < range.end_offset then
+                            add_fail(
+                                "@IL.output: no instruction of '{item}' lies in "
+                                "{range.start_offset}..{range.end_offset}")
+
+                            File.delete(tmp_path)
+
+                            return
+                        fi
+
+                        if kept.count > 0 then
+                            slices[range.sequence] = kept
+
+                            if !seen_any \/ range.sequence < min_sequence then
+                                min_sequence = range.sequence
+                            fi
+
+                            if !seen_any \/ range.sequence > max_sequence then
+                                max_sequence = range.sequence
+                            fi
+
+                            seen_any = true
+                        fi
+                    fi
+                od
+
+                File.delete(tmp_path)
+            od
+
+            let lines = LIST[string]()
+
+            if seen_any then
+                for sequence in min_sequence::max_sequence do
+                    if slices.contains_key(sequence) then
+                        for line in slices[sequence] do
+                            lines.add(line)
+                        od
+                    fi
+                od
+            fi
+
+            File.write_all_lines(il_out_path, lines)
+        si
+
+        _distinct_items(ranges: LIST[IL_OUTPUT_RANGE]) -> LIST[string] is
+            let items = LIST[string]()
+
+            for range in ranges do
+                if !items.contains(range.item) then
+                    items.add(range.item)
+                fi
+            od
+
+            return items
+        si
+
+        IL_LINE: Regex static =>
+            Regex("^\\s*IL_([0-9a-fA-F]+):\\s*(.*)$")
+
+        // Scoping to something absent is answered with silence and a
+        // zero exit, so what came back has to be checked against what
+        // was asked for. A named member is the sharper case: the
+        // enclosing class is written out whether or not the member was
+        // found, so an item naming one that does not exist yields a
+        // class shell with nothing in it, which a check for the class
+        // alone would accept.
+        _contains_item(raw_path: string, item: string) -> bool static is
+            let wants_member = item.contains("::")
+
+            for line in File.read_all_lines(raw_path) do
+                let trimmed = line.trim()
+
+                if wants_member then
+                    if
+                        trimmed.starts_with(".method") \/
+                        trimmed.starts_with(".field") \/
+                        trimmed.starts_with(".property") \/
+                        trimmed.starts_with(".event")
+                    then
+                        return true
+                    fi
+                elif trimmed.starts_with(".class") then
+                    return true
+                fi
+            od
+
+            return false
+        si
+
+        // A test naming an item in `il.item` has its snapshot scoped to
+        // that type or member. Without one the whole assembly is dumped,
+        // which is what a test asserting assembly-level shape wants.
+        _requested_il_item() -> string? is
+            let path = get_path("il.item")
+
+            if !File.exists(path) then
+                return null
+            fi
+
+            return File.read_all_text(path).trim()
+        si
+
+        // A file whose namespace is compiler-generated takes its name
+        // from the source path, so the disassembly of a test with no
+        // namespace of its own carries the absolute path it was built
+        // at. `normalize_paths` deals with that; this deals with the
+        // lines ildasm writes that describe the run rather than the
+        // assembly.
+        _write_stable_il(raw_path: string, il_out_path: string) static is
+            File.write_all_lines(
+                il_out_path,
+                IL_SNAPSHOT.narrow(File.read_all_lines(raw_path)))
+        si
+
+        // The build log truncated at MSBuild's end-of-build banner. A
+        // dotnet-build capture holds each diagnostic twice: the console
+        // logger renders every error and warning as it occurs, then
+        // re-lists them all after the banner. Cutting there leaves one
+        // rendering per diagnostic and keeps genuine repeats countable. A
+        // plain run's capture - the compiler invoked directly - has no
+        // such banner and passes through unchanged.
+        trim_build_log(in_file: string, out_file: string) is
+            if !File.exists(get_path(in_file)) then
+                return
+            fi
+
+            let builder = System.Text.StringBuilder()
+
+            for line in read_all_text(in_file).split(['\n']) do
+                if line.starts_with("Build FAILED") \/ line.starts_with("Build succeeded") then
+                    break
+                fi
+
+                builder.append(line)
+                builder.append("\n")
+            od
+
+            write_all_text(out_file, builder.to_string())
+        si
+
         run_grep(pattern: string, in_file: string, out_file: string) -> bool is
             return
                 run(
                     "grep",
-                    ["-F", pattern, in_file],
-                    5000,
+                    // -E, not -F: the diagnostic patterns above are
+                    // extended regular expressions.
+                    ["-E", pattern, in_file],
+                    TOOL_TIMEOUT_MS,
                     out_file,
                     null,
                     _collate_environment
-                ) != 0;
+                ) != 0
         si
 
         run_sort(in_file: string, out_file: string) -> bool is
@@ -230,56 +875,56 @@ namespace Tester is
                 run(
                     "sort",
                     [in_file],
-                    5000,
+                    TOOL_TIMEOUT_MS,
                     out_file,
                     null,
                     _collate_environment
-                ) != 0;
+                ) != 0
         si
 
         normalize_paths(file_name: string) is
-            let path = get_path(file_name);
+            let path = get_path(file_name)
 
             if !File.exists(path) then
-                return;
+                return
             fi
 
-            let test_directory = IO.Path.get_full_path(_test.path);
+            let test_directory = IO.Path.get_full_path(_test.path)
 
             if string.is_null_or_empty(test_directory) then
-                return;
+                return
             fi
 
             let prefix =
                 if test_directory.ends_with('/') \/ test_directory.ends_with('\\') then
-                    test_directory;
+                    test_directory
                 else
-                    "{test_directory}/";
-                fi;
+                    "{test_directory}/"
+                fi
 
-            let content = File.read_all_text(path);
+            let content = File.read_all_text(path)
 
-            File.write_all_text(path, content.replace(prefix, ""));
+            File.write_all_text(path, content.replace(prefix, ""))
         si
 
         strip_stack_trace_locations(file_name: string) is
-            let path = get_path(file_name);
+            let path = get_path(file_name)
 
             if !File.exists(path) then
-                return;
+                return
             fi
 
-            let content = File.read_all_text(path);
+            let content = File.read_all_text(path)
 
             // Strip the ` in <path>:line <N>` suffix from each `   at …`
             // frame so snapshots don't pin absolute paths or line numbers.
             // Frames without an `in …` suffix (typically ones without debug
             // info) are left intact.
-            let pattern = Regex("^( {3}at .+) in [^:]*:line [0-9]+\\s*$", RegexOptions.MULTILINE);
+            let pattern = Regex("^( {3}at .+) in [^:]*:line [0-9]+\\s*$", RegexOptions.MULTILINE)
 
-            File.write_all_text(path, pattern.replace(content, "$1"));
+            File.write_all_text(path, pattern.replace(content, "$1"))
         si
-        
+
         run_diff(
             description: string,
             expected_file_name: string mut,
@@ -288,192 +933,323 @@ namespace Tester is
             ignore_space_changes: bool
         ) -> bool
         is
-            let expected_path = get_path(expected_file_name);
-            let actual_path = get_path(actual_file_name);
-            let out_path = get_path(out_file_name);
+            let expected_path = get_path(expected_file_name)
+            let actual_path = get_path(actual_file_name)
+            let out_path = get_path(out_file_name)
 
             if
                 !File.exists(expected_path)
             then
-                expected_file_name = "/dev/null";
+                expected_file_name = "/dev/null"
             fi
 
             if
                 !File.exists(actual_path)
             then
-                return false;
+                return false
             fi
 
-            let args: string[] mut;
+            let args: string[] mut
 
             if ignore_space_changes then
-                args = ["-b", "--strip-trailing-cr", expected_file_name, actual_file_name];
+                args = ["-b", "--strip-trailing-cr", expected_file_name, actual_file_name]
             else
-                args = ["--strip-trailing-cr", expected_file_name, actual_file_name];
+                args = ["--strip-trailing-cr", expected_file_name, actual_file_name]
             fi
 
             let result = run(
                 "diff",
                 args,
-                5000,
+                TOOL_TIMEOUT_MS,
                 out_file_name,
                 null
-            );
+            )
 
             if result != 0 then
-                add_fail(description, out_file_name);
+                add_fail(description, out_file_name)
             fi
-                
-            return result == 0;
+
+            return result == 0
         si
 
         run(
             path: string,
             arguments: Iterable[string],
             timeout: int,
-            out_file: string,
-            err_file: string
-        ) -> int => 
-            run(path, arguments, timeout, out_file, err_file, null);
+            out_file: string?,
+            err_file: string?
+        ) -> int =>
+            run(path, arguments, timeout, out_file, err_file, null)
 
         run(
             path: string,
             arguments: Iterable[string],
             timeout: int,
-            out_file: string,
-            err_file: string,
-            environment: Iterable[Pair[string,string]]
+            out_file: string?,
+            err_file: string?,
+            environment: Iterable[Pair[string,string]]?
+        ) -> int =>
+            run(path, arguments, timeout, out_file, err_file, environment, null, null)
+
+        run(
+            path: string,
+            arguments: Iterable[string],
+            timeout: int,
+            out_file: string?,
+            err_file: string?,
+            environment: Iterable[Pair[string,string]]?,
+            in_file: string?,
+            session_file: string?
         ) -> int
         is
-            let process = start(path, arguments, environment);
-            
-            return wait(process, timeout, out_file, err_file);
+            let process =
+                start(path, arguments, environment, in_file? \/ session_file?)
+
+            return wait(
+                process, path, timeout, out_file, err_file, in_file,
+                session_file
+            )
         si
 
         start(path: string, arguments: Iterable[string]) -> Process =>
-            start(path, arguments, null);
+            start(path, arguments, null, false)
 
-        start(path: string, arguments: Iterable[string], environment: Iterable[Pair[string,string]]) -> Process is
-            let start_info = new System.Diagnostics.ProcessStartInfo();
+        start(path: string, arguments: Iterable[string], environment: Iterable[Pair[string,string]]?) -> Process =>
+            start(path, arguments, environment, false)
 
-            start_info.file_name = path;
+        start(
+            path: string,
+            arguments: Iterable[string],
+            environment: Iterable[Pair[string,string]]?,
+            redirect_input: bool
+        ) -> Process is
+            let start_info = System.Diagnostics.ProcessStartInfo()
 
-            start_info.use_shell_execute = false;
+            start_info.file_name = path
+
+            start_info.use_shell_execute = false
 
             if environment? then
                 for element in environment do
-                    start_info.environment.add(element.key, element.value);
-                od                        
+                    start_info.environment.add(element.key, element.value)
+                od
             fi
 
-            let arguments_string = new StringBuilder();
+            start_info.arguments =
+                arguments
+                    |> map(arg =>
+                        arg
+                            // FIXME: not convinced either of these are necessary
+                            .replace("\\", "\\\\")
+                            .replace("\"", "\"\""))
+                    |> join(" ")
 
-            if arguments? then                
-                start_info.arguments =
-                    arguments |
-                        .filter(a => a?)
-                        .map(arg => 
-                            arg
-                                // FIXME: not convinced either of these are necessary
-                                .replace("\\", "\\\\")
-                                .replace("\"", "\"\""))
-                        .to_string(" ");
+            start_info.working_directory = _test.path
+
+            start_info.redirect_standard_output = true
+            start_info.redirect_standard_error = true
+            start_info.redirect_standard_input = redirect_input
+            start_info.use_shell_execute = false
+
+            let result = Process.start(start_info)
+
+            if !result? then
+                throw Exception("failed to start process: {path} {start_info.arguments}")
             fi
 
-            start_info.working_directory = _test.path;
-
-            start_info.redirect_standard_output = true;
-            start_info.redirect_standard_error = true;
-            start_info.use_shell_execute = false;
-
-            let result = Process.start(start_info);
-
-            if result == null then
-                throw new Exception("failed to start process: {path} {start_info.arguments}");
-            fi
-            
-            return result;
+            return result
         si
 
-        wait(process: Process, timeout: int, out_file_name: string, err_file_name: string) -> int is
-            if out_file_name? then
-                let stdout = process.standard_output.read_to_end();
-                write_all_text(out_file_name, stdout);
-            fi
-            
-            if err_file_name? then
-                let stderr = process.standard_error.read_to_end();
-                write_all_text(err_file_name, stderr);
-            fi
-            
-            process.wait_for_exit(5000);
+        wait(process: Process, timeout: int, out_file_name: string?, err_file_name: string?) -> int =>
+            wait(process, "", timeout, out_file_name, err_file_name, null, null)
 
-            return process.exit_code;
+        // Both pipes are drained, and the input written, while the program is
+        // still running: each of the three can block, and a blocked one stops
+        // the program reaching the end of the other two. Draining only the
+        // stream a caller asked for is not enough - what fills a pipe the
+        // runner is ignoring still stops the program that filled it.
+        wait(
+            process: Process,
+            path: string,
+            timeout: int,
+            out_file_name: string?,
+            err_file_name: string?,
+            in_file_name: string?,
+            session_file_name: string?
+        ) -> int is
+            let reading_out =
+                if let session = session_file_name then
+                    Tasks.TASK.run(() -> string => drive_session(process, session))
+                else
+                    process.standard_output.read_to_end_async()
+                fi
+
+            let reading_err = process.standard_error.read_to_end_async()
+
+            write_input(process, in_file_name)
+
+            if !process.wait_for_exit(timeout) then
+                // Killing it closes the pipes, which is what lets the reads
+                // above finish; without that there is nothing to report with.
+                process.kill(true)
+                process.wait_for_exit()
+
+                add_fail(
+                    "`{path}` did not finish within {timeout}ms",
+                    err_file_name
+                )
+            fi
+
+            if out_file_name? then
+                write_all_text(out_file_name, reading_out.result)
+            fi
+
+            if err_file_name? then
+                write_all_text(err_file_name, reading_err.result)
+            fi
+
+            return process.exit_code
+        si
+
+        // Drives a program that prompts, the way a person at a terminal does.
+        // Output is read as it arrives, and a line is sent whenever what has
+        // arrived ends part way through a line: that is the program sitting at
+        // a prompt with nothing more to say until it is answered. The line goes
+        // into the transcript at the same point, which is where the terminal
+        // would have echoed it, so what is captured is the session as it would
+        // have been seen rather than the program's output with the answers
+        // missing.
+        //
+        // A program that reads without prompting first is not driven this way -
+        // nothing marks the point to answer at, so it waits until the timeout.
+        // `run.in` is for those, and sends the whole input at once.
+        drive_session(process: Process, session_file_name: string) -> string is
+            let pending = File.read_all_lines(get_path(session_file_name))
+            let transcript = StringBuilder()
+            let buffer = (0..4096) |> map(_ => ' ') |> collect_array()
+
+            let sent mut = 0
+
+            do
+                let count =
+                    process.standard_output.read(buffer, 0, buffer.count)
+
+                if count <= 0 then
+                    break
+                fi
+
+                let arrived = string(buffer, 0, count)
+
+                transcript.append(arrived)
+
+                if arrived.ends_with("\n") \/ sent >= pending.count then
+                    continue
+                fi
+
+                let answer = pending[sent]
+
+                sent = sent + 1
+
+                process.standard_input.write("{answer}\n")
+                process.standard_input.flush()
+
+                transcript.append("{answer}\n")
+
+                if sent >= pending.count then
+                    process.standard_input.close()
+                fi
+            od
+
+            return transcript.to_string()
+        si
+
+        // Written from a task of its own so that input the program never reads
+        // bounds nothing: a payload past the pipe buffer would otherwise block
+        // here for as long as the program declined to read it. A program that
+        // exits first breaks the pipe, which is an ordinary end to a run rather
+        // than a failure, so the write is allowed to fail quietly.
+        write_input(process: Process, in_file_name: string?) is
+            // Standard input is only redirected when there is something to
+            // send, so with no input file there is no stream to write or close.
+            if !in_file_name? then
+                return
+            fi
+
+            let text = read_all_text(in_file_name)
+
+            let _ =
+                Tasks.TASK.run(() is
+                    try
+                        process.standard_input.write(text)
+                        process.standard_input.close()
+                    catch e: Exception
+                    yrt
+                si)
         si
 
         add_fail(message: string) is
-            add_fail(message, null);
+            add_fail(message, null)
         si
-        
-        add_fail(message: string, file_name: string) is
-            let details: DETAILS mut;
+
+        add_fail(message: string, file_name: string?) is
+            let details: DETAILS mut
 
             if file_name? then
-                details = new DETAILS(message, read_all_text_quiet(file_name));
+                details = DETAILS(message, read_all_text_quiet(file_name))
             else
-                details = new DETAILS(message);                
+                details = DETAILS(message)
             fi
 
             if !_failure? then
-                _failure = new FAILURE(_test, details);
+                _failure = FAILURE(_test, details)
             else
-                _failure.add(details);
+                _failure.add(details)
             fi
         si
 
         mark_if_failed() is
             if _failure? then
-                File.create(get_path("failed")).close();
+                File.create(get_path("failed")).close()
             else
-                delete_file("failed");
+                delete_file("failed")
             fi
         si
 
         delete_files(file_names: Iterable[string]) is
             for file_name in file_names do
-                delete_file(file_name);
+                delete_file(file_name)
             od
         si
-        
+
         delete_file(file_name: string) is
-            let file_path = get_path(file_name);
+            let file_path = get_path(file_name)
 
             if File.exists(file_path) then
-                File.delete(file_path);
+                File.delete(file_path)
             fi
         si
-        
+
         get_path(file_name: string) -> string =>
-            IO.Path.join(_test.path, file_name);
+            IO.Path.join(_test.path, file_name)
 
         get_path() -> string =>
-            _test.path;
+            _test.path
 
         write_all_text(file_name: string, text: string) is
-            File.write_all_text(get_path(file_name), text);
+            File.write_all_text(get_path(file_name), text)
         si
-        
+
         read_all_text(file_name: string) -> string =>
-            File.read_all_text(get_path(file_name));
+            File.read_all_text(get_path(file_name))
 
         read_all_text_quiet(file_name: string) -> string is
-            let file_path = get_path(file_name);
+            let file_path = get_path(file_name)
 
             if !File.exists(file_path) then
-                return "(could not read file: {file_path})";
+                return "(could not read file: {file_path})"
             fi
-            
-            return File.read_all_text(get_path(file_name));
+
+            return File.read_all_text(get_path(file_name))
         si
     si
 si

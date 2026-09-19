@@ -1,0 +1,15 @@
+namespace IlItemProperty is
+    class BOX is
+        value: int;
+
+        init(value: int) is
+            self.value = value;
+        si
+    si
+
+    class MAIN is
+        entry() static is
+            IO.Std.write_line("{BOX(42).value}");
+        si
+    si
+si
