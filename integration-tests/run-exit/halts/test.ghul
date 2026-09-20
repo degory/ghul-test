@@ -1,0 +1,9 @@
+use IO.Std;
+
+// Ends abnormally, which is the whole subject of a task like Halt and catch
+// fire. The test says which status to expect and what reached standard error.
+entry() is
+    Std.write_line("about to fail");
+
+    throw System.Exception("catching fire");
+si
