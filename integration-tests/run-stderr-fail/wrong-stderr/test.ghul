@@ -1,0 +1,7 @@
+use IO.Std;
+
+// Writes to both streams, so the test asserts what reached each of them.
+entry() is
+    Std.write_line("this is stdout");
+    Std.error.write_line("this is stderr");
+si
