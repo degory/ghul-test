@@ -36,9 +36,18 @@ if [ -d $CASE ] ; then
         fi
     done
 
+    # The program's standard error becomes an expectation when it wrote
+    # something there, or when the test already asserts that stream - a test
+    # that says nothing about it keeps saying nothing.
+    if [ -f $CASE/run.err ] ; then
+        if [ -s $CASE/run.err ] || [ -f $CASE/run.err.expected ] ; then
+            mv $CASE/run.err $CASE/run.err.expected
+        fi
+    fi
+
     if [ -f $CASE/run.out ] ; then
         mv $CASE/run.out $CASE/run.expected
-        rm $CASE/fail.expected
+        rm -f $CASE/fail.expected
     else
         echo >$CASE/fail.expected
     fi

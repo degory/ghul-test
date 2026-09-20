@@ -395,6 +395,71 @@ fi
 echo integration-tests/run-in: PASS
 
 
+echo integration-tests/run-args...
+
+# A test carrying run.args gives the program that command line, one
+# argument a line. The second argument holds a space, so this also covers an
+# argument reaching the program whole rather than split in two.
+TEST_PROCESSES=1 CI=1 $RUNNER integration-tests/run-args | tee actual-output
+
+if [ "${PIPESTATUS[0]}" != "0" ]; then
+    echo integration-tests/run-args unexpectedly failed
+
+    exit 1
+fi
+
+if ! diff integration-tests/run-args/expected-output actual-output ; then
+    echo integration-tests/run-args output did not match expected output
+
+    exit 1
+fi
+
+echo integration-tests/run-args: PASS
+
+
+echo integration-tests/run-stderr...
+
+# A test carrying run.err.expected asserts what the program wrote to its
+# standard error, which is captured either way but compared only when the
+# expectation is there.
+TEST_PROCESSES=1 CI=1 $RUNNER integration-tests/run-stderr | tee actual-output
+
+if [ "${PIPESTATUS[0]}" != "0" ]; then
+    echo integration-tests/run-stderr unexpectedly failed
+
+    exit 1
+fi
+
+if ! diff integration-tests/run-stderr/expected-output actual-output ; then
+    echo integration-tests/run-stderr output did not match expected output
+
+    exit 1
+fi
+
+echo integration-tests/run-stderr: PASS
+
+
+echo integration-tests/run-stderr-fail...
+
+# ... and reports a difference on that stream as a failure, rather than
+# passing because the standard output matched.
+TEST_PROCESSES=1 CI=1 $RUNNER integration-tests/run-stderr-fail | tee actual-output
+
+if [ "${PIPESTATUS[0]}" != "1" ]; then
+    echo integration-tests/run-stderr-fail unexpectedly succeeded
+
+    exit 1
+fi
+
+if ! diff integration-tests/run-stderr-fail/expected-output actual-output ; then
+    echo integration-tests/run-stderr-fail output did not match expected output
+
+    exit 1
+fi
+
+echo integration-tests/run-stderr-fail: PASS
+
+
 echo integration-tests/back-pressure...
 
 # The program fills its error pipe before it has finished reading its input,

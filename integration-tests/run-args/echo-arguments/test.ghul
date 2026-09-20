@@ -1,0 +1,12 @@
+use IO.Std;
+
+// Reads the command line, which is what `run.args` supplies. The second
+// argument holds a space, so it also covers an argument reaching the program
+// whole rather than as two.
+entry(args: string[]) is
+    Std.write_line("{args.count} arguments");
+
+    for argument in args do
+        Std.write_line("[{argument}]");
+    od
+si

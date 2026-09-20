@@ -185,6 +185,8 @@ namespace Tester is
                 run_diff("test output", "run.expected", "run.out", "run.diff", true)
             fi
 
+            run_error_diff("standard error", "run.err", "run.err.diff")
+
             run_image_diffs()
         si
 
@@ -253,7 +255,7 @@ namespace Tester is
             let exit_status =
                 run(
                     _target_cli,
-                    [COMPILER_UNDER_TEST.FORMATTED_BINARY],
+                    run_command_line(COMPILER_UNDER_TEST.FORMATTED_BINARY),
                     PROGRAM_TIMEOUT_MS,
                     "formatted-run.out",
                     "formatted-run.err",
@@ -288,6 +290,12 @@ namespace Tester is
                     true
                 )
             fi
+
+            run_error_diff(
+                "formatted standard error",
+                "formatted-run.err",
+                "formatted-run.err.diff"
+            )
         si
 
         FORMATTED_DIRECTORY: string static => "formatted"
@@ -298,6 +306,10 @@ namespace Tester is
 
         RUN_CHECK: string static => "run.check"
 
+        RUN_ARGS: string static => "run.args"
+
+        RUN_ERR_EXPECTED: string static => "run.err.expected"
+
         input_file() -> string? =>
             if File.exists(get_path(RUN_IN)) then RUN_IN else null fi
 
@@ -306,6 +318,48 @@ namespace Tester is
 
         check_file() -> string? =>
             if File.exists(get_path(RUN_CHECK)) then RUN_CHECK else null fi
+
+        // The command line the program under test is given, one argument a
+        // line, so an argument that contains spaces is still one argument.
+        // A test without the file runs the program with none, as before.
+        program_arguments() -> Collections.List[string] is
+            let arguments = Collections.LIST[string]()
+
+            if !File.exists(get_path(RUN_ARGS)) then
+                return arguments
+            fi
+
+            for line in File.read_all_lines(get_path(RUN_ARGS)) do
+                arguments.add(line)
+            od
+
+            arguments
+        si
+
+        // The command line for a run: the binary, then whatever `run.args`
+        // holds.
+        run_command_line(binary: string) -> Collections.List[string] is
+            let command_line = Collections.LIST[string]([binary])
+
+            command_line.add_range(program_arguments())
+
+            command_line
+        si
+
+        // What the program wrote to standard error, asserted by a test that
+        // carries `run.err.expected`. Without one the stream is captured as
+        // before and only reported when the run fails, since most programs
+        // write nothing there and a snapshot would say so at length.
+        run_error_diff(description: string, produced: string, diff_file: string) is
+            if !File.exists(get_path(RUN_ERR_EXPECTED)) then
+                return
+            fi
+
+            normalize_paths(produced)
+            strip_stack_trace_locations(produced)
+
+            run_diff(description, RUN_ERR_EXPECTED, produced, diff_file, true)
+        si
 
         // A program whose output is not the same twice cannot be held to a
         // snapshot, so a test may carry a `run.check` instead: an executable
@@ -431,6 +485,7 @@ namespace Tester is
                     "run.out",
                     "run.err",
                     "run.diff",
+                    "run.err.diff",
                     "format.out",
                     "format.err",
                     "format.diff",
@@ -441,6 +496,7 @@ namespace Tester is
                     "formatted-run.out",
                     "formatted-run.err",
                     "formatted-run.diff",
+                    "formatted-run.err.diff",
                     "ghul-runtime.dll"
                 ])
 
@@ -467,7 +523,7 @@ namespace Tester is
                     _target_cli,
                     // but this needs to be a path relative to the directory
                     // that the test is in
-                    [_compiler_under_test.get_binary_path_relative_to_test_folder(self)],
+                    run_command_line(_compiler_under_test.get_binary_path_relative_to_test_folder(self)),
                     PROGRAM_TIMEOUT_MS,
                     "run.out",
                     "run.err",
@@ -1035,14 +1091,13 @@ namespace Tester is
                 od
             fi
 
-            start_info.arguments =
-                arguments
-                    |> map(arg =>
-                        arg
-                            // FIXME: not convinced either of these are necessary
-                            .replace("\\", "\\\\")
-                            .replace("\"", "\"\""))
-                    |> join(" ")
+            // One argument at a time rather than a joined string, so an
+            // argument that holds a space or a quote reaches the program as
+            // the one argument it is: the runtime quotes each for the
+            // platform it is on.
+            for argument in arguments do
+                start_info.argument_list.add(argument)
+            od
 
             start_info.working_directory = _test.path
 
@@ -1054,7 +1109,7 @@ namespace Tester is
             let result = Process.start(start_info)
 
             if !result? then
-                throw Exception("failed to start process: {path} {start_info.arguments}")
+                throw Exception("failed to start process: {path} {arguments |> join(" ")}")
             fi
 
             return result
