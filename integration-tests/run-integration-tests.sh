@@ -460,6 +460,47 @@ fi
 echo integration-tests/run-stderr-fail: PASS
 
 
+echo integration-tests/run-exit...
+
+# A test carrying run.exit.expected passes when the program ends with that
+# status, which is how a program whose subject is failing is tested at all.
+TEST_PROCESSES=1 CI=1 $RUNNER integration-tests/run-exit | tee actual-output
+
+if [ "${PIPESTATUS[0]}" != "0" ]; then
+    echo integration-tests/run-exit unexpectedly failed
+
+    exit 1
+fi
+
+if ! diff integration-tests/run-exit/expected-output actual-output ; then
+    echo integration-tests/run-exit output did not match expected output
+
+    exit 1
+fi
+
+echo integration-tests/run-exit: PASS
+
+
+echo integration-tests/run-exit-fail...
+
+# ... and fails when it ends with a different one.
+TEST_PROCESSES=1 CI=1 $RUNNER integration-tests/run-exit-fail | tee actual-output
+
+if [ "${PIPESTATUS[0]}" != "1" ]; then
+    echo integration-tests/run-exit-fail unexpectedly succeeded
+
+    exit 1
+fi
+
+if ! diff integration-tests/run-exit-fail/expected-output actual-output ; then
+    echo integration-tests/run-exit-fail output did not match expected output
+
+    exit 1
+fi
+
+echo integration-tests/run-exit-fail: PASS
+
+
 echo integration-tests/back-pressure...
 
 # The program fills its error pipe before it has finished reading its input,

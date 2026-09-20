@@ -36,6 +36,15 @@ if [ -d $CASE ] ; then
         fi
     done
 
+    # A run that ended abnormally records the status it ended with, so a
+    # test whose subject is failing can assert it. A run that succeeded
+    # leaves no expectation behind unless the test already carries one.
+    if [ -f $CASE/run.exit ] ; then
+        if [ "$(cat $CASE/run.exit)" != "0" ] || [ -f $CASE/run.exit.expected ] ; then
+            mv $CASE/run.exit $CASE/run.exit.expected
+        fi
+    fi
+
     # The program's standard error becomes an expectation when it wrote
     # something there, or when the test already asserts that stream - a test
     # that says nothing about it keeps saying nothing.

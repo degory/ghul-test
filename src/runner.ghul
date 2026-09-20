@@ -264,11 +264,14 @@ namespace Tester is
                     session_file()
                 )
 
-            if exit_status != 0 then
-                add_fail(
-                    "formatted binary exited with non-zero status ({exit_status})",
-                    "formatted-run.err"
+            if
+                !exit_status_is_expected(
+                    "formatted binary",
+                    exit_status,
+                    "formatted-run.err",
+                    "formatted-run.exit"
                 )
+            then
                 return
             fi
 
@@ -310,6 +313,8 @@ namespace Tester is
 
         RUN_ERR_EXPECTED: string static => "run.err.expected"
 
+        RUN_EXIT_EXPECTED: string static => "run.exit.expected"
+
         input_file() -> string? =>
             if File.exists(get_path(RUN_IN)) then RUN_IN else null fi
 
@@ -344,6 +349,63 @@ namespace Tester is
             command_line.add_range(program_arguments())
 
             command_line
+        si
+
+        // The exit status a test says its program should end with, for a
+        // program whose subject is failing. Without the file any non-zero
+        // status fails the test, as before.
+        expected_exit_status() -> int? is
+            if !File.exists(get_path(RUN_EXIT_EXPECTED)) then
+                return null
+            fi
+
+            let text = File.read_all_text(get_path(RUN_EXIT_EXPECTED)).trim()
+
+            let status mut = 0
+
+            if int.try_parse(text, status ref) then
+                return status
+            fi
+
+            add_fail("{RUN_EXIT_EXPECTED} holds '{text}', which is not an exit status")
+
+            return null
+        si
+
+        // Whether a run ended the way the test says it should, and what to
+        // report when it did not. The status is written to `run.exit` either
+        // way, which is what `scripts/capture.sh` promotes.
+        exit_status_is_expected(
+            description: string,
+            exit_status: int,
+            err_file_name: string,
+            exit_file_name: string
+        ) -> bool is
+            write_all_text(exit_file_name, "{exit_status}\n")
+
+            if let expected = expected_exit_status() then
+                if exit_status == expected then
+                    return true
+                fi
+
+                add_fail(
+                    "{description} exited with status {exit_status}, not {expected}",
+                    err_file_name
+                )
+
+                return false
+            fi
+
+            if exit_status == 0 then
+                return true
+            fi
+
+            add_fail(
+                "{description} exited with non-zero status ({exit_status})",
+                err_file_name
+            )
+
+            return false
         si
 
         // What the program wrote to standard error, asserted by a test that
@@ -486,6 +548,7 @@ namespace Tester is
                     "run.err",
                     "run.diff",
                     "run.err.diff",
+                    "run.exit",
                     "format.out",
                     "format.err",
                     "format.diff",
@@ -497,6 +560,7 @@ namespace Tester is
                     "formatted-run.err",
                     "formatted-run.diff",
                     "formatted-run.err.diff",
+                    "formatted-run.exit",
                     "ghul-runtime.dll"
                 ])
 
@@ -532,14 +596,7 @@ namespace Tester is
                     session_file()
                 )
 
-            if
-                exit_status != 0
-            then
-                add_fail("binary exited with non-zero status ({exit_status})", "run.err")
-                return false
-            fi
-
-            return true
+            return exit_status_is_expected("binary", exit_status, "run.err", "run.exit")
         si
 
         // A `<name>.expected` sitting beside an image the test wrote asserts
