@@ -133,6 +133,15 @@ namespace Tester is
             // Written with character classes because a pattern holding a
             // literal space would not survive being joined into the
             // command line unquoted.
+            // The compiler reports a pass that threw as `exception:`
+            // rather than as a diagnostic, so nothing a test asserts
+            // would notice one. A pass that throws is a compiler
+            // defect whatever the test says about the source, so it
+            // fails the test on its own.
+            if grep_matched(":[[:space:]]*exception:", "compiler.trim", "exception.grep") then
+                add_fail("compiler reported an internal exception", "exception.grep")
+            fi
+
             run_grep(":[[:space:]]*error(:|[[:space:]]+[a-z0-9-]*:)", "compiler.trim", "err.grep")
             run_grep(":[[:space:]]*warn(ing)?(:|[[:space:]]+[a-z0-9-]*:)", "compiler.trim", "warn.grep")
 
@@ -968,6 +977,11 @@ namespace Tester is
 
             write_all_text(out_file, builder.to_string())
         si
+
+        // grep exits 0 when it matched, which is the question here:
+        // `run_grep` answers the opposite, and its callers ignore it.
+        grep_matched(pattern: string, in_file: string, out_file: string) -> bool =>
+            !run_grep(pattern, in_file, out_file)
 
         run_grep(pattern: string, in_file: string, out_file: string) -> bool is
             return
