@@ -114,7 +114,7 @@ namespace Tester is
             // sees one rendering per diagnostic and still counts genuine
             // repeats; a plain run's capture has no such banner and passes
             // through unchanged.
-            trim_build_log("compiler.out", "compiler.trim")
+            trim_build_log("compiler.out", "compiler.trim.out")
 
             // Matches both diagnostic formats the compiler emits: the
             // default `file: l,c..l,c: error: text` and MSBuild's canonical
@@ -138,12 +138,12 @@ namespace Tester is
             // would notice one. A pass that throws is a compiler
             // defect whatever the test says about the source, so it
             // fails the test on its own.
-            if grep_matched(":[[:space:]]*exception:", "compiler.trim", "exception.grep") then
+            if grep_matched(":[[:space:]]*exception:", "compiler.trim.out", "exception.grep") then
                 add_fail("compiler reported an internal exception", "exception.grep")
             fi
 
-            run_grep(":[[:space:]]*error(:|[[:space:]]+[a-z0-9-]*:)", "compiler.trim", "err.grep")
-            run_grep(":[[:space:]]*warn(ing)?(:|[[:space:]]+[a-z0-9-]*:)", "compiler.trim", "warn.grep")
+            run_grep(":[[:space:]]*error(:|[[:space:]]+[a-z0-9-]*:)", "compiler.trim.out", "err.grep")
+            run_grep(":[[:space:]]*warn(ing)?(:|[[:space:]]+[a-z0-9-]*:)", "compiler.trim.out", "warn.grep")
 
             run_sort("err.grep", "err.sort")
             run_sort("warn.grep", "warn.sort")
@@ -540,7 +540,7 @@ namespace Tester is
                     "binary.exe.mdb",
                     "binary.runtimeconfig.json",
                     "compiler.out",
-                    "compiler.trim",
+                    "compiler.trim.out",
                     "sed.out",
                     "warn.grep",
                     "warn.diff",
