@@ -1,0 +1,75 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v10.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v10.0": {
+      "ghul-test/1.3.1-alpha.1": {
+        "dependencies": {
+          "ghul.runtime": "21.13.0",
+          "runtime.linux-x64.Microsoft.NETCore.ILDAsm": "10.0.11",
+          "runtime.win-x64.Microsoft.NETCore.ILDAsm": "10.0.11"
+        },
+        "runtime": {
+          "ghul-test.dll": {}
+        }
+      },
+      "ghul.runtime/21.13.0": {
+        "runtime": {
+          "lib/net10.0/ghul-runtime.dll": {
+            "assemblyVersion": "21.13.0.0",
+            "fileVersion": "0.0.0.0"
+          }
+        }
+      },
+      "runtime.linux-x64.Microsoft.NETCore.ILDAsm/10.0.11": {
+        "runtimeTargets": {
+          "runtimes/linux-x64/native/ildasm": {
+            "rid": "linux-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          }
+        }
+      },
+      "runtime.win-x64.Microsoft.NETCore.ILDAsm/10.0.11": {
+        "runtimeTargets": {
+          "runtimes/win-x64/native/ildasm.exe": {
+            "rid": "win-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "ghul-test/1.3.1-alpha.1": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "ghul.runtime/21.13.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-N0VBtRVo02QY/8Sv7OhAlLqpVXiVD9EFoc3Ig5ucXtOKX3R25dhXDOVeF87eux4XtJuCDT2RwkZyZk6vxgiuqQ==",
+      "path": "ghul.runtime/21.13.0",
+      "hashPath": "ghul.runtime.21.13.0.nupkg.sha512"
+    },
+    "runtime.linux-x64.Microsoft.NETCore.ILDAsm/10.0.11": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-W/Ejf2Bsoou/eeODrQHFCP6jsitqAcUQ0za8cwO1Sny6lmFrfn0K7AECF2Y+YWebGpnncMc6mCZ043In6IftoQ==",
+      "path": "runtime.linux-x64.microsoft.netcore.ildasm/10.0.11",
+      "hashPath": "runtime.linux-x64.microsoft.netcore.ildasm.10.0.11.nupkg.sha512"
+    },
+    "runtime.win-x64.Microsoft.NETCore.ILDAsm/10.0.11": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-A8RErnPdGjK98kvANfEKpRMEYq0hfnY1th56n4C3VPF8jADD+Cd1IvOi37qTb9Ep3ig4gDgz+l2yFMCQa0GrwA==",
+      "path": "runtime.win-x64.microsoft.netcore.ildasm/10.0.11",
+      "hashPath": "runtime.win-x64.microsoft.netcore.ildasm.10.0.11.nupkg.sha512"
+    }
+  }
+}
