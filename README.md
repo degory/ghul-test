@@ -1,11 +1,11 @@
 # ghūl compiler integration test runner
 
-[![CI/CD](https://img.shields.io/github/actions/workflow/status/degory/ghul-test/cicd.yml?branch=main)](https://github.com/degory/ghul-test/actions?query=workflow%3ACICD+branch%3Amain)
+[![CI/CD](https://img.shields.io/github/actions/workflow/status/ghul-lang/ghul-test/cicd.yml?branch=main)](https://github.com/ghul-lang/ghul-test/actions?query=workflow%3ACICD+branch%3Amain)
 [![NuGet version (ghul.test)](https://img.shields.io/nuget/v/ghul.test.svg)](https://www.nuget.org/packages/ghul.test/)
-[![Release](https://img.shields.io/github/v/release/degory/ghul-test?label=release)](https://github.com/degory/ghul-test/releases)
-[![Release Date](https://img.shields.io/github/release-date/degory/ghul-test)](https://github.com/degory/ghul-test/releases)
-[![Issues](https://img.shields.io/github/issues-search/degory/ghul?query=is%3Aopen%20is%3Aissue%20label%3Aghul-test&label=issues)](https://github.com/degory/ghul/issues?q=is%3Aopen+is%3Aissue+label%3Aghul-test) 
-[![License](https://img.shields.io/github/license/degory/ghul-test)](https://github.com/degory/ghul-test/blob/main/LICENSE)
+[![Release](https://img.shields.io/github/v/release/ghul-lang/ghul-test?label=release)](https://github.com/ghul-lang/ghul-test/releases)
+[![Release Date](https://img.shields.io/github/release-date/ghul-lang/ghul-test)](https://github.com/ghul-lang/ghul-test/releases)
+[![Issues](https://img.shields.io/github/issues-search/ghul-lang/ghul?query=is%3Aopen%20is%3Aissue%20label%3Aghul-test&label=issues)](https://github.com/ghul-lang/ghul/issues?q=is%3Aopen+is%3Aissue+label%3Aghul-test) 
+[![License](https://img.shields.io/github/license/ghul-lang/ghul-test)](https://github.com/ghul-lang/ghul-test/blob/main/LICENSE)
 [![ghūl](https://img.shields.io/badge/gh%C5%ABl-100%25!-information)](https://ghul.dev)
 
 This is a very simple snapshot based test runner which is used by the [ghūl programming language](https://ghul.dev) [compiler](https://github.com/degory/ghul) [integration tests](https://github.com/degory/ghul/tree/master/integration-tests). It compares test expectations, in the form of snapshot text files, against the actual outputs of the compiler and test executables and flags any differences.
@@ -137,4 +137,4 @@ Refer to the [ghūl compiler integration tests](https://github.com/degory/ghul/t
 
 ## Issues
 
-[View open issues](https://github.com/degory/ghul/issues?q=is%3Aopen+is%3Aissue+label%3Aghul-test) or [raise a new one](https://github.com/degory/ghul/issues/new?labels=ghul-test).
+[View open issues](https://github.com/ghul-lang/ghul/issues?q=is%3Aopen+is%3Aissue+label%3Aghul-test) or [raise a new one](https://github.com/ghul-lang/ghul/issues/new?labels=ghul-test).
