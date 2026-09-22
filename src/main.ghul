@@ -163,17 +163,23 @@ namespace Tester is
                 return 1
             yrt
 
+            let requested = TEST_PATHS.distinct(test_paths)
+
+            if requested.dropped > 0 then
+                Std.write_line("ignoring {requested.dropped} repeated test path(s)")
+            fi
+
             let queue =
                 TEST_QUEUE(
                     host,
                     target,
                     compiler_under_test,
                     disassembler,
-                    PROGRESS_REPORTER(test_paths),
+                    PROGRESS_REPORTER(requested.paths),
                     tag_filter,
                     shard)
 
-            for path in test_paths do
+            for path in requested.paths do
                 if !Directory.exists(path) then
                     Std.write_line("not a directory: {path}")
                     return 1

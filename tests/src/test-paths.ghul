@@ -1,0 +1,47 @@
+namespace Tests is
+    use Collections.LIST
+
+    use Tester
+
+    use TestClass = Microsoft.VisualStudio.TestTools.UnitTesting.TestClassAttribute
+    use Test = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute
+
+    @TestClass()
+    class TEST_PATHS_Should is
+
+        init() is si
+
+        @Test()
+        TEST_PATHS__distinct__given_no_repeats__keeps_every_path_in_order() is
+
+            let result = TEST_PATHS.distinct(["a", "b", "c"])
+
+            should(result.dropped).be(0, "", [])
+            should(result.paths.count).be(3, "", [])
+            should(result.paths[0]).be("a", "", [])
+            should(result.paths[1]).be("b", "", [])
+            should(result.paths[2]).be("c", "", [])
+        si
+
+        @Test()
+        TEST_PATHS__distinct__given_a_repeat__keeps_the_first_and_counts_the_rest() is
+
+            let result = TEST_PATHS.distinct(["a", "b", "a", "c", "a"])
+
+            should(result.dropped).be(2, "", [])
+            should(result.paths.count).be(3, "", [])
+            should(result.paths[0]).be("a", "", [])
+            should(result.paths[1]).be("b", "", [])
+            should(result.paths[2]).be("c", "", [])
+        si
+
+        @Test()
+        TEST_PATHS__distinct__given_nothing__answers_nothing() is
+
+            let result = TEST_PATHS.distinct(LIST[string]())
+
+            should(result.dropped).be(0, "", [])
+            should(result.paths.count).be(0, "", [])
+        si
+    si
+si
