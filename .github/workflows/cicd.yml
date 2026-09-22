@@ -59,6 +59,12 @@ jobs:
     name: Build and publish NuGet package
     runs-on: ubuntu-latest
 
+    # The organization hands workflows a read-only token by default, so the
+    # push to its package feed has to ask for packages: write itself.
+    permissions:
+      contents: read
+      packages: write
+
     container:
       image: mcr.microsoft.com/dotnet/sdk:10.0
 
