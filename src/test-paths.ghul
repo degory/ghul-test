@@ -1,0 +1,26 @@
+namespace Tester is
+    use Collections.LIST
+    use Collections.List
+    use Collections.SET
+
+    // The test paths a run was asked for, each once. A path given twice
+    // is the same directory twice, and two runs of one test share its
+    // build output, so the copies overwrite each other and one of them
+    // finds no binary to run. Overlapping globs produce this from an
+    // ordinary command line: `*pure*` and `*lambda*` both name a test
+    // called `recursive-pure-lambda`.
+    class TEST_PATHS is
+        distinct(paths: List[string]) -> (paths: List[string], dropped: int) static is
+            let seen = SET[string]()
+            let result = LIST[string]()
+
+            for path in paths do
+                if seen.add(path) then
+                    result.add(path)
+                fi
+            od
+
+            (paths = result, dropped = paths.count - result.count)
+        si
+    si
+si
