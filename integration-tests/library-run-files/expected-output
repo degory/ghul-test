@@ -1,0 +1,6 @@
+using 1 processes to run tests
+ 0% ❌ fail: integration-tests/library-run-files/hello-world: a library test carries run.expected, describing a run that never happens
+1 tests discovered
+1 tests enabled
+0/1 tests passed
+❌ 1 tests failed ❌
