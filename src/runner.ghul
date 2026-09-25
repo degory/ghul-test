@@ -168,6 +168,10 @@ namespace Tester is
                 return
             fi
 
+            if !check_library_files() then
+                return
+            fi
+
             // Before the library return below: a library has no entry point
             // to run, but what the formatter wrote for it still has to
             // build, which is most of what the phase asserts.
@@ -311,6 +315,8 @@ namespace Tester is
         si
 
         FORMATTED_DIRECTORY: string static => "formatted"
+
+        RUN_EXPECTED: string static => "run.expected"
 
         RUN_IN: string static => "run.in"
 
@@ -473,6 +479,29 @@ namespace Tester is
             if exit_status != 0 then
                 add_fail(description, out_file_name)
             fi
+        si
+
+        // A library is never run, so a file describing the run asserts
+        // something about a program that does not execute. Left unreported it
+        // reads as a passing assertion: the expectation is simply never
+        // compared, whatever it says.
+        check_library_files() -> bool is
+            let describing_the_run =
+                [RUN_EXPECTED, RUN_CHECK, RUN_ARGS, RUN_IN, RUN_SESSION,
+                 RUN_ERR_EXPECTED, RUN_EXIT_EXPECTED]
+                    |> filter(name => File.exists(get_path(name)))
+                    |> collect()
+
+            if !_test.is_library \/ describing_the_run.count == 0 then
+                return true
+            fi
+
+            add_fail(
+                "a library test carries {describing_the_run |> join(", ")}, "
+                "describing a run that never happens"
+            )
+
+            return false
         si
 
         check_input_files() -> bool is

@@ -746,4 +746,27 @@ fi
 echo integration-tests/run-check-fail: PASS
 
 
+echo integration-tests/library-run-files...
+
+# A library is never run, so a file saying what running it produces is a
+# mistake. Unreported it reads as a passing assertion, because the expectation
+# is simply never compared - which is how a build that emitted nothing could
+# pass against an empty run.expected.
+TEST_PROCESSES=1 CI=1 $RUNNER integration-tests/library-run-files | tee actual-output
+
+if [ "${PIPESTATUS[0]}" != "1" ]; then
+    echo integration-tests/library-run-files did not exit 1
+
+    exit 1
+fi
+
+if ! diff integration-tests/library-run-files/expected-output actual-output ; then
+    echo integration-tests/library-run-files output did not match expected output
+
+    exit 1
+fi
+
+echo integration-tests/library-run-files: PASS
+
+
 exit 0
